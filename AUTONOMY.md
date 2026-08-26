@@ -93,8 +93,10 @@ instead of stalling.
   `main` should only ever move by fast-forward here; if it's ever diverged
   (unexpected commits not from the working branch), stop and flag it
   rather than force-pushing over it.
-- **Push-vs-PR workflow is a pending decision** — see `DECISIONS.md`. Until
-  resolved, prefer PRs so changes are reviewable.
+- **Push directly to the working branch — no PR per cycle.** Every push
+  gets its own Vercel preview deployment automatically, which is the
+  review surface; `main` (production) gets fast-forwarded once you've
+  reviewed the preview and are happy with it. See `DECISIONS.md`.
 - **Actions only a human can take** (creating accounts, provisioning
   infrastructure, etc.) are tracked in `DECISIONS.md` under "Needs Your
   Action" — the loop won't block on these; it keeps building against

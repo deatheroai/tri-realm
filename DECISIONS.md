@@ -10,8 +10,6 @@ on these.
 
 ## Pending Decisions
 
-- **Cadence and push-vs-PR workflow** for autonomous build cycles, per
-  `AUTONOMY.md`.
 - **Exact form of the land↔air and land↔sea portals** — e.g. a stairway or
   hot-air-balloon launch point for land↔air, a dive spot / underground
   passage / beach for land↔sea. Deferred until Phase 2/3 (`BACKLOG.md`)
@@ -20,14 +18,7 @@ on these.
 
 ## Needs Your Action (not decisions — steps only you can take)
 
-- **Create and link a Vercel project.** Nothing is deployed yet — Phase 0
-  in `BACKLOG.md` will produce a deployable build, but actually getting a
-  live URL needs a Vercel account/project you import this repo into.
-  Import with Root Directory at the repo root, and set Production Branch
-  to `main` if the option is available (it may not be, on the free/Hobby
-  tier — see `AUTONOMY.md`'s `main`-fast-forward guardrail for the
-  workaround if so). Not blocking Phase 0/1a code from being written —
-  just blocking you from actually seeing it live until this is done.
+None outstanding — Vercel project imported 2026-08-26 (see Resolved).
 
 ## Resolved
 
@@ -81,3 +72,17 @@ on these.
   reviewed). Made a standing guardrail in `AUTONOMY.md` so future phases
   (air, sea) follow the same visual-first sequencing rather than needing
   to be asked again each time.
+
+- **2026-08-26 — Push directly to the working branch, no PR-per-cycle.**
+  Every push to the working branch gets its own Vercel preview deployment
+  automatically, so a PR isn't needed just to get something reviewable —
+  I push, you review on the branch's preview URL, and `main` (production)
+  gets fast-forwarded once you're happy with it. Matches how this project
+  has worked so far. Cadence itself stays manual-kickoff (send a message
+  to start a cycle) — not raised as a separate blocking decision since
+  that's already working fine.
+
+- **2026-08-26 — Vercel project imported.** Repo imported into Vercel with
+  Root Directory at the repo root. GitHub default branch switched to
+  `main` beforehand so Production Branch tracks `main` correctly. Ready
+  for Phase 0's first deployable build.

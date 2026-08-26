@@ -16,14 +16,14 @@ rough version has been reviewed, so direction gets checked before the
 
 ## Phase 0 — Get something live
 
-- `todo` Initialize the TypeScript + Vite + Three.js scaffold — a single
-  visible scene (e.g. a ground plane + a camera + one placeholder shape) —
-  and deploy it to Vercel. **Review checkpoint: a live URL exists at all,
-  before anything else gets built.**
-- `todo` Set up Vitest (unit) and Playwright (E2E), covering just this
-  scaffold (renders without error), so tests gate commits from the start
-  per `AUTONOMY.md` — kept minimal here on purpose, not blocking Phase 0
-  on test infrastructure maturity.
+- `done` Initialize the TypeScript + Vite + Three.js scaffold — a single
+  visible scene (ground plane, camera, one placeholder cube, basic
+  lighting). Builds clean, 0 npm audit vulnerabilities. **Review
+  checkpoint: pending your look at the Vercel preview URL for this push.**
+- `done` Set up Vitest (unit — `scene.ts`/`camera.ts` object-graph checks)
+  and Playwright (E2E — real headless-Chromium render check: canvas
+  visible, non-zero size, no console errors), so tests gate commits from
+  the start per `AUTONOMY.md`.
 
 ## Phase 1a — Walkable, buildable land (hardcoded, visual-first)
 
