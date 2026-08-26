@@ -9,9 +9,8 @@ cycle rather than one-off pings.
 
 Not yet set. Until a cadence is chosen, cycles are kicked off manually —
 send a short message (e.g. "next cycle") and the session runs the same
-procedure below on demand. It reads this doc plus `DECISIONS.md` (and
-`BACKLOG.md`, once one exists), so there's no need to repaste instructions
-each time.
+procedure below on demand. It reads this doc plus `DECISIONS.md` and
+`BACKLOG.md`, so there's no need to repaste instructions each time.
 
 Each cycle (automated or manually kicked off) does two things in order:
 
@@ -19,10 +18,10 @@ Each cycle (automated or manually kicked off) does two things in order:
    section. If it's non-empty, ask those questions directly in this
    conversation (batched into one round, not one at a time) and record the
    answers, moving each item to the Resolved log.
-2. **Build cycle.** Read the backlog and pick the next unblocked,
-   highest-priority item(s) — as much as fits in one focused session.
-   Implement it with tests, run the full test suite (must pass before
-   committing), update the backlog, commit, and push.
+2. **Build cycle.** Read [`BACKLOG.md`](./BACKLOG.md) and pick the next
+   unblocked, highest-priority item(s) — as much as fits in one focused
+   session. Implement it with tests, run the full test suite (must pass
+   before committing), update `BACKLOG.md`, commit, and push.
 
 If nothing is pending and the backlog has an unblocked next item, step 1 is
 a no-op and the session goes straight to building. If everything in the
