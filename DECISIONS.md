@@ -20,7 +20,14 @@ on these.
 
 ## Needs Your Action (not decisions — steps only you can take)
 
-None yet.
+- **Create and link a Vercel project.** Nothing is deployed yet — Phase 0
+  in `BACKLOG.md` will produce a deployable build, but actually getting a
+  live URL needs a Vercel account/project you import this repo into.
+  Import with Root Directory at the repo root, and set Production Branch
+  to `main` if the option is available (it may not be, on the free/Hobby
+  tier — see `AUTONOMY.md`'s `main`-fast-forward guardrail for the
+  workaround if so). Not blocking Phase 0/1a code from being written —
+  just blocking you from actually seeing it live until this is done.
 
 ## Resolved
 
@@ -62,3 +69,15 @@ None yet.
   math), lowest risk to validate the avatar + construction systems
   against before generalizing to air/sea. Sequencing recorded in
   `BACKLOG.md`.
+
+- **2026-08-26 — Backlog reprioritized: visible/deployed vertical slice
+  before backend generalization.** You flagged that if a lot of backend
+  gets built first, you can't appreciate, test, or redirect the work —
+  need to be able to check direction on the live Vercel app quickly.
+  `BACKLOG.md` restructured: Phase 1 split into Phase 1a (walk on land,
+  place a placeholder structure — all hardcoded, no schema, each item
+  ends in something reviewable on Vercel) and Phase 1b (the `RealmMap`
+  schema, real validation, generic save/load — only starts once 1a is
+  reviewed). Made a standing guardrail in `AUTONOMY.md` so future phases
+  (air, sea) follow the same visual-first sequencing rather than needing
+  to be asked again each time.

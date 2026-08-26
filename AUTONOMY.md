@@ -66,13 +66,33 @@ instead of stalling.
 
 ## Guardrails
 
+- **Prioritize a reviewable, deployed vertical slice over backend
+  abstraction.** You can't appreciate, test, or redirect work that only
+  exists as schema/validation/save-system code with nothing on screen.
+  Within any phase, order work so the earliest items produce something
+  visible and clickable on the live Vercel deployment — hardcoded and
+  rough is fine there. Generalizing into the "proper" architecture
+  (shared schemas, validation rules, generic persistence) happens *after*
+  a rough version has been reviewed and the direction confirmed, not
+  before. `BACKLOG.md`'s Phase 1a/1b split is the template for this.
 - **Tests gate every commit.** New logic ships with new/updated tests; the
-  full suite must pass before anything is pushed.
+  full suite must pass before anything is pushed. This applies even to
+  the earliest visual-first slices (e.g. "the scene renders without
+  error") — it's the backend *generality* that gets deferred, not testing
+  itself.
 - **Core systems (avatar movement, map representation, construction) are
   tested generically where possible** — e.g. terrain-traversal rules,
   placement validity, save/load round-trips — so new content additions get
   validated automatically rather than needing a hand-written test per
   piece of content.
+- **`main` gets fast-forwarded to the working branch's tip at the end of
+  every cycle that pushes code**, once a Vercel project exists. Vercel's
+  free (Hobby) tier doesn't allow repointing Production Branch away from
+  `main`, so this is what keeps the live deployment actually current
+  (same workaround `deatheroai/testai` needed — see its `AUTONOMY.md`).
+  `main` should only ever move by fast-forward here; if it's ever diverged
+  (unexpected commits not from the working branch), stop and flag it
+  rather than force-pushing over it.
 - **Push-vs-PR workflow is a pending decision** — see `DECISIONS.md`. Until
   resolved, prefer PRs so changes are reviewable.
 - **Actions only a human can take** (creating accounts, provisioning
