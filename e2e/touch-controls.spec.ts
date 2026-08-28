@@ -63,6 +63,40 @@ async function releaseJoystick(page: Page): Promise<void> {
   });
 }
 
+// A genuine tap: touchstart then touchend at (essentially) the same point,
+// no touchmove at all — this is what TouchJoystick treats as "place", not
+// "move" (see TAP_MAX_DRAG_PX in touchJoystick.ts).
+async function tapInsideZone(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const zone = document.getElementById("touch-zone");
+    if (!zone) throw new Error("touch zone not found");
+    const rect = zone.getBoundingClientRect();
+    const x = rect.x + rect.width / 2;
+    const y = rect.y + rect.height / 2;
+    const id = 2;
+
+    const touch = new Touch({ identifier: id, target: zone, clientX: x, clientY: y });
+    zone.dispatchEvent(
+      new TouchEvent("touchstart", {
+        touches: [touch],
+        changedTouches: [touch],
+        targetTouches: [touch],
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    zone.dispatchEvent(
+      new TouchEvent("touchend", {
+        touches: [],
+        changedTouches: [touch],
+        targetTouches: [],
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  });
+}
+
 test("dragging the touch joystick up moves the avatar forward", async ({ page }) => {
   await page.goto("/");
   const hud = page.locator("#hud-position");
@@ -126,4 +160,33 @@ test("tapping outside the joystick zone places a castle piece instead of moving"
   // A plain tap (no drag) shouldn't have moved the avatar at all.
   await expect(positionHud).toHaveAttribute("data-x", "0.000");
   await expect(positionHud).toHaveAttribute("data-z", "0.000");
+});
+
+test("a quick tap inside the joystick zone also places a castle piece, not just moves", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const positionHud = page.locator("#hud-position");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+
+  await tapInsideZone(page);
+
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  await expect(positionHud).toHaveAttribute("data-x", "0.000");
+  await expect(positionHud).toHaveAttribute("data-z", "0.000");
+});
+
+test("a real drag inside the joystick zone still moves, without placing", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const positionHud = page.locator("#hud-position");
+
+  await dragJoystick(page, 0, -40);
+  await page.waitForTimeout(400);
+  await releaseJoystick(page);
+
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+  const z = Number(await positionHud.getAttribute("data-z"));
+  expect(z).toBeLessThan(-0.3);
 });

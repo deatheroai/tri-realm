@@ -48,32 +48,7 @@ const groundHeightAt = terrainHeightAt;
 
 const input = new KeyboardInput();
 
-const touchZone = document.getElementById("touch-zone");
-const joystickBase = document.getElementById("joystick-base");
-const joystickKnob = document.getElementById("joystick-knob");
-const touchJoystick =
-  touchZone && joystickBase && joystickKnob
-    ? new TouchJoystick(touchZone, joystickBase, joystickKnob)
-    : null;
-
-const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
-
-let movement: LandMovementState = {
-  position: { x: 0, y: terrainHeightAt(0, 0), z: 0 },
-  velocityY: 0,
-};
-
-const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
-
-const hud = document.getElementById("hud-position");
 const structuresHud = document.getElementById("hud-structures");
-const clock = new THREE.Clock();
-
-// Click/tap-to-place: raycast against the ground mesh specifically (not the
-// whole scene) so clicking on the avatar or a landmark still resolves to a
-// point on the ground behind it, rather than placing on top of that object.
-const raycaster = new THREE.Raycaster();
-const pointerNdc = new THREE.Vector2();
 let placedCount = 0;
 
 function updateStructuresHud(): void {
@@ -82,6 +57,12 @@ function updateStructuresHud(): void {
   structuresHud.dataset.count = String(placedCount);
 }
 updateStructuresHud();
+
+// Click/tap-to-place: raycast against the ground mesh specifically (not the
+// whole scene) so clicking on the avatar or a landmark still resolves to a
+// point on the ground behind it, rather than placing on top of that object.
+const raycaster = new THREE.Raycaster();
+const pointerNdc = new THREE.Vector2();
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
@@ -104,6 +85,26 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
 // devices (see index.html's `pointer: coarse` rule), so a click here is
 // always a real placement intent — no need to check the event target.
 window.addEventListener("click", (e) => placeCastlePieceAt(e.clientX, e.clientY));
+
+const touchZone = document.getElementById("touch-zone");
+const joystickBase = document.getElementById("joystick-base");
+const joystickKnob = document.getElementById("joystick-knob");
+const touchJoystick =
+  touchZone && joystickBase && joystickKnob
+    ? new TouchJoystick(touchZone, joystickBase, joystickKnob, { onTap: placeCastlePieceAt })
+    : null;
+
+const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
+
+let movement: LandMovementState = {
+  position: { x: 0, y: terrainHeightAt(0, 0), z: 0 },
+  velocityY: 0,
+};
+
+const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
+
+const hud = document.getElementById("hud-position");
+const clock = new THREE.Clock();
 
 function animate(): void {
   requestAnimationFrame(animate);
