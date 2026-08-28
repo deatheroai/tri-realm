@@ -26,7 +26,8 @@
         height: 100%;
       }
       #hud-position,
-      #hud-controls {
+      #hud-controls,
+      #hud-structures {
         position: fixed;
         color: #8f9bab;
         font: 12px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
@@ -39,12 +40,22 @@
         bottom: 10px;
         left: 12px;
       }
+      #hud-structures {
+        bottom: 10px;
+        right: 12px;
+      }
       #hud-controls {
         top: 10px;
         left: 12px;
         right: 12px;
       }
-      /* Left-side touch zone the floating joystick appears inside of. */
+      /*
+       * Left-side touch zone the floating joystick appears inside of.
+       * pointer-events stays off by default so a mouse click there falls
+       * through to the canvas (for castle placement) instead of being
+       * swallowed by this overlay — only a touch-primary device (where the
+       * joystick is actually needed) turns it interactive.
+       */
       #touch-zone {
         position: fixed;
         left: 0;
@@ -53,6 +64,12 @@
         height: 60%;
         touch-action: none;
         z-index: 5;
+        pointer-events: none;
+      }
+      @media (pointer: coarse) {
+        #touch-zone {
+          pointer-events: auto;
+        }
       }
       #joystick-base {
         position: fixed;
@@ -86,8 +103,10 @@
     <div id="joystick-base"><div id="joystick-knob"></div></div>
     <div id="hud-controls">
       Move: WASD / Arrows or touch-drag (left side) &middot; Run: Shift or drag further out
+      &middot; Click / tap elsewhere to place a castle piece
     </div>
     <div id="hud-position" data-x="0" data-z="0">x: 0.00  z: 0.00</div>
+    <div id="hud-structures" data-count="0">Structures: 0</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

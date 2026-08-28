@@ -102,3 +102,28 @@ test("the joystick knob becomes visible while dragging", async ({ page }) => {
   await releaseJoystick(page);
   await expect(base).toBeHidden();
 });
+
+test("tapping outside the joystick zone places a castle piece instead of moving", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const positionHud = page.locator("#hud-position");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+
+  // The touch-zone occupies the bottom-left 55%x60% of the viewport (see
+  // index.html), and the camera looks down at the ground, so the right
+  // 20% of the screen at mid-height is reliably both outside the zone and
+  // aimed at ground, not sky.
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  const tapX = viewport.width * 0.9;
+  const tapY = viewport.height * 0.55;
+
+  await page.touchscreen.tap(tapX, tapY);
+
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  // A plain tap (no drag) shouldn't have moved the avatar at all.
+  await expect(positionHud).toHaveAttribute("data-x", "0.000");
+  await expect(positionHud).toHaveAttribute("data-z", "0.000");
+});

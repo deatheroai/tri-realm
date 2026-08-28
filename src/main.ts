@@ -7,6 +7,7 @@ import { combineMoveInputs } from "./input/combineMoveInputs";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { terrainHeightAt } from "./land/terrain";
+import { createCastlePieceMesh, CASTLE_PIECE_GROUND_OFFSET } from "./land/placement";
 import { lerpVec3 } from "./math/vec3";
 
 const app = document.getElementById("app");
@@ -27,6 +28,12 @@ if (!avatarOrUndefined) {
   throw new Error("Missing avatar in scene");
 }
 const avatar = avatarOrUndefined;
+
+const groundOrUndefined = scene.getObjectByName("ground");
+if (!groundOrUndefined) {
+  throw new Error("Missing ground in scene");
+}
+const ground = groundOrUndefined;
 
 function onResize(): void {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -59,7 +66,44 @@ let movement: LandMovementState = {
 const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
 
 const hud = document.getElementById("hud-position");
+const structuresHud = document.getElementById("hud-structures");
 const clock = new THREE.Clock();
+
+// Click/tap-to-place: raycast against the ground mesh specifically (not the
+// whole scene) so clicking on the avatar or a landmark still resolves to a
+// point on the ground behind it, rather than placing on top of that object.
+const raycaster = new THREE.Raycaster();
+const pointerNdc = new THREE.Vector2();
+let placedCount = 0;
+
+function updateStructuresHud(): void {
+  if (!structuresHud) return;
+  structuresHud.textContent = `Structures: ${placedCount}`;
+  structuresHud.dataset.count = String(placedCount);
+}
+updateStructuresHud();
+
+function placeCastlePieceAt(clientX: number, clientY: number): void {
+  pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
+  pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointerNdc, camera);
+
+  const hits = raycaster.intersectObject(ground, false);
+  if (hits.length === 0) return;
+
+  const point = hits[0].point;
+  const piece = createCastlePieceMesh();
+  piece.position.set(point.x, point.y + CASTLE_PIECE_GROUND_OFFSET, point.z);
+  scene.add(piece);
+
+  placedCount += 1;
+  updateStructuresHud();
+}
+
+// The touch-zone (joystick) only becomes pointer-interactive on touch
+// devices (see index.html's `pointer: coarse` rule), so a click here is
+// always a real placement intent — no need to check the event target.
+window.addEventListener("click", (e) => placeCastlePieceAt(e.clientX, e.clientY));
 
 function animate(): void {
   requestAnimationFrame(animate);

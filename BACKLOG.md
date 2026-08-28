@@ -51,12 +51,22 @@ system.
   would've looked broken intersecting hills anyway); landmarks now sit at
   their actual local terrain height instead of a fixed y. **Review
   checkpoint: pending your look at the deployed app.**
-- `todo` Place a placeholder castle piece (a simple box/prefab) by
-  clicking a spot on the ground and seeing it appear — no placement
-  validation, no persistence yet. **Review checkpoint: the core loop
-  (walk + place something) is visible and clickable end to end.**
+- `done` Place a placeholder castle piece (a plain box) by clicking/tapping
+  a spot on the ground — no placement validation, no persistence yet.
+  Raycasts against the ground mesh specifically (not the whole scene), so
+  clicking on the avatar or a landmark still resolves to the ground point
+  behind it rather than placing on top of that object. On touch devices,
+  the joystick zone only intercepts taps within its own rectangle (the
+  `pointer: coarse` CSS rule from the mobile-controls pass), so a tap
+  elsewhere places a piece instead of being swallowed by the movement
+  zone — verified by a real mobile E2E test that also confirms a plain
+  tap doesn't accidentally move the avatar. Unit tested (3 tests, 38
+  total); E2E confirms both desktop click and mobile tap placement
+  accumulate correctly (8 E2E tests total). **Review checkpoint: pending
+  your look — this completes Phase 1a's core loop (walk + build).**
 
-Stop here and get your read on direction before Phase 1b.
+Phase 1a complete. Stop here and get your read on direction before
+Phase 1b.
 
 ## Phase 1b — Harden into the real architecture
 
