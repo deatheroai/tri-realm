@@ -6,6 +6,7 @@ import { TouchJoystick } from "./input/touchJoystick";
 import { combineMoveInputs } from "./input/combineMoveInputs";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
+import { terrainHeightAt } from "./land/terrain";
 import { lerpVec3 } from "./math/vec3";
 
 const app = document.getElementById("app");
@@ -34,9 +35,9 @@ function onResize(): void {
 }
 window.addEventListener("resize", onResize);
 
-// Flat ground for now — Phase 1a's next item swaps in real varied terrain
-// without stepLandMovement itself needing to change.
-const groundHeightAt = (): number => 0;
+// Same height function the ground mesh itself is built from (scene.ts) —
+// movement collision and the rendered terrain can't drift apart.
+const groundHeightAt = terrainHeightAt;
 
 const input = new KeyboardInput();
 
@@ -50,7 +51,10 @@ const touchJoystick =
 
 const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
 
-let movement: LandMovementState = { position: { x: 0, y: 0, z: 0 }, velocityY: 0 };
+let movement: LandMovementState = {
+  position: { x: 0, y: terrainHeightAt(0, 0), z: 0 },
+  velocityY: 0,
+};
 
 const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
 

@@ -40,11 +40,17 @@ system.
   movement/camera-follow/input logic unit tested (31 tests); real
   headless-Chromium E2E tests confirm keyboard walking/running (desktop
   project) and touch-drag joystick movement (mobile/Pixel-5 project with
-  real synthetic touch events). **Review checkpoint: pending your look on
-  both desktop and an actual phone.**
-- `todo` Swap the flat plane for simple varied terrain (a heightfield or a
-  few raised/lowered areas) so it reads as land, not a void. **Review
-  checkpoint.**
+  real synthetic touch events). **Review checkpoint: confirmed working on
+  desktop and mobile — feels good.**
+- `done` Swapped the flat plane for varied terrain: a deterministic
+  rolling-hill heightfield (`terrainHeightAt`, a small sum of sine waves)
+  drives both the displaced ground mesh vertices and `stepLandMovement`'s
+  ground collision from the same function, so the two can't visually/
+  physically drift apart. Removed the flat-ground grid helper — the
+  terrain relief itself now gives the follow-camera enough parallax (grid
+  would've looked broken intersecting hills anyway); landmarks now sit at
+  their actual local terrain height instead of a fixed y. **Review
+  checkpoint: pending your look at the deployed app.**
 - `todo` Place a placeholder castle piece (a simple box/prefab) by
   clicking a spot on the ground and seeing it appear — no placement
   validation, no persistence yet. **Review checkpoint: the core loop

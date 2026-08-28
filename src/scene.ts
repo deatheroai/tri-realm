@@ -1,15 +1,39 @@
 import * as THREE from "three";
+import { terrainHeightAt } from "./land/terrain";
 
 const AVATAR_RADIUS = 0.4;
 const AVATAR_LENGTH = 1.0;
+const GROUND_SIZE = 50;
+const GROUND_SEGMENTS = 64;
 
 /** Half-height of the avatar capsule — add this to a ground-contact y to get the mesh's center. */
 export const AVATAR_GROUND_OFFSET = AVATAR_LENGTH / 2 + AVATAR_RADIUS;
 
 /**
- * Builds the Phase 1a land scene: a ground plane, a player-controlled
- * avatar capsule, and basic lighting. Still a single hardcoded flat map —
- * no RealmMap schema yet (see BACKLOG.md Phase 1a/1b).
+ * Displaces a flat PlaneGeometry's vertices to match terrainHeightAt.
+ * Before the mesh's own -90°-about-X rotation, a vertex's local (x, y)
+ * maps to world (x, -y); setting local z (which becomes world y/height
+ * after that rotation) to terrainHeightAt(worldX, worldZ) is what makes
+ * the mesh actually match the height function movement collides against.
+ */
+function buildGroundGeometry(): THREE.PlaneGeometry {
+  const geometry = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, GROUND_SEGMENTS, GROUND_SEGMENTS);
+  const position = geometry.attributes.position;
+
+  for (let i = 0; i < position.count; i++) {
+    const worldX = position.getX(i);
+    const worldZ = -position.getY(i);
+    position.setZ(i, terrainHeightAt(worldX, worldZ));
+  }
+  geometry.computeVertexNormals();
+
+  return geometry;
+}
+
+/**
+ * Builds the Phase 1a land scene: varied terrain, a player-controlled
+ * avatar capsule, and basic lighting. Still a single hardcoded map — no
+ * RealmMap schema yet (see BACKLOG.md Phase 1a/1b).
  */
 export function createScene(): THREE.Scene {
   const scene = new THREE.Scene();
@@ -21,19 +45,12 @@ export function createScene(): THREE.Scene {
   scene.add(ambient, sun);
 
   const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(50, 50),
+    buildGroundGeometry(),
     new THREE.MeshStandardMaterial({ color: 0x3a5f3a }),
   );
   ground.rotation.x = -Math.PI / 2;
   ground.name = "ground";
   scene.add(ground);
-
-  // A plain flat plane gives the follow-camera no parallax to show movement
-  // against — a grid plus a few scattered landmarks make walking visible at
-  // a glance, ahead of Phase 1a's next item swapping in real terrain.
-  const grid = new THREE.GridHelper(50, 50, 0x2c4a2c, 0x2c4a2c);
-  grid.position.y = 0.01;
-  scene.add(grid);
 
   const landmarkPositions: Array<[number, number]> = [
     [4, -6],
@@ -46,7 +63,7 @@ export function createScene(): THREE.Scene {
   const landmarkMaterial = new THREE.MeshStandardMaterial({ color: 0x5b7a99 });
   for (const [x, z] of landmarkPositions) {
     const landmark = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.5, 8), landmarkMaterial);
-    landmark.position.set(x, 0.75, z);
+    landmark.position.set(x, terrainHeightAt(x, z) + 0.75, z);
     landmark.name = "landmark";
     scene.add(landmark);
   }
@@ -55,7 +72,7 @@ export function createScene(): THREE.Scene {
     new THREE.CapsuleGeometry(AVATAR_RADIUS, AVATAR_LENGTH, 4, 8),
     new THREE.MeshStandardMaterial({ color: 0xd9822b }),
   );
-  avatar.position.set(0, AVATAR_GROUND_OFFSET, 0);
+  avatar.position.set(0, terrainHeightAt(0, 0) + AVATAR_GROUND_OFFSET, 0);
   avatar.name = "avatar";
   scene.add(avatar);
 

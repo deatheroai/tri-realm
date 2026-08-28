@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { createScene } from "./scene";
+import { terrainHeightAt } from "./land/terrain";
 
 describe("createScene", () => {
   it("includes a ground plane and a player avatar", () => {
@@ -13,11 +14,28 @@ describe("createScene", () => {
     expect(avatar).toBeInstanceOf(THREE.Mesh);
   });
 
-  it("places the avatar standing on the ground, not embedded in it", () => {
+  it("places the avatar standing on the terrain surface, not embedded in it", () => {
     const scene = createScene();
     const avatar = scene.getObjectByName("avatar");
+    const spawnGroundHeight = terrainHeightAt(0, 0);
 
-    expect(avatar?.position.y).toBeGreaterThan(0);
+    expect(avatar?.position.y).toBeGreaterThan(spawnGroundHeight);
+  });
+
+  it("gives the ground mesh real height variation, not a flat plane", () => {
+    const scene = createScene();
+    const ground = scene.getObjectByName("ground") as THREE.Mesh;
+    const position = ground.geometry.attributes.position;
+
+    let min = Infinity;
+    let max = -Infinity;
+    for (let i = 0; i < position.count; i++) {
+      const z = position.getZ(i); // pre-rotation local z == world height
+      min = Math.min(min, z);
+      max = Math.max(max, z);
+    }
+
+    expect(max - min).toBeGreaterThan(1);
   });
 
   it("includes scattered landmarks so the follow-camera has visual parallax", () => {
