@@ -20,10 +20,29 @@
         width: 100%;
         height: 100%;
       }
+      #hud-position,
+      #hud-controls {
+        position: fixed;
+        color: #8f9bab;
+        font: 12px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+        opacity: 0.7;
+        pointer-events: none;
+        user-select: none;
+      }
+      #hud-position {
+        bottom: 10px;
+        left: 12px;
+      }
+      #hud-controls {
+        top: 10px;
+        left: 12px;
+      }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="hud-controls">WASD / Arrow keys to walk &middot; Shift to run</div>
+    <div id="hud-position" data-x="0" data-z="0">x: 0.00  z: 0.00</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

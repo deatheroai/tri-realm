@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("the placeholder scene renders without console errors", async ({ page }) => {
+test("the land scene renders without console errors", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   page.on("console", (msg) => {
