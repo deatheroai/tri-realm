@@ -100,5 +100,14 @@ Only starts once Phase 1a has been reviewed and the direction holds.
 ## Later / unscoped
 
 - `todo` Structure types beyond castles.
+- `todo` **Climbable-slope limit + terrain-face collision.** Movement
+  currently has no concept of "too steep/tall to climb" — the avatar's
+  height snaps directly to `terrainHeightAt` every frame with zero
+  horizontal collision against steepness, so a literal cliff or wall
+  wouldn't block you, you'd just walk straight up it. Not visible yet
+  because the current rolling-hill terrain never gets steeper than ~30%
+  grade by construction. Deferred deliberately (see `DECISIONS.md`) —
+  pick this up once a realm actually needs real cliffs/walls (e.g. castle
+  walls in Phase 1b, or any future terrain authored steeper than today's).
 - Multiplayer or shared persistent world — explicitly out of scope until
   raised, per `AUTONOMY.md`.

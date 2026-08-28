@@ -123,6 +123,14 @@ A realm transition (via portal) swaps the active movement module and
 teleports the avatar to the target map's spawn position — no continuous
 blending between modules is required under this model.
 
+**Known gap:** the land module's ground collision has no concept of "too
+steep to climb" — position snaps to `terrainHeightAt` every frame with no
+max step-height check and no horizontal collision against steepness, so a
+literal cliff or wall doesn't block movement today. Deliberately deferred
+(see `DECISIONS.md`) rather than an oversight — a max-climbable-angle
+check plus terrain-face collision is real, separate scope from the
+current rolling-hill terrain, which never gets steep enough to expose it.
+
 ## Construction system
 
 - Structures (starting with castle pieces) are `PlacedStructure` entries

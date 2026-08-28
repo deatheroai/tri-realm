@@ -86,3 +86,17 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
   Root Directory at the repo root. GitHub default branch switched to
   `main` beforehand so Production Branch tracks `main` correctly. Ready
   for Phase 0's first deployable build.
+
+- **2026-08-26 — Climbable-slope limit / terrain-face collision deferred.**
+  You asked whether steps/stairs were in scope for the terrain work.
+  Clarified the real gap: small steps already work for free (movement
+  snaps to `terrainHeightAt` every frame, no max step-height check), but
+  there's no "too steep to climb" concept at all — a literal cliff or
+  wall wouldn't block horizontal movement today. Not visible yet since
+  the current rolling-hill terrain never exceeds ~30% grade by
+  construction. Chose to defer rather than build now — logged as a
+  `Later / unscoped` item in `BACKLOG.md` — since Phase 1a's terrain goal
+  ("reads as land, not a void") is met and this is real, separate scope
+  (a max-climbable-angle check plus terrain-face collision), not a bug in
+  what's already built. Revisit once a realm actually needs real cliffs
+  or walls — castle walls in Phase 1b are the most likely trigger.
