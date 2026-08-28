@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { createScene, AVATAR_GROUND_OFFSET } from "./scene";
 import { createCamera } from "./camera";
-import { KeyboardInput } from "./input/keyboardInput";
+import { KeyboardInput, type MoveInput } from "./input/keyboardInput";
+import { TouchJoystick } from "./input/touchJoystick";
+import { combineMoveInputs } from "./input/combineMoveInputs";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { lerpVec3 } from "./math/vec3";
@@ -37,6 +39,17 @@ window.addEventListener("resize", onResize);
 const groundHeightAt = (): number => 0;
 
 const input = new KeyboardInput();
+
+const touchZone = document.getElementById("touch-zone");
+const joystickBase = document.getElementById("joystick-base");
+const joystickKnob = document.getElementById("joystick-knob");
+const touchJoystick =
+  touchZone && joystickBase && joystickKnob
+    ? new TouchJoystick(touchZone, joystickBase, joystickKnob)
+    : null;
+
+const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
+
 let movement: LandMovementState = { position: { x: 0, y: 0, z: 0 }, velocityY: 0 };
 
 const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
@@ -50,7 +63,11 @@ function animate(): void {
   // Clamp dt so a dropped/backgrounded frame can't cause a huge physics jump.
   const dt = Math.min(clock.getDelta(), 0.1);
 
-  movement = stepLandMovement(movement, input.getMoveInput(), groundHeightAt, dt);
+  const moveInput = combineMoveInputs(
+    input.getMoveInput(),
+    touchJoystick?.getMoveInput() ?? ZERO_INPUT,
+  );
+  movement = stepLandMovement(movement, moveInput, groundHeightAt, dt);
   avatar.position.set(
     movement.position.x,
     movement.position.y + AVATAR_GROUND_OFFSET,

@@ -31,13 +31,17 @@ No `RealmMap` schema yet in this phase — a single hardcoded flat/simple
 map is fine. The goal is a reviewable vertical slice, not the general
 system.
 
-- `done` Land avatar controller: walk/run (WASD/arrows, Shift to run),
+- `done` Land avatar controller: walk/run (WASD/arrows + Shift, or a
+  touch-drag virtual joystick for mobile — drag further out to run),
   gravity, ground collision, third-person follow camera, on a flat ground
-  plane with a grid + scattered landmarks for movement parallax. Pure
-  movement/camera-follow/input logic unit tested (22 tests); a real
-  headless-Chromium E2E test confirms walking and running actually move
-  the avatar. **Review checkpoint: pending your look at the deployed app —
-  WASD/arrows to walk, Shift to run.**
+  plane with a grid + scattered landmarks for movement parallax. Keyboard
+  and touch are two independent input sources merged into one move intent,
+  so `stepLandMovement` itself doesn't know or care which was used. Pure
+  movement/camera-follow/input logic unit tested (31 tests); real
+  headless-Chromium E2E tests confirm keyboard walking/running (desktop
+  project) and touch-drag joystick movement (mobile/Pixel-5 project with
+  real synthetic touch events). **Review checkpoint: pending your look on
+  both desktop and an actual phone.**
 - `todo` Swap the flat plane for simple varied terrain (a heightfield or a
   few raised/lowered areas) so it reads as land, not a void. **Review
   checkpoint.**

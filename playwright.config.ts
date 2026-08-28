@@ -25,8 +25,20 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
+      testIgnore: /touch-controls\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
+        launchOptions: chromiumLaunchOptions,
+      },
+    },
+    {
+      // Android preset defaults to Chromium (unlike iPhone presets, which
+      // default to WebKit — not installed in this sandbox) and gives us
+      // hasTouch/isMobile for real touch-event testing.
+      name: "mobile",
+      testMatch: /touch-controls\.spec\.ts/,
+      use: {
+        ...devices["Pixel 5"],
         launchOptions: chromiumLaunchOptions,
       },
     },

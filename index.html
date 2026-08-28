@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>tri-realm</title>
     <link
       rel="icon"
@@ -15,6 +18,8 @@
         height: 100%;
         overflow: hidden;
         background: #10151c;
+        touch-action: none;
+        overscroll-behavior: none;
       }
       #app {
         width: 100%;
@@ -28,6 +33,7 @@
         opacity: 0.7;
         pointer-events: none;
         user-select: none;
+        z-index: 10;
       }
       #hud-position {
         bottom: 10px;
@@ -36,12 +42,51 @@
       #hud-controls {
         top: 10px;
         left: 12px;
+        right: 12px;
+      }
+      /* Left-side touch zone the floating joystick appears inside of. */
+      #touch-zone {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 55%;
+        height: 60%;
+        touch-action: none;
+        z-index: 5;
+      }
+      #joystick-base {
+        position: fixed;
+        display: none;
+        width: 100px;
+        height: 100px;
+        margin-left: -50px;
+        margin-top: -50px;
+        border-radius: 50%;
+        background: rgba(217, 130, 43, 0.12);
+        border: 2px solid rgba(217, 130, 43, 0.4);
+        z-index: 6;
+        pointer-events: none;
+      }
+      #joystick-knob {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 44px;
+        height: 44px;
+        margin-left: -22px;
+        margin-top: -22px;
+        border-radius: 50%;
+        background: rgba(217, 130, 43, 0.85);
       }
     </style>
   </head>
   <body>
     <div id="app"></div>
-    <div id="hud-controls">WASD / Arrow keys to walk &middot; Shift to run</div>
+    <div id="touch-zone"></div>
+    <div id="joystick-base"><div id="joystick-knob"></div></div>
+    <div id="hud-controls">
+      Move: WASD / Arrows or touch-drag (left side) &middot; Run: Shift or drag further out
+    </div>
     <div id="hud-position" data-x="0" data-z="0">x: 0.00  z: 0.00</div>
     <script type="module" src="/src/main.ts"></script>
   </body>

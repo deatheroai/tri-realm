@@ -106,6 +106,13 @@ realm's map the avatar currently occupies:
 
 - **Shared core:** input handling, position/velocity state, camera rig,
   collision against the active `RealmMap`'s terrain.
+- **Input is device-agnostic by construction.** Each input source (keyboard,
+  touch joystick, and later anything else — gamepad, on-screen buttons)
+  produces the same small `MoveInput` shape (`moveX`/`moveZ`/`run`)
+  independently; sources are merged into one intent (`combineMoveInputs`)
+  before movement logic ever sees them. A movement module never knows or
+  cares which device produced its input — mobile support was added without
+  touching `stepLandMovement` at all.
 - **Land module:** walk/run, gravity, ground collision, jump.
 - **Air module** *(built when air realm is scoped)*: flight — free
   movement with its own feel (lift/momentum, not literally freefall-only).
