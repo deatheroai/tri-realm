@@ -64,6 +64,16 @@ system.
   total); E2E confirms both desktop click and mobile tap placement
   accumulate correctly (8 E2E tests total). **Review checkpoint: pending
   your look — this completes Phase 1a's core loop (walk + build).**
+- `done` Two small extensions once the core loop was reviewed: (1) taps
+  inside the joystick zone place a piece instead of being fully consumed
+  by the joystick — TouchJoystick distinguishes a real drag from a
+  tap-and-release by tracking max drag distance, so one touch region
+  handles both gestures; (2) clicking/tapping an already-placed piece
+  stacks a new one on top of it (centered on the hit piece, using its
+  actual top-face height) instead of falling through to the ground
+  behind it — raycasting now targets the ground plus every placed piece,
+  not just the ground. 5 new E2E tests confirm both directions each time
+  (tap-vs-drag, stack-vs-fall-through).
 
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.

@@ -51,34 +51,77 @@ const input = new KeyboardInput();
 const structuresHud = document.getElementById("hud-structures");
 let placedCount = 0;
 
-function updateStructuresHud(): void {
+function updateStructuresHud(lastPosition?: THREE.Vector3): void {
   if (!structuresHud) return;
   structuresHud.textContent = `Structures: ${placedCount}`;
   structuresHud.dataset.count = String(placedCount);
+  if (lastPosition) {
+    structuresHud.dataset.lastX = lastPosition.x.toFixed(3);
+    structuresHud.dataset.lastY = lastPosition.y.toFixed(3);
+    structuresHud.dataset.lastZ = lastPosition.z.toFixed(3);
+  }
 }
 updateStructuresHud();
 
-// Click/tap-to-place: raycast against the ground mesh specifically (not the
-// whole scene) so clicking on the avatar or a landmark still resolves to a
-// point on the ground behind it, rather than placing on top of that object.
+// Test-only hook: projects a world point to screen pixels the same way the
+// renderer does, so E2E tests can click a placed piece's actual position
+// instead of guessing screen offsets (this camera's shallow angle means a
+// piece's rendered footprint is nowhere near directly below its own
+// ground-click point in screen space).
+declare global {
+  interface Window {
+    __projectToScreen?: (x: number, y: number, z: number) => { x: number; y: number };
+  }
+}
+window.__projectToScreen = (x, y, z) => {
+  const ndc = new THREE.Vector3(x, y, z).project(camera);
+  return {
+    x: ((ndc.x + 1) / 2) * window.innerWidth,
+    y: ((1 - ndc.y) / 2) * window.innerHeight,
+  };
+};
+
+// Click/tap-to-place: raycast against the ground mesh AND every already-
+// placed piece (not the whole scene — avatar/landmarks are deliberately
+// excluded, so clicking one of those still resolves to the ground/piece
+// behind it) so a second click on an existing piece stacks instead of
+// falling through to the ground underneath it.
 const raycaster = new THREE.Raycaster();
 const pointerNdc = new THREE.Vector2();
+const placedPieces: THREE.Object3D[] = [];
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
   pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointerNdc, camera);
 
-  const hits = raycaster.intersectObject(ground, false);
+  const hits = raycaster.intersectObjects([ground, ...placedPieces], false);
   if (hits.length === 0) return;
 
-  const point = hits[0].point;
+  const hit = hits[0];
   const piece = createCastlePieceMesh();
-  piece.position.set(point.x, point.y + CASTLE_PIECE_GROUND_OFFSET, point.z);
+
+  if (hit.object === ground) {
+    piece.position.set(hit.point.x, hit.point.y + CASTLE_PIECE_GROUND_OFFSET, hit.point.z);
+  } else {
+    // Stack centered on the hit piece rather than at the raw click point —
+    // clicking a side face would otherwise offset the new piece into an
+    // overhang instead of a clean stack. Top face height comes from its
+    // actual bounds, not an assumed constant, so this still works if piece
+    // sizes ever vary (Phase 1b's real catalog).
+    const hitBox = new THREE.Box3().setFromObject(hit.object);
+    piece.position.set(
+      hit.object.position.x,
+      hitBox.max.y + CASTLE_PIECE_GROUND_OFFSET,
+      hit.object.position.z,
+    );
+  }
+
   scene.add(piece);
+  placedPieces.push(piece);
 
   placedCount += 1;
-  updateStructuresHud();
+  updateStructuresHud(piece.position);
 }
 
 // The touch-zone (joystick) only becomes pointer-interactive on touch
