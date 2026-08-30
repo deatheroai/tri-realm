@@ -9,7 +9,7 @@ test("the dev skin panel lists both avatar skins and block materials", async ({ 
   await expect(page.locator("#dev-skin-panel button", { hasText: "Slate" })).toBeVisible();
 });
 
-test("switching to the Fox skin loads it without console errors", async ({ page }) => {
+test("Fox loads by default on first visit, without console errors", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   page.on("console", (msg) => {
@@ -17,16 +17,26 @@ test("switching to the Fox skin loads it without console errors", async ({ page 
   });
 
   await page.goto("/");
-  await expect
-    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()))
-    .toBe("capsule");
 
-  await page.locator("#dev-skin-panel button", { hasText: "Fox" }).click();
-
+  // Fox is a real glTF load (async), so it isn't set the instant the page
+  // loads — poll until it resolves rather than asserting immediately.
   await expect
     .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
     .toBe("fox");
   expect(errors).toEqual([]);
+});
+
+test("switching back to Capsule works after Fox has loaded", async ({ page }) => {
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Capsule" }).click();
+
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()))
+    .toBe("capsule");
 });
 
 test("switching block material changes the color of newly-placed pieces", async ({ page }) => {

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import {
   AVATAR_SKINS,
-  DEFAULT_AVATAR_SKIN_ID,
+  FALLBACK_AVATAR_SKIN_ID,
   type AvatarSkin,
   type MoveAnimationState,
 } from "./avatarSkins";
@@ -112,7 +112,7 @@ export class AvatarView {
         visual: createProceduralAvatarMesh(),
         mixer: null,
         actions: {},
-        resolvedSkinId: DEFAULT_AVATAR_SKIN_ID,
+        resolvedSkinId: FALLBACK_AVATAR_SKIN_ID,
       };
     }
   }

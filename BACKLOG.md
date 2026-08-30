@@ -95,6 +95,10 @@ surfaced.
   repo — CC0/CC-BY 4.0, attributed in `public/assets/ATTRIBUTIONS.md`)
   with real Walk/Run/Survey clips driven by actual movement state.
   **Review checkpoint: confirmed — "I love the fox."**
+- `done` Fox is now the default avatar skin (was capsule). Split
+  `DEFAULT_AVATAR_SKIN_ID` from a new `FALLBACK_AVATAR_SKIN_ID` so the
+  error-recovery path always lands on the guaranteed-safe procedural
+  skin regardless of what the startup default is.
 - `todo` **Kenney/Quaternius/ambientCG-sourced content** (castle-piece
   model packs, PBR stone/wood/brick textures) — blocked on you fetching
   these, since this session's network policy blocks those three sites

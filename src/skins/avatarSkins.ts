@@ -15,7 +15,6 @@ export interface AvatarSkin {
 }
 
 export const AVATAR_SKINS: readonly AvatarSkin[] = [
-  { id: "capsule", label: "Capsule", kind: "procedural" },
   {
     id: "fox",
     label: "Fox",
@@ -24,9 +23,14 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     scale: 0.03,
     animationClipNames: { idle: "Survey", walk: "Walk", run: "Run" },
   },
+  { id: "capsule", label: "Capsule", kind: "procedural" },
 ];
 
-export const DEFAULT_AVATAR_SKIN_ID = AVATAR_SKINS[0]!.id;
+/** Shown on first load — reviewed and confirmed 2026-08-30 (see DECISIONS.md). */
+export const DEFAULT_AVATAR_SKIN_ID = "fox";
+
+/** Always procedural, so it can never itself fail to load — what AvatarView falls back to if a real asset does. */
+export const FALLBACK_AVATAR_SKIN_ID = "capsule";
 
 /** Pure: which animation state a given move intent maps to. */
 export function moveInputToAnimationState(moveX: number, moveZ: number, run: boolean): MoveAnimationState {

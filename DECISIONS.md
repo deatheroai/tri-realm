@@ -152,3 +152,12 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
 
 - **2026-08-30 — Fox skin reviewed: confirmed, "I love the fox."** Closes
   out the review checkpoint above.
+
+- **2026-08-30 — Fox made the default avatar skin.** Follow-up to the
+  above. Split `DEFAULT_AVATAR_SKIN_ID` (now `"fox"`, shown on first
+  load) from a new `FALLBACK_AVATAR_SKIN_ID` (`"capsule"`, always
+  procedural) — `AvatarView`'s error-recovery path now falls back to the
+  guaranteed-safe procedural skin specifically, not whatever "default"
+  happens to mean, so a broken/missing asset can never cascade into
+  trying to load a second broken skin. Capsule stays selectable in the
+  dev panel.
