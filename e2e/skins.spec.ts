@@ -5,6 +5,7 @@ test("the dev skin panel lists both avatar skins and block materials", async ({ 
 
   await expect(page.locator("#dev-skin-panel button", { hasText: "Capsule" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Fox" })).toBeVisible();
+  await expect(page.locator("#dev-skin-panel button", { hasText: "Robot" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Sandstone" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Slate" })).toBeVisible();
 });
@@ -37,6 +38,31 @@ test("switching back to Capsule works after Fox has loaded", async ({ page }) =>
   await expect
     .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()))
     .toBe("capsule");
+});
+
+test("switching to Robot loads it, then switching back to Fox still works", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Robot" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("robot");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Fox" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  expect(errors).toEqual([]);
 });
 
 test("switching block material changes the color of newly-placed pieces", async ({ page }) => {

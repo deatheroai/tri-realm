@@ -106,9 +106,22 @@ surfaced.
   download packs in your own browser, then either push the files to the
   repo yourself or hand them to me in this session to wire into the
   catalogs above.
-- `todo` A second/third avatar skin option once more assets exist (an
-  "animal" and a "princess figure" were the original ask) — catalog
-  already supports adding more with no engine changes.
+- `done` Second avatar skin: an animated robot (`public/assets/models/robot.glb`,
+  "RobotExpressive" from three.js's own bundled examples — CC0, Tomás
+  Laulhé/Quaternius, modifications by Don McCurdy — attributed in
+  `public/assets/ATTRIBUTIONS.md`). Fourteen built-in clips; `Idle`/
+  `Walking`/`Running` wired to our three movement states, a direct
+  1:1 match unlike Fox's renamed `Survey`/`Walk`/`Run`. Chosen over two
+  other reachable candidates (Khronos's `CesiumMan` — CC-BY 4.0 but only
+  one unnamed animation clip and a Cesium-logo trademark caveat; three.js's
+  own `Soldier.glb`/`Xbot.glb` — no credit line found, likely Mixamo-derived
+  with redistribution terms too unclear to bundle raw). Same review pattern
+  as Fox: added to the catalog and dev panel, not yet visually confirmed by
+  you — check it via the dev switcher on the next preview.
+- `todo` **Still want:** a "princess figure"-style skin specifically — none
+  of the reachable CC0/CC-BY sources (Khronos glTF-Sample-Assets, three.js's
+  bundled examples) have a plausible match; still blocked on the
+  Kenney/Quaternius/ambientCG/itch.io/opengameart sites above.
 - `todo` Real textures for block materials once ambientCG (or equivalent)
   content is available — `BLOCK_MATERIALS`' shape already anticipates
   this (`color` → `textureUrl` per entry).
