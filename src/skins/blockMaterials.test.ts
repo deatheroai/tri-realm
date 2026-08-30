@@ -10,6 +10,12 @@ describe("BLOCK_MATERIALS catalog", () => {
     const ids = BLOCK_MATERIALS.map((m) => m.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("every entry names a textureKind for createCastlePieceMesh to shade with", () => {
+    for (const material of BLOCK_MATERIALS) {
+      expect(material.textureKind).toBeTruthy();
+    }
+  });
 });
 
 describe("findBlockMaterial", () => {
