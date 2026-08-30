@@ -207,6 +207,14 @@ hand the files to me).
 - The placement/save/render pipeline is written once against the shared
   schema; only the *rule set* (what's placeable where) and the *structure
   catalog* (which structure types exist) vary per realm.
+- Implemented (`BACKLOG.md` Phase 1b): `src/world/placementValidation.ts`
+  is the once-written pipeline — bounds check, a true 3D overlap check
+  against existing structures (so stacking is allowed; only genuine
+  overlap is rejected), and a realm-supplied `terrainRule`. Land's catalog
+  (`src/land/castleStructures.ts`: Keep/Wall/Gate) and terrain rule
+  (`landTerrainPlacementRule` in `src/land/landRealmMap.ts`, trivially
+  true today) are the first realm plugging into that shape; sea/air add
+  their own catalog + rule later without this file changing.
 
 ## Modularity
 

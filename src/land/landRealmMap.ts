@@ -1,4 +1,5 @@
 import type { RealmMap } from "../world/realmMap";
+import type { TerrainPlacementRule } from "../world/placementValidation";
 
 const LAND_MAP_ID = "land-01";
 
@@ -26,3 +27,15 @@ export function createLandRealmMap(): RealmMap {
     portals: [],
   };
 }
+
+/**
+ * Land's placement terrain rule (`src/world/placementValidation.ts`) —
+ * trivially true today, since the current rolling-hill terrain is
+ * uniformly walkable with no water/cliffs to exclude (the same gap
+ * `DECISIONS.md` deferred for movement: no "too steep to build/climb"
+ * concept yet). Kept as a real function, not inlined at the call site, so
+ * a future terrain feature only changes this, and sea's real rule (e.g.
+ * "not on open water") plugs into the exact same `validatePlacement` call
+ * shape land's does.
+ */
+export const landTerrainPlacementRule: TerrainPlacementRule = () => true;

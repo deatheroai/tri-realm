@@ -6,10 +6,16 @@ import { TouchJoystick } from "./input/touchJoystick";
 import { combineMoveInputs } from "./input/combineMoveInputs";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
-import { createLandRealmMap } from "./land/landRealmMap";
-import { createCastlePieceMesh, CASTLE_PIECE_GROUND_OFFSET } from "./land/placement";
+import { createLandRealmMap, landTerrainPlacementRule } from "./land/landRealmMap";
+import { createCastlePieceMesh, castlePieceGroundOffset } from "./land/placement";
+import {
+  CASTLE_STRUCTURE_TYPES,
+  DEFAULT_CASTLE_STRUCTURE_TYPE_ID,
+  findCastleStructureType,
+} from "./land/castleStructures";
 import { addStructure, sampleTerrainHeight } from "./world/realmMap";
-import { lerpVec3 } from "./math/vec3";
+import { validatePlacement } from "./world/placementValidation";
+import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
 import { BLOCK_MATERIALS, DEFAULT_BLOCK_MATERIAL_ID } from "./skins/blockMaterials";
@@ -87,6 +93,7 @@ declare global {
     __projectToScreen?: (x: number, y: number, z: number) => { x: number; y: number };
     __getAvatarSkinId?: () => string;
     __getLastPlacedColor?: () => number | undefined;
+    __getLastPlacedType?: () => string | undefined;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -103,6 +110,7 @@ window.__getLastPlacedColor = () => {
   const material = (last as THREE.Mesh | undefined)?.material as THREE.MeshStandardMaterial | undefined;
   return material?.color.getHex();
 };
+window.__getLastPlacedType = () => landMap.structures[landMap.structures.length - 1]?.type;
 
 // Click/tap-to-place: raycast against the ground mesh AND every already-
 // placed piece (not the whole scene — avatar/landmarks are deliberately
@@ -116,6 +124,11 @@ const pointerNdc = new THREE.Vector2();
 // this Map is purely the rendering/raycasting side of the same data.
 const placedMeshes = new Map<string, THREE.Object3D>();
 let currentBlockMaterialId = DEFAULT_BLOCK_MATERIAL_ID;
+let currentStructureTypeId = DEFAULT_CASTLE_STRUCTURE_TYPE_ID;
+
+// Footprint lookup for validatePlacement (src/world/placementValidation.ts)
+// — a structure type's `dimensions` already has the shape it wants.
+const castleStructureFootprintOf = (typeId: string) => findCastleStructureType(typeId).dimensions;
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
@@ -126,27 +139,30 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
   if (hits.length === 0) return;
 
   const hit = hits[0];
-  const piece = createCastlePieceMesh(currentBlockMaterialId);
+  const groundOffset = castlePieceGroundOffset(currentStructureTypeId);
 
+  let position: Vec3;
   if (hit.object === ground) {
-    piece.position.set(hit.point.x, hit.point.y + CASTLE_PIECE_GROUND_OFFSET, hit.point.z);
+    position = { x: hit.point.x, y: hit.point.y + groundOffset, z: hit.point.z };
   } else {
     // Stack centered on the hit piece rather than at the raw click point —
     // clicking a side face would otherwise offset the new piece into an
     // overhang instead of a clean stack. Top face height comes from its
-    // actual bounds, not an assumed constant, so this still works if piece
-    // sizes ever vary (Phase 1b's real catalog).
+    // actual bounds, not an assumed constant, so this still works across
+    // the real catalog's differently-sized structure types.
     const hitBox = new THREE.Box3().setFromObject(hit.object);
-    piece.position.set(
-      hit.object.position.x,
-      hitBox.max.y + CASTLE_PIECE_GROUND_OFFSET,
-      hit.object.position.z,
-    );
+    position = { x: hit.object.position.x, y: hitBox.max.y + groundOffset, z: hit.object.position.z };
   }
 
+  const check = validatePlacement(landMap, currentStructureTypeId, position, castleStructureFootprintOf, landTerrainPlacementRule);
+  if (!check.valid) return; // rough Phase 1b pass: reject silently, no error UI yet
+
+  const piece = createCastlePieceMesh(currentStructureTypeId, currentBlockMaterialId);
+  piece.position.set(position.x, position.y, position.z);
+
   const { map, structure } = addStructure(landMap, {
-    type: "castle-piece-placeholder",
-    position: { x: piece.position.x, y: piece.position.y, z: piece.position.z },
+    type: currentStructureTypeId,
+    position,
     rotation: 0,
   });
   landMap = map;
@@ -197,6 +213,24 @@ if (devSkinPanel) {
 
   devSkinPanel.appendChild(avatarRow);
   devSkinPanel.appendChild(materialRow);
+}
+
+// Dev-only structure-type switcher (not child-facing UI) — separate panel
+// from the skins one above (that's Skins-track-owned wiring); picks which
+// castle structure type (src/land/castleStructures.ts) new placements use.
+const devStructurePanel = document.getElementById("dev-structure-panel");
+if (devStructurePanel) {
+  const structureRow = document.createElement("div");
+  structureRow.textContent = "Structure: ";
+  for (const type of CASTLE_STRUCTURE_TYPES) {
+    const btn = document.createElement("button");
+    btn.textContent = type.label;
+    btn.addEventListener("click", () => {
+      currentStructureTypeId = type.id;
+    });
+    structureRow.appendChild(btn);
+  }
+  devStructurePanel.appendChild(structureRow);
 }
 
 const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };

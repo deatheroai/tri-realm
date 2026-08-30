@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { createCastlePieceMesh, CASTLE_PIECE_GROUND_OFFSET } from "./placement";
+import { createCastlePieceMesh, castlePieceGroundOffset } from "./placement";
+import { CASTLE_STRUCTURE_TYPES } from "./castleStructures";
 
 describe("createCastlePieceMesh", () => {
   it("creates a distinctly-named box mesh", () => {
@@ -18,10 +19,25 @@ describe("createCastlePieceMesh", () => {
     expect(a).not.toBe(b);
   });
 
-  it("exposes a ground offset matching half its own height", () => {
-    const mesh = createCastlePieceMesh();
-    const params = (mesh.geometry as THREE.BoxGeometry).parameters;
+  it("builds each catalog type at its own dimensions", () => {
+    for (const type of CASTLE_STRUCTURE_TYPES) {
+      const mesh = createCastlePieceMesh(type.id);
+      const params = (mesh.geometry as THREE.BoxGeometry).parameters;
 
-    expect(CASTLE_PIECE_GROUND_OFFSET).toBeCloseTo(params.height / 2);
+      expect(params.width).toBe(type.dimensions.width);
+      expect(params.height).toBe(type.dimensions.height);
+      expect(params.depth).toBe(type.dimensions.depth);
+    }
+  });
+});
+
+describe("castlePieceGroundOffset", () => {
+  it("matches half the mesh's own height for every catalog type", () => {
+    for (const type of CASTLE_STRUCTURE_TYPES) {
+      const mesh = createCastlePieceMesh(type.id);
+      const params = (mesh.geometry as THREE.BoxGeometry).parameters;
+
+      expect(castlePieceGroundOffset(type.id)).toBeCloseTo(params.height / 2);
+    }
   });
 });

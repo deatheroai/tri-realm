@@ -151,8 +151,22 @@ Only starts once Phase 1a has been reviewed and the direction holds.
   Phase 1b/2/3 items). 7 new unit tests (`realmMap.test.ts`,
   `landRealmMap.test.ts`); all existing unit/E2E tests still pass
   unchanged since the schema is additive under the same runtime behavior.
-- `todo` Real castle structure catalog (keep, wall, gate — starter set) +
-  placement validation (collision, no-overlap against terrain).
+- `done` Real castle structure catalog (`src/land/castleStructures.ts`:
+  Keep/Wall/Gate starter set, each with its own box dimensions — Keep
+  matches Phase 1a's original placeholder exactly so the default and
+  existing behavior/tests are unchanged) + generic placement validation
+  (`src/world/placementValidation.ts`): a proposed placement is checked
+  against the map's `bounds`, a true 3D overlap check against existing
+  `structures` (so stacking one piece flush atop another still works —
+  only a genuine overlap is rejected), and a realm-supplied terrain rule
+  (land's is trivially true today — see `landTerrainPlacementRule`, same
+  deferred-slope gap as movement's). `createCastlePieceMesh`/
+  `castlePieceGroundOffset` now take a structure-type id; a new dev panel
+  (`#dev-structure-panel`, separate from the skins one) picks the type for
+  new placements live. 13 new unit tests (`placementValidation.test.ts`,
+  `castleStructures.test.ts`, updated `placement.test.ts`); 1 new E2E test
+  confirms the default type and that switching type changes new
+  placements; all pre-existing tests still pass unchanged.
 - `todo` Generic save/load of a `RealmMap` + entity state — tested against
   land data first, but not land-specific in implementation.
 - `todo` E2E coverage: spawn on a land map, walk around, place a castle
