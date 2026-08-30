@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { terrainHeightAt } from "./land/terrain";
+import { LAND_MAP_SIZE } from "./land/landRealmMap";
 import { AVATAR_GROUND_OFFSET, createProceduralAvatarMesh } from "./skins/avatarView";
 
-const GROUND_SIZE = 50;
+const GROUND_SIZE = LAND_MAP_SIZE;
 const GROUND_SEGMENTS = 64;
 
 export { AVATAR_GROUND_OFFSET };
@@ -29,9 +30,11 @@ function buildGroundGeometry(): THREE.PlaneGeometry {
 }
 
 /**
- * Builds the Phase 1a land scene: varied terrain, a player-controlled
- * avatar, and basic lighting. Still a single hardcoded map — no RealmMap
- * schema yet (see BACKLOG.md Phase 1a/1b).
+ * Builds the land scene: varied terrain, a player-controlled avatar, and
+ * basic lighting. `GROUND_SIZE` matches the `RealmMap`'s own `bounds`
+ * (`land/landRealmMap.ts`) so the rendered ground and the map data can't
+ * drift apart. Landmarks stay local hardcoded dressing — they're cosmetic
+ * scene parallax, not `PlacedStructure`s, so they're outside the schema.
  *
  * The avatar is a Group ("avatar") holding whichever skin is currently
  * active — starts with the default procedural capsule as its one child;

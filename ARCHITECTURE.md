@@ -28,8 +28,10 @@ physical coordinate space.
 
 ### `RealmMap` schema
 
-The shape every realm's map data conforms to, regardless of which realm
-it is:
+Implemented as real TypeScript types in `src/world/realmMap.ts` (`BACKLOG.md`
+Phase 1b); `src/land/landRealmMap.ts` builds the hardcoded land instance the
+Phase 1a prototype now runs against instead of scattered constants. The
+shape every realm's map data conforms to, regardless of which realm it is:
 
 ```ts
 interface RealmMap {

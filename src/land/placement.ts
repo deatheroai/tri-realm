@@ -9,12 +9,14 @@ const PIECE_DEPTH = 1.2;
 export const CASTLE_PIECE_GROUND_OFFSET = PIECE_HEIGHT / 2;
 
 /**
- * A single placeholder castle piece — a plain box, no catalog or placement
- * validation yet (that's Phase 1b, once the RealmMap schema exists). The
- * point of this pass is just proving the core loop: walk somewhere, place
- * something, see it appear. `materialId` selects a flat color from the
- * BLOCK_MATERIALS catalog (src/skins/blockMaterials.ts) — swapped for a
- * real texture once one is sourced.
+ * A single placeholder castle piece — a plain box, still no real structure
+ * catalog or placement validation (those are separate `BACKLOG.md` Phase 1b
+ * items; a placed piece is now a real `PlacedStructure` on the `RealmMap` —
+ * see `src/world/realmMap.ts` — but its visual is still just this one box
+ * shape, and any position is accepted with no validity check). `materialId`
+ * selects a flat color from the BLOCK_MATERIALS catalog
+ * (src/skins/blockMaterials.ts) — swapped for a real texture once one is
+ * sourced.
  */
 export function createCastlePieceMesh(materialId: string = DEFAULT_BLOCK_MATERIAL_ID): THREE.Mesh {
   const material = findBlockMaterial(materialId);
