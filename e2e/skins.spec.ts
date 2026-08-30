@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { AVATAR_SKINS } from "../src/skins/avatarSkins";
 
 /**
  * Regression guard for the class of bug fixed in the "dev-panel overlap"
@@ -50,6 +51,43 @@ test.describe("fixed overlay layout", () => {
     const overlaps = await boundingBoxesOverlap(page);
     expect(overlaps).toEqual([]);
   });
+});
+
+/**
+ * Regression guard for the bug reported directly: Robot originally shipped
+ * at scale 1 and rendered ~4.82 world units tall — 2.7x the procedural
+ * Capsule and off the top of the screen, head included — because the
+ * scale was picked by inference (bounding-box math + reading a demo's
+ * camera setup) rather than measured against a real render. Generic on
+ * purpose: iterates AVATAR_SKINS itself, so a *future* gltf skin is
+ * covered automatically without editing this test, and checks a ratio
+ * against Capsule (our one scale-independent reference) rather than an
+ * absolute number, so it isn't tied to today's specific models.
+ */
+test("every gltf avatar skin renders within a sane height range of the procedural capsule", async ({ page }) => {
+  await page.goto("/");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Capsule" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("capsule");
+  const capsuleHeight = await page.evaluate(() => window.__getAvatarWorldHeight?.());
+  expect(capsuleHeight).toBeGreaterThan(0);
+
+  const gltfSkins = AVATAR_SKINS.filter((skin) => skin.kind === "gltf");
+  expect(gltfSkins.length).toBeGreaterThan(0); // sanity: the check actually covered something
+
+  for (const skin of gltfSkins) {
+    await page.locator("#dev-skin-panel button", { hasText: skin.label }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe(skin.id);
+
+    const height = await page.evaluate(() => window.__getAvatarWorldHeight?.());
+    const ratio = (height ?? 0) / (capsuleHeight ?? 1);
+    expect(ratio, `"${skin.label}" is ${ratio.toFixed(2)}x Capsule's height — outside the sane range`).toBeGreaterThan(0.5);
+    expect(ratio, `"${skin.label}" is ${ratio.toFixed(2)}x Capsule's height — outside the sane range`).toBeLessThan(1.8);
+  }
 });
 
 test("the dev skin panel lists both avatar skins and block materials", async ({ page }) => {

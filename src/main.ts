@@ -92,6 +92,7 @@ declare global {
   interface Window {
     __projectToScreen?: (x: number, y: number, z: number) => { x: number; y: number };
     __getAvatarSkinId?: () => string;
+    __getAvatarWorldHeight?: () => number;
     __getLastPlacedColor?: () => number | undefined;
     __getLastPlacedType?: () => string | undefined;
   }
@@ -104,6 +105,13 @@ window.__projectToScreen = (x, y, z) => {
   };
 };
 window.__getAvatarSkinId = () => avatarView.skinId;
+// World-space height of whatever's currently rendering inside the avatar
+// group — lets skin scale be checked/tuned against a real number instead
+// of by eye (see BACKLOG.md: Robot originally shipped far too tall).
+window.__getAvatarWorldHeight = () => {
+  const box = new THREE.Box3().setFromObject(avatar);
+  return box.max.y - box.min.y;
+};
 window.__getLastPlacedColor = () => {
   const lastStructure = landMap.structures[landMap.structures.length - 1];
   const last = lastStructure && placedMeshes.get(lastStructure.id);

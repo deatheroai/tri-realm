@@ -118,6 +118,21 @@ surfaced.
   with redistribution terms too unclear to bundle raw). Same review pattern
   as Fox: added to the catalog and dev panel, not yet visually confirmed by
   you — check it via the dev switcher on the next preview.
+- `done` **Fixed: Robot shipped far too big** — you reported its head was
+  off-screen. Turned out to be exactly that: at `scale: 1` (picked by
+  inference — bounding-box math plus reading the model's own demo's
+  camera setup — never actually rendered and measured) it was ~4.82
+  world units tall, 2.7x the procedural Capsule and 2.15x Fox. Fixed by
+  measuring for real instead of inferring: added a small permanent debug
+  hook, `window.__getAvatarWorldHeight()` (`src/main.ts`, computes a
+  `THREE.Box3` on the live avatar group), used it to read Fox's (2.24)
+  and Capsule's (1.8) actual rendered heights as a sane reference, then
+  picked `scale: 0.4` for Robot to land at ~1.93 — in between the two.
+  Guarded by a new E2E test iterating `AVATAR_SKINS` itself (covers a
+  future gltf skin automatically) asserting every skin's rendered height
+  stays within 0.5x–1.8x Capsule's — verified it actually catches this
+  exact regression by reverting to `scale: 1` and watching it fail with
+  the real ratio (2.68x) in the assertion message, then restoring the fix.
 - `todo` **Still want:** a "princess figure"-style skin specifically — none
   of the reachable CC0/CC-BY sources (Khronos glTF-Sample-Assets, three.js's
   bundled examples) have a plausible match; still blocked on the
