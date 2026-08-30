@@ -5,11 +5,71 @@ plans, and implements progressively on its own, and only interrupts you for
 decisions that genuinely need a human call — batched into one check-in per
 cycle rather than one-off pings.
 
+## Parallel tracks
+
+As of 2026-08-30, two tracks run independently and in parallel, each on
+its own branch and its own dedicated persistent Claude Code Remote
+session, per explicit request — not sequential phases, genuinely
+concurrent daily work:
+
+- **World** — branch `claude/world-daily`, owns `BACKLOG.md`'s Phase
+  1a/1b/2/3 (land/air/sea, avatar movement, construction/placement
+  mechanics, the eventual `RealmMap` schema).
+- **Skins** — branch `claude/skins-daily`, owns `BACKLOG.md`'s "Skins /
+  visual identity" section (avatar skins, block materials, the dev
+  switcher, asset sourcing).
+
+Each fires on its own daily schedule (staggered — World then Skins a few
+hours later — so the second cycle each day naturally starts from the
+first's already-merged `main`, cutting collision odds) and runs the same
+cycle described below, scoped to its own track's `BACKLOG.md` section.
+This doc, `DECISIONS.md`, and `BACKLOG.md` stay single shared files —
+each track edits its own section; see file ownership below for code.
+
+### File ownership (minimizes merge conflicts between the two tracks)
+
+- **World owns:** `src/land/`, `src/math/`, `src/input/` (movement/
+  touch/keyboard — not the skin-switcher panel), `src/camera.ts`,
+  terrain/ground/landmark code in `src/scene.ts`, `e2e/land-*.spec.ts`,
+  `e2e/castle-placement.spec.ts`, `e2e/touch-controls.spec.ts`.
+- **Skins owns:** `src/skins/`, `public/assets/`, the avatar-`Group`
+  creation in `src/scene.ts`, the dev-panel wiring in `src/main.ts` /
+  `index.html`, `e2e/skins.spec.ts`.
+- **Genuinely shared** (both tracks may touch — expect occasional
+  overlap to resolve by hand, not a sign something's wrong): the rest of
+  `src/main.ts` (both wire into the same per-frame loop), the rest of
+  `index.html` (both add HUD/panel markup), and each track's own section
+  of `BACKLOG.md` / `DECISIONS.md` / `ARCHITECTURE.md` — edit your own
+  track's section; if the other track's section changed too in the same
+  merge, keep both, never overwrite one with the other.
+
+### Merge protocol for two branches landing on `main` independently
+
+This supersedes the single-branch fast-forward-only guardrail below for
+these two tracks specifically (that guardrail still describes how a
+single ad-hoc/manual session, like this one, operates). Each cycle,
+before pushing:
+
+1. `git fetch origin && git merge origin/main` into your track branch (a
+   real merge, not a rebase — the branch may already be visible/
+   reviewed elsewhere, don't rewrite its history). Resolve conflicts
+   using the file-ownership split above. A conflict that isn't just
+   "both sides touched the same doc section" — i.e. two tracks made
+   incompatible code changes in genuinely shared territory — is a real
+   decision: stop and flag it rather than guessing which side wins.
+2. Verify (typecheck, unit tests, build, E2E) on the *merged* result,
+   not just your own track's changes in isolation.
+3. Push your track branch, then merge it into `main` the same way
+   (fetch, merge, verify, push).
+
 ## Schedule
 
-Not yet set. Until a cadence is chosen, cycles are kicked off manually —
-send a short message (e.g. "next cycle") and the session runs the same
-procedure below on demand. It reads this doc plus `DECISIONS.md` and
+Two daily cadences are set for the World and Skins tracks (see Parallel
+tracks above) — each track's own session gets woken on its own schedule
+and runs the cycle below automatically. Outside of those, ad-hoc cycles
+on this or any other session are still kicked off manually — send a
+short message (e.g. "next cycle") and the session runs the same
+procedure on demand. It reads this doc plus `DECISIONS.md` and
 `BACKLOG.md`, so there's no need to repaste instructions each time.
 
 Each cycle (automated or manually kicked off) does two things in order:
@@ -85,14 +145,16 @@ instead of stalling.
   placement validity, save/load round-trips — so new content additions get
   validated automatically rather than needing a hand-written test per
   piece of content.
-- **`main` gets fast-forwarded to the working branch's tip at the end of
-  every cycle that pushes code**, once a Vercel project exists. Vercel's
-  free (Hobby) tier doesn't allow repointing Production Branch away from
-  `main`, so this is what keeps the live deployment actually current
-  (same workaround `deatheroai/testai` needed — see its `AUTONOMY.md`).
-  `main` should only ever move by fast-forward here; if it's ever diverged
-  (unexpected commits not from the working branch), stop and flag it
-  rather than force-pushing over it.
+- **`main` gets updated at the end of every cycle that pushes code**,
+  once a Vercel project exists, so the live deployment stays current
+  (Vercel's free/Hobby tier can't repoint Production Branch away from
+  `main` — same workaround `deatheroai/testai` needed). For a single
+  ad-hoc/manual session working alone (like this one), that update is a
+  pure fast-forward — if `main` is ever diverged for reasons other than
+  the two daily tracks below, stop and flag it rather than force-pushing
+  over it. **The World and Skins daily tracks use the real-merge
+  protocol in "Parallel tracks" above instead**, since two branches land
+  on `main` independently there and a fast-forward-only rule can't hold.
 - **Push directly to the working branch — no PR per cycle.** Every push
   gets its own Vercel preview deployment automatically, which is the
   review surface; `main` (production) gets fast-forwarded once you've

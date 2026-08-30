@@ -161,3 +161,29 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
   happens to mean, so a broken/missing asset can never cascade into
   trying to load a second broken skin. Capsule stays selectable in the
   dev panel.
+
+- **2026-08-30 — Two parallel daily tracks set up: World and Skins.**
+  You asked for world-building and skin-generation to run as genuinely
+  parallel daily work, not sequential phases. Resolved via
+  `AskUserQuestion`:
+  1. **Two separate branches/sessions**, not one session alternating —
+     real parallelism, matching what "parallel" actually means.
+  2. **Autonomous daily cycles** — each track's session follows
+     `AUTONOMY.md`'s existing cycle (check `DECISIONS.md`'s Pending,
+     otherwise build the next unblocked item in its own `BACKLOG.md`
+     section) and only stops for a genuine decision, same bar as this
+     session has used throughout.
+
+  Set up: `claude/world-daily` and `claude/skins-daily` branches (both
+  from `main`'s current tip), a dedicated persistent session per track,
+  and a daily trigger per track waking its session (staggered — World
+  then Skins a few hours later, so the second cycle each day starts from
+  the first's already-merged `main`). File ownership split and the
+  two-branches-on-`main` merge protocol (a real merge now, not
+  fast-forward-only) recorded in `AUTONOMY.md`'s new "Parallel tracks"
+  section — that's the source of truth for how this actually works day
+  to day, not this entry.
+
+  This session (`claude/tri-realm-readme-wh2lr2`) remains available for
+  direct/manual work as before — the two new sessions handle the daily
+  automated cadence specifically.
