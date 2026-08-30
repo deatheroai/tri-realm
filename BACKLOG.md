@@ -135,10 +135,22 @@ surfaced.
 
 Only starts once Phase 1a has been reviewed and the direction holds.
 
-- `todo` Define the shared `RealmMap` / `Portal` / `PlacedStructure` data
-  schema from `ARCHITECTURE.md` as real TypeScript types (unit tested),
-  and refactor the Phase 1a prototype to be backed by it instead of
-  hardcoded values.
+- `done` Defined the shared `RealmMap` / `Portal` / `PlacedStructure` data
+  schema from `ARCHITECTURE.md` as real TypeScript types
+  (`src/world/realmMap.ts`) and refactored the Phase 1a prototype to be
+  backed by it: `src/land/landRealmMap.ts` builds the hardcoded `land-01`
+  map (same bounds/terrain as before, now data instead of scattered
+  constants — `scene.ts`'s ground size reads from it too); `main.ts`
+  places pieces via `addStructure` (immutable, mirrors `stepLandMovement`'s
+  reassignment style) instead of an ad hoc array/counter, and movement/
+  ground-mesh height both sample through `sampleTerrainHeight(terrain, x,
+  z)` — a single dispatch point air/sea add cases to later — instead of
+  calling the land heightfield formula directly. `Portal`/`EntityRef` are
+  typed but left unpopulated (`portals: []`, `entities: []`): no consumer
+  yet (portals need a target realm, entities need save/load — both later
+  Phase 1b/2/3 items). 7 new unit tests (`realmMap.test.ts`,
+  `landRealmMap.test.ts`); all existing unit/E2E tests still pass
+  unchanged since the schema is additive under the same runtime behavior.
 - `todo` Real castle structure catalog (keep, wall, gate — starter set) +
   placement validation (collision, no-overlap against terrain).
 - `todo` Generic save/load of a `RealmMap` + entity state — tested against

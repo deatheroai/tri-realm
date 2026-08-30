@@ -6,8 +6,9 @@ import { TouchJoystick } from "./input/touchJoystick";
 import { combineMoveInputs } from "./input/combineMoveInputs";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
-import { terrainHeightAt } from "./land/terrain";
+import { createLandRealmMap } from "./land/landRealmMap";
 import { createCastlePieceMesh, CASTLE_PIECE_GROUND_OFFSET } from "./land/placement";
+import { addStructure, sampleTerrainHeight } from "./world/realmMap";
 import { lerpVec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
@@ -48,17 +49,24 @@ function onResize(): void {
 }
 window.addEventListener("resize", onResize);
 
-// Same height function the ground mesh itself is built from (scene.ts) —
-// movement collision and the rendered terrain can't drift apart.
-const groundHeightAt = terrainHeightAt;
+// The Phase 1a prototype is now backed by a real RealmMap (src/world/
+// realmMap.ts, src/land/landRealmMap.ts) instead of hardcoded constants —
+// `landMap` is reassigned (immutably) as structures are placed, mirroring
+// how `movement` is reassigned each frame below.
+let landMap = createLandRealmMap();
+
+// Same terrain the ground mesh itself is built from (scene.ts) — movement
+// collision and the rendered terrain can't drift apart, and both now go
+// through the map's own `terrain` field rather than a bare function.
+const groundHeightAt = (x: number, z: number) => sampleTerrainHeight(landMap.terrain, x, z);
 
 const input = new KeyboardInput();
 
 const structuresHud = document.getElementById("hud-structures");
-let placedCount = 0;
 
 function updateStructuresHud(lastPosition?: THREE.Vector3): void {
   if (!structuresHud) return;
+  const placedCount = landMap.structures.length;
   structuresHud.textContent = `Structures: ${placedCount}`;
   structuresHud.dataset.count = String(placedCount);
   if (lastPosition) {
@@ -90,7 +98,8 @@ window.__projectToScreen = (x, y, z) => {
 };
 window.__getAvatarSkinId = () => avatarView.skinId;
 window.__getLastPlacedColor = () => {
-  const last = placedPieces[placedPieces.length - 1];
+  const lastStructure = landMap.structures[landMap.structures.length - 1];
+  const last = lastStructure && placedMeshes.get(lastStructure.id);
   const material = (last as THREE.Mesh | undefined)?.material as THREE.MeshStandardMaterial | undefined;
   return material?.color.getHex();
 };
@@ -102,7 +111,10 @@ window.__getLastPlacedColor = () => {
 // falling through to the ground underneath it.
 const raycaster = new THREE.Raycaster();
 const pointerNdc = new THREE.Vector2();
-const placedPieces: THREE.Object3D[] = [];
+// The mesh for each placed piece, keyed by its RealmMap PlacedStructure id
+// — `landMap.structures` is the source of truth (what was placed, where);
+// this Map is purely the rendering/raycasting side of the same data.
+const placedMeshes = new Map<string, THREE.Object3D>();
 let currentBlockMaterialId = DEFAULT_BLOCK_MATERIAL_ID;
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
@@ -110,7 +122,7 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
   pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointerNdc, camera);
 
-  const hits = raycaster.intersectObjects([ground, ...placedPieces], false);
+  const hits = raycaster.intersectObjects([ground, ...placedMeshes.values()], false);
   if (hits.length === 0) return;
 
   const hit = hits[0];
@@ -132,10 +144,15 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
     );
   }
 
-  scene.add(piece);
-  placedPieces.push(piece);
+  const { map, structure } = addStructure(landMap, {
+    type: "castle-piece-placeholder",
+    position: { x: piece.position.x, y: piece.position.y, z: piece.position.z },
+    rotation: 0,
+  });
+  landMap = map;
+  placedMeshes.set(structure.id, piece);
 
-  placedCount += 1;
+  scene.add(piece);
   updateStructuresHud(piece.position);
 }
 
@@ -185,7 +202,7 @@ if (devSkinPanel) {
 const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
 
 let movement: LandMovementState = {
-  position: { x: 0, y: terrainHeightAt(0, 0), z: 0 },
+  position: { x: 0, y: sampleTerrainHeight(landMap.terrain, 0, 0), z: 0 },
   velocityY: 0,
 };
 
