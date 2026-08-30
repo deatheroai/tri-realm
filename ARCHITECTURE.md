@@ -190,12 +190,14 @@ This session's network policy blocks the free-asset sites (kenney.nl,
 quaternius.com, ambientcg.com, itch.io, opengameart.org, polyhaven.com)
 directly — confirmed as an organization egress policy denial, not a bug.
 GitHub (`raw.githubusercontent.com`) is reachable, and is where the first
-real asset (`public/assets/models/fox.glb`, from Khronos's official glTF
-sample repo) came from. Assets are committed directly into
-`public/assets/` — small enough (fox.glb is 162KB) that external hosting
-isn't warranted yet. See `DECISIONS.md` for the full reasoning and the
-practical path for Kenney/ambientCG-sourced content (you fetch, then
-either push directly or hand the files to me).
+two real assets came from: `public/assets/models/fox.glb` (Khronos's
+official glTF sample repo) and `public/assets/models/robot.glb`
+("RobotExpressive", bundled in three.js's own examples). Assets are
+committed directly into `public/assets/` — small enough (163KB and 453KB
+respectively) that external hosting isn't warranted yet. See
+`DECISIONS.md` for the full reasoning and the practical path for
+Kenney/ambientCG-sourced content (you fetch, then either push directly or
+hand the files to me).
 
 ## Construction system
 

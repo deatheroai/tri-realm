@@ -23,6 +23,14 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     scale: 0.03,
     animationClipNames: { idle: "Survey", walk: "Walk", run: "Run" },
   },
+  {
+    id: "robot",
+    label: "Robot",
+    kind: "gltf",
+    modelUrl: "/assets/models/robot.glb",
+    scale: 1,
+    animationClipNames: { idle: "Idle", walk: "Walking", run: "Running" },
+  },
   { id: "capsule", label: "Capsule", kind: "procedural" },
 ];
 
