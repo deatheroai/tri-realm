@@ -78,6 +78,43 @@ system.
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
 
+## Skins / visual identity — parallel track, not a sequential phase
+
+Runs alongside Phase 1b+ rather than blocking it, per your explicit
+request. Engine side is source-agnostic (see `ARCHITECTURE.md`'s "Skins"
+section); content depends on where assets actually come from — see
+`DECISIONS.md`'s 2026-08-30 entry for the network-access constraint this
+surfaced.
+
+- `done` Skin-swapping engine: data-driven avatar-skin and block-material
+  catalogs, `AvatarView` (procedural ↔ glTF with animation, graceful
+  fallback on load failure), a dev-only live switcher panel. 9 new unit
+  tests, 3 new E2E tests.
+- `done` First real asset proven end-to-end: an animated fox model
+  (`public/assets/models/fox.glb`, from Khronos's official glTF sample
+  repo — CC0/CC-BY 4.0, attributed in `public/assets/ATTRIBUTIONS.md`)
+  with real Walk/Run/Survey clips driven by actual movement state.
+  **Review checkpoint: pending your look — try the 🔧 skins panel,
+  top-right.**
+- `todo` **Kenney/Quaternius/ambientCG-sourced content** (castle-piece
+  model packs, PBR stone/wood/brick textures) — blocked on you fetching
+  these, since this session's network policy blocks those three sites
+  directly (confirmed, not a bug — see `DECISIONS.md`). Practical path:
+  download packs in your own browser, then either push the files to the
+  repo yourself or hand them to me in this session to wire into the
+  catalogs above.
+- `todo` A second/third avatar skin option once more assets exist (an
+  "animal" and a "princess figure" were the original ask) — catalog
+  already supports adding more with no engine changes.
+- `todo` Real textures for block materials once ambientCG (or equivalent)
+  content is available — `BLOCK_MATERIALS`' shape already anticipates
+  this (`color` → `textureUrl` per entry).
+- `todo` Revisit the 3rd-person camera's framing once there's more
+  character content to actually showcase — noted in `DECISIONS.md`: the
+  current steep ~31° elevation makes an elongated quadruped read as
+  compressed/vertical rather than clearly "a fox." Not a blocker, just
+  worth a look with real content in view.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.

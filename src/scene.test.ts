@@ -4,14 +4,18 @@ import { createScene } from "./scene";
 import { terrainHeightAt } from "./land/terrain";
 
 describe("createScene", () => {
-  it("includes a ground plane and a player avatar", () => {
+  it("includes a ground plane and a player avatar group with a default visual", () => {
     const scene = createScene();
 
     const ground = scene.getObjectByName("ground");
     const avatar = scene.getObjectByName("avatar");
 
     expect(ground).toBeInstanceOf(THREE.Mesh);
-    expect(avatar).toBeInstanceOf(THREE.Mesh);
+    // The avatar is a Group so AvatarView can swap its visual child (skins);
+    // it should start with exactly one child — the default procedural mesh.
+    expect(avatar).toBeInstanceOf(THREE.Group);
+    expect(avatar?.children).toHaveLength(1);
+    expect(avatar?.children[0]).toBeInstanceOf(THREE.Mesh);
   });
 
   it("places the avatar standing on the terrain surface, not embedded in it", () => {

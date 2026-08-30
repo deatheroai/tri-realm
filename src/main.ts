@@ -9,6 +9,9 @@ import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { terrainHeightAt } from "./land/terrain";
 import { createCastlePieceMesh, CASTLE_PIECE_GROUND_OFFSET } from "./land/placement";
 import { lerpVec3 } from "./math/vec3";
+import { AvatarView } from "./skins/avatarView";
+import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
+import { BLOCK_MATERIALS, DEFAULT_BLOCK_MATERIAL_ID } from "./skins/blockMaterials";
 
 const app = document.getElementById("app");
 if (!app) {
@@ -28,6 +31,9 @@ if (!avatarOrUndefined) {
   throw new Error("Missing avatar in scene");
 }
 const avatar = avatarOrUndefined;
+
+const avatarView = new AvatarView(avatar);
+void avatarView.setSkin(DEFAULT_AVATAR_SKIN_ID);
 
 const groundOrUndefined = scene.getObjectByName("ground");
 if (!groundOrUndefined) {
@@ -71,6 +77,8 @@ updateStructuresHud();
 declare global {
   interface Window {
     __projectToScreen?: (x: number, y: number, z: number) => { x: number; y: number };
+    __getAvatarSkinId?: () => string;
+    __getLastPlacedColor?: () => number | undefined;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -79,6 +87,12 @@ window.__projectToScreen = (x, y, z) => {
     x: ((ndc.x + 1) / 2) * window.innerWidth,
     y: ((1 - ndc.y) / 2) * window.innerHeight,
   };
+};
+window.__getAvatarSkinId = () => avatarView.skinId;
+window.__getLastPlacedColor = () => {
+  const last = placedPieces[placedPieces.length - 1];
+  const material = (last as THREE.Mesh | undefined)?.material as THREE.MeshStandardMaterial | undefined;
+  return material?.color.getHex();
 };
 
 // Click/tap-to-place: raycast against the ground mesh AND every already-
@@ -89,6 +103,7 @@ window.__projectToScreen = (x, y, z) => {
 const raycaster = new THREE.Raycaster();
 const pointerNdc = new THREE.Vector2();
 const placedPieces: THREE.Object3D[] = [];
+let currentBlockMaterialId = DEFAULT_BLOCK_MATERIAL_ID;
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
@@ -99,7 +114,7 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
   if (hits.length === 0) return;
 
   const hit = hits[0];
-  const piece = createCastlePieceMesh();
+  const piece = createCastlePieceMesh(currentBlockMaterialId);
 
   if (hit.object === ground) {
     piece.position.set(hit.point.x, hit.point.y + CASTLE_PIECE_GROUND_OFFSET, hit.point.z);
@@ -137,6 +152,36 @@ const touchJoystick =
     ? new TouchJoystick(touchZone, joystickBase, joystickKnob, { onTap: placeCastlePieceAt })
     : null;
 
+// Dev-only skin switcher (not child-facing UI) — cycles the avatar's skin
+// and the block material used for new placements, live, no redeploy. See
+// DECISIONS.md for why this exists now (in-app preview, since real asset
+// sourcing happens outside this session).
+const devSkinPanel = document.getElementById("dev-skin-panel");
+if (devSkinPanel) {
+  const avatarRow = document.createElement("div");
+  avatarRow.textContent = "Avatar: ";
+  for (const skin of AVATAR_SKINS) {
+    const btn = document.createElement("button");
+    btn.textContent = skin.label;
+    btn.addEventListener("click", () => void avatarView.setSkin(skin.id));
+    avatarRow.appendChild(btn);
+  }
+
+  const materialRow = document.createElement("div");
+  materialRow.textContent = "Blocks: ";
+  for (const material of BLOCK_MATERIALS) {
+    const btn = document.createElement("button");
+    btn.textContent = material.label;
+    btn.addEventListener("click", () => {
+      currentBlockMaterialId = material.id;
+    });
+    materialRow.appendChild(btn);
+  }
+
+  devSkinPanel.appendChild(avatarRow);
+  devSkinPanel.appendChild(materialRow);
+}
+
 const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
 
 let movement: LandMovementState = {
@@ -165,6 +210,12 @@ function animate(): void {
     movement.position.y + AVATAR_GROUND_OFFSET,
     movement.position.z,
   );
+
+  // Skin-swapping (AvatarView) is purely visual — it never touches
+  // movement.position or stepLandMovement's inputs, only what's rendered.
+  avatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
+  avatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
+  avatarView.update(dt);
 
   const target = desiredCameraPosition(movement.position, cameraOffset);
   const t = smoothingFactor(0.12, dt);

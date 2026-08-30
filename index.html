@@ -95,6 +95,35 @@
         border-radius: 50%;
         background: rgba(217, 130, 43, 0.85);
       }
+      /* Dev-only skin/material switcher — not child-facing UI, see DECISIONS.md. */
+      #dev-skin-panel {
+        position: fixed;
+        top: 40px;
+        right: 12px;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font: 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+        color: #8f9bab;
+        background: rgba(16, 21, 28, 0.6);
+        border: 1px solid rgba(143, 155, 171, 0.3);
+        border-radius: 6px;
+        padding: 6px 8px;
+      }
+      #dev-skin-panel button {
+        font: inherit;
+        color: #d9822b;
+        background: rgba(217, 130, 43, 0.12);
+        border: 1px solid rgba(217, 130, 43, 0.4);
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin: 2px 2px 0 0;
+        cursor: pointer;
+      }
+      #dev-skin-panel button:hover {
+        background: rgba(217, 130, 43, 0.25);
+      }
     </style>
   </head>
   <body>
@@ -107,6 +136,7 @@
     </div>
     <div id="hud-position" data-x="0" data-z="0">x: 0.00  z: 0.00</div>
     <div id="hud-structures" data-count="0">Structures: 0</div>
+    <div id="dev-skin-panel">🔧 skins</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

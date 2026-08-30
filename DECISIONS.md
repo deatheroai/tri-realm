@@ -100,3 +100,52 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
   (a max-climbable-angle check plus terrain-face collision), not a bug in
   what's already built. Revisit once a realm actually needs real cliffs
   or walls — castle walls in Phase 1b are the most likely trigger.
+
+- **2026-08-30 — Visual identity ("skins") scoped: engine now, real free
+  assets sourced from GitHub, a dev-only live switcher.** You asked to
+  scope skin generation as parallel work alongside world-building, with
+  tooling identified. Two things resolved via `AskUserQuestion`:
+
+  1. **Asset track: free CC0 packs first** (Kenney/Quaternius/ambientCG),
+     escalate to AI 3D generation only for gaps those don't cover.
+  2. **Build the dev skin-switcher now**, not later — matches this
+     project's whole "review quickly on Vercel" pattern.
+
+  **Real constraint found while acting on this, reported rather than
+  routed around**: this session's network egress policy blocks
+  kenney.nl, quaternius.com, ambientcg.com outright (403 — confirmed via
+  the proxy's own status endpoint as an organization policy denial, not
+  a technical failure) — also itch.io, opengameart.org, polyhaven.com.
+  I cannot fetch from any of these myself from inside this session.
+  GitHub (`raw.githubusercontent.com`) and the npm registry *are*
+  reachable.
+
+  **Revised, working plan**:
+  - **Engine side (built this round, doesn't depend on any asset
+    source)**: a data-driven skin catalog (`src/skins/avatarSkins.ts`,
+    `src/skins/blockMaterials.ts`), a `AvatarView` controller that swaps
+    between a procedural mesh and a loaded glTF model + its animations
+    with a graceful fallback to procedural on any load failure, and a
+    dev-only on-screen panel to switch both live, no redeploy. See
+    `ARCHITECTURE.md`'s new "Skins" section.
+  - **First real asset, sourced from GitHub today**: Khronos's official
+    glTF sample-asset repo has a genuine animated low-poly fox
+    (`KhronosGroup/glTF-Sample-Models`, `2.0/Fox`) with built-in
+    Walk/Run/Survey animation clips — CC0 base model, CC-BY 4.0
+    rig/animation (attribution recorded in
+    `public/assets/ATTRIBUTIONS.md`, required by that license). Wired in
+    as a second selectable avatar skin, proving the whole pipeline
+    (loading, scaling, animation-state switching driven by actual
+    movement input) works end to end with a real, not placeholder,
+    asset. Verified: the model itself walks normally on all fours from a
+    proper side-on debug view — what looked like an odd upright pose in
+    our normal 3rd-person camera is that camera's steep ~31° elevation
+    viewing an elongated quadruped nearly end-on, not a model or
+    animation bug. Worth revisiting camera framing later once there's
+    more character content to actually showcase, not a blocker now.
+  - **Kenney/Quaternius/ambientCG content (castle-piece packs, PBR
+    textures) still needs you**: since I can't reach those sites, the
+    practical flow is you download packs in your own browser and either
+    push the files to the repo yourself or hand them to me in this
+    session to wire in — I can't source them myself. Logged as a
+    `BACKLOG.md` item, not blocking further engine work in the meantime.

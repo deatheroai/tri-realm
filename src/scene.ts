@@ -1,13 +1,11 @@
 import * as THREE from "three";
 import { terrainHeightAt } from "./land/terrain";
+import { AVATAR_GROUND_OFFSET, createProceduralAvatarMesh } from "./skins/avatarView";
 
-const AVATAR_RADIUS = 0.4;
-const AVATAR_LENGTH = 1.0;
 const GROUND_SIZE = 50;
 const GROUND_SEGMENTS = 64;
 
-/** Half-height of the avatar capsule — add this to a ground-contact y to get the mesh's center. */
-export const AVATAR_GROUND_OFFSET = AVATAR_LENGTH / 2 + AVATAR_RADIUS;
+export { AVATAR_GROUND_OFFSET };
 
 /**
  * Displaces a flat PlaneGeometry's vertices to match terrainHeightAt.
@@ -32,8 +30,14 @@ function buildGroundGeometry(): THREE.PlaneGeometry {
 
 /**
  * Builds the Phase 1a land scene: varied terrain, a player-controlled
- * avatar capsule, and basic lighting. Still a single hardcoded map — no
- * RealmMap schema yet (see BACKLOG.md Phase 1a/1b).
+ * avatar, and basic lighting. Still a single hardcoded map — no RealmMap
+ * schema yet (see BACKLOG.md Phase 1a/1b).
+ *
+ * The avatar is a Group ("avatar") holding whichever skin is currently
+ * active — starts with the default procedural capsule as its one child;
+ * AvatarView (src/skins/avatarView.ts) takes over swapping that child
+ * once main.ts wires it up. The group itself is what main.ts positions
+ * every frame, so skin-swapping never touches movement/positioning code.
  */
 export function createScene(): THREE.Scene {
   const scene = new THREE.Scene();
@@ -68,13 +72,11 @@ export function createScene(): THREE.Scene {
     scene.add(landmark);
   }
 
-  const avatar = new THREE.Mesh(
-    new THREE.CapsuleGeometry(AVATAR_RADIUS, AVATAR_LENGTH, 4, 8),
-    new THREE.MeshStandardMaterial({ color: 0xd9822b }),
-  );
-  avatar.position.set(0, terrainHeightAt(0, 0) + AVATAR_GROUND_OFFSET, 0);
-  avatar.name = "avatar";
-  scene.add(avatar);
+  const avatarRoot = new THREE.Group();
+  avatarRoot.name = "avatar";
+  avatarRoot.add(createProceduralAvatarMesh());
+  avatarRoot.position.set(0, terrainHeightAt(0, 0) + AVATAR_GROUND_OFFSET, 0);
+  scene.add(avatarRoot);
 
   return scene;
 }

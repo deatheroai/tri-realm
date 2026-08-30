@@ -131,6 +131,70 @@ literal cliff or wall doesn't block movement today. Deliberately deferred
 check plus terrain-face collision is real, separate scope from the
 current rolling-hill terrain, which never gets steep enough to expose it.
 
+## Skins (visual identity)
+
+Everything an object *looks like* — the avatar's model, a castle block's
+material — is deliberately separate from what it *is* mechanically. This
+mirrors the input-source split above: a movement module never knows which
+input device drove it; equally, `stepLandMovement` and the placement/
+raycasting logic never know which skin is currently rendering the avatar
+or a block. Skins are swappable purely visually, live, with zero coupling
+to game logic.
+
+### Avatar skins (`src/skins/avatarSkins.ts`, `src/skins/avatarView.ts`)
+
+- A small catalog (`AvatarSkin[]`) declares each option: `kind:
+  "procedural"` (built from primitives, no asset dependency) or `kind:
+  "gltf"` (a loaded model, with `modelUrl`, a `scale` to normalize its
+  authored size to our world units, and `animationClipNames` mapping our
+  three movement states — `idle`/`walk`/`run` — to that model's actual
+  clip names).
+- `AvatarView` owns the avatar's current visual inside the stable `Group`
+  scene.ts creates (named `"avatar"`, positioned every frame by
+  `main.ts` regardless of skin). `setSkin(id)` builds the new visual
+  fully (including loading + wiring animations) *before* swapping it in,
+  so there's never a frame where the avatar is invisible mid-load. A
+  failed glTF load falls back to the procedural capsule automatically
+  (logged, not thrown) — a skin can never brick the app.
+- `moveInputToAnimationState` (pure, unit-tested) maps the same
+  `MoveInput` movement already uses to an animation state; `AvatarView`
+  crossfades between clips when it changes, and `faceDirection` smoothly
+  turns the model to face its actual movement direction — necessary once
+  a skin has a real "front" (unlike the rotationally-symmetric capsule).
+- glTF loads are cached by URL (module-level `Map`) so switching back to
+  an already-loaded skin is instant.
+
+### Block materials (`src/skins/blockMaterials.ts`)
+
+A simpler catalog of flat colors for now (`BLOCK_MATERIALS[]`) —
+`createCastlePieceMesh(materialId)` picks one. Swapped for real textures
+once a texture source is available (see `DECISIONS.md`); the catalog
+shape doesn't need to change when that happens, just `color` becoming
+`textureUrl` for a given entry.
+
+### Dev skin switcher
+
+A small on-screen panel (`#dev-skin-panel`, not child-facing UI — same
+"labeled dev scaffolding" spirit as the touch-joystick's visual debug
+aids) lists every catalog entry as a button; clicking one calls
+`avatarView.setSkin()` or sets the active block-material id, live, no
+redeploy. Exists specifically so asset iteration (swap a file, refresh,
+click the button) doesn't require a rebuild/redeploy cycle per asset
+tried.
+
+### Where assets actually come from
+
+This session's network policy blocks the free-asset sites (kenney.nl,
+quaternius.com, ambientcg.com, itch.io, opengameart.org, polyhaven.com)
+directly — confirmed as an organization egress policy denial, not a bug.
+GitHub (`raw.githubusercontent.com`) is reachable, and is where the first
+real asset (`public/assets/models/fox.glb`, from Khronos's official glTF
+sample repo) came from. Assets are committed directly into
+`public/assets/` — small enough (fox.glb is 162KB) that external hosting
+isn't warranted yet. See `DECISIONS.md` for the full reasoning and the
+practical path for Kenney/ambientCG-sourced content (you fetch, then
+either push directly or hand the files to me).
+
 ## Construction system
 
 - Structures (starting with castle pieces) are `PlacedStructure` entries
