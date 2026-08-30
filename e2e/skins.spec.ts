@@ -1,4 +1,56 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+/**
+ * Regression guard for the class of bug fixed in the "dev-panel overlap"
+ * commit: two `position: fixed` overlays (added independently by the World
+ * and Skins tracks, in the same or different cycles) can merge cleanly as
+ * text yet still collide visually. Generic on purpose — every child of
+ * `#dev-panels` is checked, not specific panel ids, so a *future* panel
+ * added to that shared column is covered automatically without editing
+ * this test. See AUTONOMY.md's "UI layout convention" for the rule this
+ * enforces (new panels join `#dev-panels`, they don't claim their own
+ * fixed corner).
+ */
+async function boundingBoxesOverlap(page: Page): Promise<Array<{ a: string; b: string }>> {
+  const selectors = ["#hud-controls", "#hud-position", "#hud-structures", "#dev-panels > *"];
+  const boxes: Array<{ label: string; box: { x: number; y: number; width: number; height: number } }> = [];
+
+  for (const selector of selectors) {
+    const locator = page.locator(selector);
+    const count = await locator.count();
+    for (let i = 0; i < count; i++) {
+      const box = await locator.nth(i).boundingBox();
+      if (box) boxes.push({ label: `${selector}[${i}]`, box });
+    }
+  }
+
+  const overlaps: Array<{ a: string; b: string }> = [];
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const { box: a } = boxes[i];
+      const { box: b } = boxes[j];
+      const intersects = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+      if (intersects) overlaps.push({ a: boxes[i].label, b: boxes[j].label });
+    }
+  }
+  return overlaps;
+}
+
+test.describe("fixed overlay layout", () => {
+  // The bug this guards against only reproduces on a narrow viewport — wide
+  // enough panels never collided even before the fix. Desktop Chrome's
+  // default (1280px) wouldn't have caught it.
+  test.use({ viewport: { width: 390, height: 700 } });
+
+  test("no two fixed HUD/panel elements overlap on a narrow viewport", async ({ page }) => {
+    await page.goto("/");
+    const panelCount = await page.locator("#dev-panels > *").count();
+    expect(panelCount).toBeGreaterThan(0); // sanity: the check actually covered something
+
+    const overlaps = await boundingBoxesOverlap(page);
+    expect(overlaps).toEqual([]);
+  });
+});
 
 test("the dev skin panel lists both avatar skins and block materials", async ({ page }) => {
   await page.goto("/");
