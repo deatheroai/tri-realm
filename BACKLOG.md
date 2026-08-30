@@ -122,6 +122,17 @@ surfaced.
   of the reachable CC0/CC-BY sources (Khronos glTF-Sample-Assets, three.js's
   bundled examples) have a plausible match; still blocked on the
   Kenney/Quaternius/ambientCG/itch.io/opengameart sites above.
+- `done` Fixed dev-panel overlap: World's new `#dev-structure-panel` and
+  Skins' `#dev-skin-panel` were both anchored `top: 40px` in opposite
+  corners, and on narrow viewports their multi-button rows grew wide
+  enough to collide in the middle (reported with a screenshot — text
+  from both panels was rendering on top of each other). Both now sit in
+  one shared `#dev-panels` flex column (top-right, stacked, `flex-wrap`
+  on each button row, capped width) instead of claiming opposite
+  corners — genuinely-shared `index.html` territory per `AUTONOMY.md`,
+  fixed here since Skins already owns "dev-panel wiring". Verified with
+  real screenshots at both a narrow (390px) and desktop (1280px)
+  viewport — no more overlap either way.
 - `todo` Real textures for block materials once ambientCG (or equivalent)
   content is available — `BLOCK_MATERIALS`' shape already anticipates
   this (`color` → `textureUrl` per entry).
