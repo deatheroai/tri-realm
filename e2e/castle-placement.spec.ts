@@ -54,3 +54,23 @@ test("clicking an existing piece stacks a new one on top of it", async ({ page }
 
   expect(secondY).toBeGreaterThan(firstPos.y + 1); // a full piece height higher, not just a fraction
 });
+
+test("defaults to the Keep structure type, and switching type changes new placements", async ({ page }) => {
+  await page.goto("/");
+
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  const groundX = viewport.width / 2;
+  const groundY = viewport.height * 0.75;
+
+  await page.mouse.click(groundX, groundY);
+  expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-keep");
+
+  await page.getByRole("button", { name: "Wall" }).click();
+  await page.mouse.click(groundX + 100, groundY);
+  expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-wall");
+
+  await page.getByRole("button", { name: "Gate" }).click();
+  await page.mouse.click(groundX - 100, groundY);
+  expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-gate");
+});
