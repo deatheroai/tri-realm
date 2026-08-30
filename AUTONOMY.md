@@ -43,6 +43,32 @@ each track edits its own section; see file ownership below for code.
   track's section; if the other track's section changed too in the same
   merge, keep both, never overwrite one with the other.
 
+#### UI layout convention (avoids visual, not just textual, merge conflicts)
+
+Two independently-scheduled sessions can each add `position: fixed`
+overlay markup to `index.html` in the same cycle without a git conflict —
+the merge is textually clean, but the *rendered* result can still
+overlap on screen (this happened once: a new castle structure-type panel
+landed in the same corner as the existing skin panel). Avoid it by
+construction, not by remembering to check:
+
+- **Dev-only button panels** (skin switcher, structure-type switcher, and
+  any future one) join the existing `#dev-panels` flex column in
+  `index.html` rather than getting their own `position: fixed` corner.
+  Add a new `<div id="...">` as another child of `#dev-panels` and give
+  it the same `#dev-skin-panel, #dev-structure-panel { ... }` shared
+  style rule (or extend that selector list) — the column stacks and wraps
+  automatically, so a new panel can't collide with an existing one.
+- **Corner HUD text** (`#hud-position`, `#hud-structures`,
+  `#hud-controls`) stays one small element per corner — if a new one is
+  needed, pick an unused corner/edge or extend an existing element's text
+  rather than introducing a second element in the same corner.
+- **Regression guard:** `e2e/skins.spec.ts` asserts no two fixed overlay
+  elements' bounding boxes intersect, checked generically (every child of
+  `#dev-panels`, plus the HUD text elements) so a future panel is covered
+  without editing the test — a real Playwright layout check, not just a
+  visual review, catches this class of bug before it merges.
+
 ### Merge protocol for two branches landing on `main` independently
 
 This supersedes the single-branch fast-forward-only guardrail below for
