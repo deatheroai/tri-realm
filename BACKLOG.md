@@ -94,8 +94,7 @@ surfaced.
   (`public/assets/models/fox.glb`, from Khronos's official glTF sample
   repo — CC0/CC-BY 4.0, attributed in `public/assets/ATTRIBUTIONS.md`)
   with real Walk/Run/Survey clips driven by actual movement state.
-  **Review checkpoint: pending your look — try the 🔧 skins panel,
-  top-right.**
+  **Review checkpoint: confirmed — "I love the fox."**
 - `todo` **Kenney/Quaternius/ambientCG-sourced content** (castle-piece
   model packs, PBR stone/wood/brick textures) — blocked on you fetching
   these, since this session's network policy blocks those three sites

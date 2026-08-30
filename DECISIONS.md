@@ -149,3 +149,6 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
     push the files to the repo yourself or hand them to me in this
     session to wire in — I can't source them myself. Logged as a
     `BACKLOG.md` item, not blocking further engine work in the meantime.
+
+- **2026-08-30 — Fox skin reviewed: confirmed, "I love the fox."** Closes
+  out the review checkpoint above.
