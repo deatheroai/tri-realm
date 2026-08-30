@@ -133,9 +133,28 @@ surfaced.
   fixed here since Skins already owns "dev-panel wiring". Verified with
   real screenshots at both a narrow (390px) and desktop (1280px)
   viewport — no more overlap either way.
-- `todo` Real textures for block materials once ambientCG (or equivalent)
-  content is available — `BLOCK_MATERIALS`' shape already anticipates
-  this (`color` → `textureUrl` per entry).
+- `done` Real (generated, not flat-color) textures for all four block
+  materials: `src/skins/proceduralTextures.ts` builds a small
+  sum-of-sine-waves shading pattern per material — thin horizontal
+  banding for sandstone, jagged facets for slate, vertical wavy grain
+  for timber, a diagonal sheen for gold — applied as each material's
+  `.map`, multiplied against its existing `.color` for hue (so the
+  color-changes-on-switch E2E check still holds). No external asset
+  needed — searched three.js's own bundled `examples/textures/` first
+  (it does mirror some ambientCG CC0 textures, e.g. `Ice002`, plus a
+  `Scratched_gold` PBR set) but nothing there fit "stone/wood/brick" for
+  castle pieces, so this generates the interim texture instead of
+  waiting further on it. 13 new unit tests (pattern purity/determinism/
+  distinctness, texture caching), 1 new placement test, verified
+  visually with a real screenshot of one piece per material. Genuinely
+  interim, not a replacement for real photographed PBR — still logged
+  below.
+- `todo` **Still** would like real photographed PBR textures
+  (stone/wood/brick) from ambientCG or equivalent, to replace the
+  generated ones above — `BLOCK_MATERIALS`' shape doesn't need to change
+  for that, `textureKind` just gains a sibling (e.g. `textureUrl`).
+  Blocked on you fetching from ambientcg.com (still blocked in this
+  environment) — same practical path as the Kenney items above.
 - `todo` Revisit the 3rd-person camera's framing once there's more
   character content to actually showcase — noted in `DECISIONS.md`: the
   current steep ~31° elevation makes an elongated quadruped read as

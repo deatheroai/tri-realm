@@ -19,6 +19,13 @@ describe("createCastlePieceMesh", () => {
     expect(a).not.toBe(b);
   });
 
+  it("shades the material with a generated texture, not just a flat color", () => {
+    const mesh = createCastlePieceMesh();
+    const material = mesh.material as THREE.MeshStandardMaterial;
+
+    expect(material.map).toBeInstanceOf(THREE.DataTexture);
+  });
+
   it("builds each catalog type at its own dimensions", () => {
     for (const type of CASTLE_STRUCTURE_TYPES) {
       const mesh = createCastlePieceMesh(type.id);

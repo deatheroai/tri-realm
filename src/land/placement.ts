@@ -1,16 +1,18 @@
 import * as THREE from "three";
 import { DEFAULT_BLOCK_MATERIAL_ID, findBlockMaterial } from "../skins/blockMaterials";
+import { getProceduralTexture } from "../skins/proceduralTextures";
 import { DEFAULT_CASTLE_STRUCTURE_TYPE_ID, findCastleStructureType } from "./castleStructures";
 
 /**
  * A placed castle piece's visual — still just a plain box per type (rough
  * is fine, see `AUTONOMY.md`), but now real `CastleStructureType`s
  * (`castleStructures.ts`) instead of one hardcoded shape: `typeId` picks
- * the box's dimensions, `materialId` selects a flat color from the
- * BLOCK_MATERIALS catalog (src/skins/blockMaterials.ts) — swapped for a
- * real texture once one is sourced. A placed piece is a real
- * `PlacedStructure` on the `RealmMap` (`src/world/realmMap.ts`), checked
- * against `src/world/placementValidation.ts` before it's ever created.
+ * the box's dimensions, `materialId` selects a color + generated shading
+ * pattern from the BLOCK_MATERIALS catalog (src/skins/blockMaterials.ts,
+ * src/skins/proceduralTextures.ts) — swapped for a real photographed
+ * texture once one is sourced. A placed piece is a real `PlacedStructure`
+ * on the `RealmMap` (`src/world/realmMap.ts`), checked against
+ * `src/world/placementValidation.ts` before it's ever created.
  */
 export function createCastlePieceMesh(
   typeId: string = DEFAULT_CASTLE_STRUCTURE_TYPE_ID,
@@ -20,7 +22,7 @@ export function createCastlePieceMesh(
   const material = findBlockMaterial(materialId);
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(type.dimensions.width, type.dimensions.height, type.dimensions.depth),
-    new THREE.MeshStandardMaterial({ color: material.color }),
+    new THREE.MeshStandardMaterial({ color: material.color, map: getProceduralTexture(material.textureKind) }),
   );
   mesh.name = "placed-structure";
   return mesh;
