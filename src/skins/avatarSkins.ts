@@ -28,7 +28,15 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     label: "Robot",
     kind: "gltf",
     modelUrl: "/assets/models/robot.glb",
-    scale: 1,
+    // At scale 1 the model measured ~4.82 world units tall (via
+    // window.__getAvatarWorldHeight) — nearly 2.7x the Fox's ~2.24 and
+    // 2.7x the procedural Capsule's 1.8, so tall its head sat off-screen
+    // by default. 0.4 brings it to ~1.93 — in between Capsule and Fox,
+    // reasonable for a bipedal/humanoid model. Guarded by an E2E check
+    // (e2e/skins.spec.ts) that every gltf skin's rendered height stays
+    // within a sane multiple of Capsule's, so a future skin shipping at
+    // the wrong scale fails a test instead of needing a screenshot report.
+    scale: 0.4,
     animationClipNames: { idle: "Idle", walk: "Walking", run: "Running" },
   },
   { id: "capsule", label: "Capsule", kind: "procedural" },
