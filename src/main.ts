@@ -114,6 +114,7 @@ declare global {
     __getAvatarSkinId?: () => string;
     __getAvatarWorldHeight?: () => number;
     __getLastPlacedColor?: () => number | undefined;
+    __getLastPlacedMapUuid?: () => string | undefined;
     __getLastPlacedType?: () => string | undefined;
   }
 }
@@ -137,6 +138,17 @@ window.__getLastPlacedColor = () => {
   const last = lastStructure && placedMeshes.get(lastStructure.id);
   const material = (last as THREE.Mesh | undefined)?.material as THREE.MeshStandardMaterial | undefined;
   return material?.color.getHex();
+};
+// A block material's real texture (once loaded) resets `.color` to white
+// for every material except Gold (src/skins/realBlockTextures.ts) — so
+// `.color` alone can't reliably distinguish materials once real textures
+// have taken over. The texture map's identity always can, procedural
+// fallback or real: every catalog entry's pattern/photo is distinct.
+window.__getLastPlacedMapUuid = () => {
+  const lastStructure = landMap.structures[landMap.structures.length - 1];
+  const last = lastStructure && placedMeshes.get(lastStructure.id);
+  const material = (last as THREE.Mesh | undefined)?.material as THREE.MeshStandardMaterial | undefined;
+  return material?.map?.uuid;
 };
 window.__getLastPlacedType = () => landMap.structures[landMap.structures.length - 1]?.type;
 

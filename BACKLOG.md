@@ -99,13 +99,16 @@ surfaced.
   `DEFAULT_AVATAR_SKIN_ID` from a new `FALLBACK_AVATAR_SKIN_ID` so the
   error-recovery path always lands on the guaranteed-safe procedural
   skin regardless of what the startup default is.
-- `todo` **Kenney/Quaternius/ambientCG-sourced content** (castle-piece
-  model packs, PBR stone/wood/brick textures) — blocked on you fetching
-  these, since this session's network policy blocks those three sites
-  directly (confirmed, not a bug — see `DECISIONS.md`). Practical path:
-  download packs in your own browser, then either push the files to the
-  repo yourself or hand them to me in this session to wire into the
-  catalogs above.
+- `done` **Superseded, see below/2026-08-31 entries.** Originally:
+  "Kenney/Quaternius/ambientCG-sourced content (castle-piece model
+  packs, PBR stone/wood/brick textures) — blocked on you fetching
+  these." Partially un-blocked itself: a GitHub-releases mirror
+  (`DECISIONS.md`, 2026-08-31) reaches ambientCG PBR textures (now
+  wired in, see the real-photographed-textures item below) and at least
+  some Quaternius packs — but not the character/animal packs, so
+  princess-figure content is still genuinely blocked (see below), and
+  castle-piece *models* (as opposed to block *materials*) are found but
+  not yet wired in (also below).
 - `done` Second avatar skin: an animated robot (`public/assets/models/robot.glb`,
   "RobotExpressive" from three.js's own bundled examples — CC0, Tomás
   Laulhé/Quaternius, modifications by Don McCurdy — attributed in
@@ -133,10 +136,14 @@ surfaced.
   stays within 0.5x–1.8x Capsule's — verified it actually catches this
   exact regression by reverting to `scale: 1` and watching it fail with
   the real ratio (2.68x) in the assertion message, then restoring the fix.
-- `todo` **Still want:** a "princess figure"-style skin specifically — none
-  of the reachable CC0/CC-BY sources (Khronos glTF-Sample-Assets, three.js's
-  bundled examples) have a plausible match; still blocked on the
-  Kenney/Quaternius/ambientCG/itch.io/opengameart sites above.
+- `todo` **Still want:** a "princess figure"-style skin specifically —
+  none of the reachable CC0/CC-BY sources (Khronos glTF-Sample-Assets,
+  three.js's bundled examples) have a plausible match. Checked again
+  2026-08-31 against the new GitHub-releases mirror
+  (`DECISIONS.md`/`ARCHITECTURE.md`) — no help there either: Quaternius's
+  character/animal packs are marked `unpulled` in that mirror's own
+  index (no archive pinned yet, still routes to the blocked
+  quaternius.com directly). Genuinely still blocked on you.
 - `done` Fixed dev-panel overlap: World's new `#dev-structure-panel` and
   Skins' `#dev-skin-panel` were both anchored `top: 40px` in opposite
   corners, and on narrow viewports their multi-button rows grew wide
@@ -164,12 +171,51 @@ surfaced.
   visually with a real screenshot of one piece per material. Genuinely
   interim, not a replacement for real photographed PBR — still logged
   below.
-- `todo` **Still** would like real photographed PBR textures
-  (stone/wood/brick) from ambientCG or equivalent, to replace the
-  generated ones above — `BLOCK_MATERIALS`' shape doesn't need to change
-  for that, `textureKind` just gains a sibling (e.g. `textureUrl`).
-  Blocked on you fetching from ambientcg.com (still blocked in this
-  environment) — same practical path as the Kenney items above.
+- `done` **Real photographed PBR textures**, replacing the generated
+  pattern above with actual ambientCG photos (CC0-1.0): sandstone ←
+  `PavingStones001`, slate ← `Rock001`, timber ← `Wood001`, gold ←
+  `Metal001`. Not blocked after all — found a GitHub-releases mirror of
+  ambientCG (and some Quaternius) content that this session *can* reach
+  even though ambientcg.com itself is still blocked; see `DECISIONS.md`'s
+  2026-08-31 entry for the mechanism and what it does/doesn't cover.
+  Downloaded at 1K, resized to 512px + re-encoded (672KB total for all
+  four materials × up to 4 maps each — color/normal/roughness, gold also
+  metalness). `BLOCK_MATERIALS` gained `textureUrls` + `tintRealTexture`;
+  `src/skins/realBlockTextures.ts` swaps each map onto the mesh's
+  material in place once loaded, starting from (and, on any failure,
+  staying on) the generated pattern already in place — same
+  "safe-default-first" philosophy as `AvatarView`. `color` resets to
+  white once a real color map loads for every material except Gold
+  (keeps its tint — the real metal photo is neutral grey and needs it to
+  read as gold at all).
+  **Found and fixed during this pass, not just guessed at**: Gold's
+  metalness map initially set `metalness: 1`, rendering the piece almost
+  **black** — this scene lights with Ambient+Directional only, no
+  environment map, and a fully metallic surface with nothing to reflect
+  renders near-black. Caught by actually screenshotting it (same lesson
+  as the Robot-scale bug above: render and look, don't just wire it up),
+  fixed by capping at `metalness: 0.35`.
+  Also fixed a latent E2E-flakiness risk while here: the existing
+  material-switch test compared `.color`, which — once real textures
+  load — converges to white for 3 of 4 materials, so the assertion would
+  eventually have started failing intermittently depending on how fast
+  the real texture happened to load relative to the test's read. Added
+  `window.__getLastPlacedMapUuid()` (texture identity is always distinct
+  per material, generated or real) for the timing-independent check, and
+  a new test that explicitly polls for the real-texture load to
+  complete and asserts the expected end state. 16 new unit tests, 1 new
+  E2E test (plus 1 rewritten), verified visually with a real screenshot
+  of one piece per material.
+- `todo` **Still want:** real Quaternius model packs for castle pieces
+  themselves (not just block materials) — the same GitHub-releases
+  mirror above does carry at least one relevant pack (a "Medieval
+  Village MegaKit" downloaded successfully as a connectivity check, not
+  yet inspected for individual model quality/fit). Logged here since I
+  found it, but wiring actual glTF castle-piece models into
+  `createCastlePieceMesh` would mean changing box-geometry/collision/
+  footprint assumptions in `src/land/` — World's file ownership, a
+  bigger change than this cycle's scope, not something to do solo
+  without checking in first.
 - `todo` Revisit the 3rd-person camera's framing once there's more
   character content to actually showcase — noted in `DECISIONS.md`: the
   current steep ~31° elevation makes an elongated quadruped read as

@@ -16,6 +16,24 @@ describe("BLOCK_MATERIALS catalog", () => {
       expect(material.textureKind).toBeTruthy();
     }
   });
+
+  it("every entry with textureUrls at least names a color map", () => {
+    for (const material of BLOCK_MATERIALS) {
+      if (material.textureUrls) {
+        expect(material.textureUrls.color).toBeTruthy();
+      }
+    }
+  });
+
+  it("only gold tints its real texture — the others are real photos, not flat colors, once loaded", () => {
+    const gold = findBlockMaterial("gold");
+    const others = BLOCK_MATERIALS.filter((m) => m.id !== "gold");
+
+    expect(gold.tintRealTexture).toBe(true);
+    for (const material of others) {
+      expect(material.tintRealTexture).toBeFalsy();
+    }
+  });
 });
 
 describe("findBlockMaterial", () => {

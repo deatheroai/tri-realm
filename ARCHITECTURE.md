@@ -192,11 +192,32 @@ reading it directly (e.g. `e2e/skins.spec.ts`'s color-changes-on-switch
 check). Generated once per kind and cached (module-level `Map`), not
 rebuilt per placed piece.
 
-This is a real interim step, not a placeholder — genuinely textured, not
-flat-colored — swapped for a photographed PBR pack once ambientCG (or
-equivalent) content is reachable (see `DECISIONS.md`); the catalog shape
-doesn't need to change when that happens, `textureKind` gains a sibling
-(e.g. `textureUrl`) rather than replacing anything.
+That prediction held: `textureKind` gained exactly that sibling.
+`BLOCK_MATERIALS` entries now also carry an optional `textureUrls`
+(`src/skins/blockMaterials.ts`) naming real photographed ambientCG PBR
+maps (color/normal/roughness, plus metalness for gold) under
+`public/assets/textures/<id>/` — sourced via the GitHub-releases mirror
+described in "Where assets actually come from" below. `createCastlePieceMesh`
+still builds the mesh's material on the generated pattern first (synchronous,
+never blocks placement), then calls `upgradeToRealTextures`
+(`src/skins/realBlockTextures.ts`) to swap each map onto that same
+material in place once it loads — mirrors `AvatarView`'s "safe default
+first, upgrade once ready" philosophy, so a bad/missing texture file can
+only make a piece less detailed, never blank or broken. Real textures
+are cached by URL (module-level `Map`), same pattern as `AvatarView`'s
+glTF cache.
+
+`color` keeps tinting the *generated* pattern for every material always
+(unchanged), but only tints the *real* texture once loaded when a
+catalog entry sets `tintRealTexture: true` — off by default, since a
+real photo is already the right hue and tinting it would muddy it; the
+color resets to white once the real map takes over. Gold is the one
+exception: photographed metal is a neutral scratched grey and needs the
+gold tint to read as gold at all. (Gold's real metalness map is also
+capped at `metalness: 0.35`, not the PBR-standard 1 — this scene lights
+with Ambient+Directional only, no environment map, and a fully metallic
+surface with no environment to reflect renders almost black. Confirmed
+by actually rendering it, not by predicting it — see `BACKLOG.md`.)
 
 ### Dev skin switcher
 
@@ -213,15 +234,35 @@ tried.
 This session's network policy blocks the free-asset sites (kenney.nl,
 quaternius.com, ambientcg.com, itch.io, opengameart.org, polyhaven.com)
 directly — confirmed as an organization egress policy denial, not a bug.
-GitHub (`raw.githubusercontent.com`) is reachable, and is where the first
-two real assets came from: `public/assets/models/fox.glb` (Khronos's
-official glTF sample repo) and `public/assets/models/robot.glb`
-("RobotExpressive", bundled in three.js's own examples). Assets are
-committed directly into `public/assets/` — small enough (163KB and 453KB
-respectively) that external hosting isn't warranted yet. See
-`DECISIONS.md` for the full reasoning and the practical path for
-Kenney/ambientCG-sourced content (you fetch, then either push directly or
-hand the files to me).
+GitHub (`raw.githubusercontent.com`, and — discovered later, see below —
+`github.com/.../releases/download/...`) is reachable, and is where every
+real asset so far has come from. Assets are committed directly into
+`public/assets/` — small enough (each model/texture set is well under
+1MB) that external hosting isn't warranted yet.
+
+- `public/assets/models/fox.glb` — Khronos's official glTF sample repo.
+- `public/assets/models/robot.glb` ("RobotExpressive") — bundled in
+  three.js's own examples.
+- `public/assets/textures/{sandstone,slate,timber,gold}/` — real
+  ambientCG PBR maps, via the GitHub-releases mirror below.
+
+**GitHub-releases mirror for Kenney/Quaternius/ambientCG content**
+(found 2026-08-31, see `DECISIONS.md`): the community npm package
+[`@jgengine/assets`](https://www.npmjs.com/package/@jgengine/assets)
+maintains a license-verified catalog of CC0 asset packs from these
+sites and mirrors the actual archive bytes on its own repo's GitHub
+Releases (`github.com/Noisemaker111/jgengine/releases/download/packs/
+<provider>-<packId>.zip`) — reachable from this session even though the
+providers' own sites aren't, since it's a `github.com` release-asset
+download rather than the provider's domain. Not everything in the
+catalog is actually mirrored this way (its own index marks some packs
+`unpulled` — no pinned archive URL yet, still routes to the blocked
+site directly), so this unblocks *some* Kenney/Quaternius/ambientCG
+content, not all of it; check a specific pack's source file
+(`src/sources/*.js` in the package) before assuming it'll work. Practical
+path for any future asset from these providers: check whether
+`@jgengine/assets` has it pinned before falling back to asking you to
+fetch it.
 
 ## Construction system
 

@@ -187,3 +187,40 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
   This session (`claude/tri-realm-readme-wh2lr2`) remains available for
   direct/manual work as before — the two new sessions handle the daily
   automated cadence specifically.
+
+- **2026-08-31 — Found a partial way around the Kenney/Quaternius/ambientCG
+  network block: a GitHub-releases mirror.** Not a decision exactly, but
+  a technical discovery worth logging prominently since it changes the
+  "blocked, needs you" framing on several `BACKLOG.md` items. While
+  looking for real PBR textures, checked the npm registry (also
+  reachable) for existing CC0-asset tooling and found
+  [`@jgengine/assets`](https://www.npmjs.com/package/@jgengine/assets) —
+  a community-maintained, license-verified index of CC0 packs from
+  Kenney/Quaternius/ambientCG/etc. Its own `download.js` reveals a
+  **default mirror**: it re-hosts the actual archive bytes for every
+  *pinned* source on its own repo's GitHub Releases
+  (`github.com/Noisemaker111/jgengine/releases/download/packs/
+  <provider>-<packId>.zip`). Tested directly — `curl -L` on that URL
+  pattern returns real archive bytes (confirmed ~100MB for a Quaternius
+  pack, and several ambientCG material zips), because it's a
+  `github.com` release-asset download, not the provider's own domain,
+  and this session's policy only blocks the latter.
+
+  **What this does and doesn't unblock**: ambientCG PBR materials and at
+  least some Quaternius packs (its own index pins e.g. a "Medieval
+  Village MegaKit" — real castle-relevant content) are reachable this
+  way. Not everything: the index marks several packs (Quaternius's
+  animated-character/animal packs among them) `unpulled` — no archive
+  URL pinned yet, would still route to the blocked site directly if
+  pulled. So the "princess figure" ask and similar character content
+  are **still blocked** even with this discovery; stone/wood/metal PBR
+  materials are not. Full mechanics recorded in `ARCHITECTURE.md`'s
+  "Where assets actually come from".
+
+  **Acted on immediately**: pulled real ambientCG textures (sandstone →
+  PavingStones001, slate → Rock001, timber → Wood001, gold → Metal001,
+  all CC0-1.0) this way, replacing the generated-pattern interim
+  textures with real photographed ones — see `BACKLOG.md`. Logged here
+  rather than filed only as a Skins backlog item because it's relevant
+  to World's still-blocked castle-piece-model-pack item too — worth
+  checking this same mirror before assuming that's still blocked.
