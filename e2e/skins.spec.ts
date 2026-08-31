@@ -167,15 +167,23 @@ test("switching block material changes the visual of newly-placed pieces", async
 
   const viewport = page.viewportSize();
   if (!viewport) throw new Error("no viewport size");
-  const groundX = viewport.width / 2;
   const groundY = viewport.height * 0.75;
+  // Widely separated screen X positions, not a small pixel delta — see
+  // e2e/castle-placement.spec.ts's "defaults to the Keep structure type"
+  // test for why a modest offset isn't reliably enough (a click this near
+  // the camera covers less world distance per pixel than it looks, so a
+  // too-close second click can overlap the first and get silently
+  // rejected by validatePlacement, leaving __getLastPlaced* pointing at
+  // the same, first piece).
+  const leftX = viewport.width * 0.2;
+  const rightX = viewport.width * 0.8;
 
-  await page.mouse.click(groundX, groundY);
+  await page.mouse.click(leftX, groundY);
   const sandstoneMapUuid = await page.evaluate(() => window.__getLastPlacedMapUuid?.());
   expect(sandstoneMapUuid).toBeTruthy();
 
   await page.locator("#dev-skin-panel button", { hasText: "Slate" }).click();
-  await page.mouse.click(groundX + 100, groundY);
+  await page.mouse.click(rightX, groundY);
   const slateMapUuid = await page.evaluate(() => window.__getLastPlacedMapUuid?.());
 
   expect(slateMapUuid).not.toBe(sandstoneMapUuid);
@@ -197,16 +205,18 @@ test("a block's real photographed texture loads in and takes over from the gener
   await page.goto("/");
   const viewport = page.viewportSize();
   if (!viewport) throw new Error("no viewport size");
-  const groundX = viewport.width / 2;
   const groundY = viewport.height * 0.75;
+  // Widely separated, same reasoning as the test above.
+  const leftX = viewport.width * 0.2;
+  const rightX = viewport.width * 0.8;
 
-  await page.mouse.click(groundX, groundY); // Sandstone is the default material
+  await page.mouse.click(leftX, groundY); // Sandstone is the default material
   await expect
     .poll(() => page.evaluate(() => window.__getLastPlacedColor?.()), { timeout: 5000 })
     .toBe(0xffffff);
 
   await page.locator("#dev-skin-panel button", { hasText: "Gold" }).click();
-  await page.mouse.click(groundX + 100, groundY);
+  await page.mouse.click(rightX, groundY);
   await expect
     .poll(() => page.evaluate(() => window.__getLastPlacedColor?.()), { timeout: 5000 })
     .toBe(0xd4af37);
