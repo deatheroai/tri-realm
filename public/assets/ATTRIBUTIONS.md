@@ -30,3 +30,18 @@ Source: [mrdoob/three.js](https://github.com/mrdoob/three.js),
   unused for now but available in the file if a future emote system wants them.
 
 CC0 — no attribution legally required, but credited here anyway for provenance.
+
+## `textures/{sandstone,slate,timber,gold}/*.jpg`
+
+Source: [ambientCG](https://ambientcg.com) materials `PavingStones001` (sandstone),
+`Rock001` (slate), `Wood001` (timber), `Metal001` (gold) — downloaded via the community
+[`@jgengine/assets`](https://github.com/Noisemaker111/jgengine) index's GitHub Releases
+mirror (`Noisemaker111/jgengine`, `packs` release), since ambientcg.com itself is blocked
+by this session's network policy but that mirror isn't (see `DECISIONS.md`).
+
+- All four: [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/) — ambientCG.
+- Downloaded at 1K resolution, resized to 512px and re-encoded as JPEG (quality 82) before
+  committing, to keep the bundle small — same reasoning as the models above. Color, normal
+  (GL convention), and roughness maps for all four; gold also carries a metalness map.
+
+CC0 — no attribution legally required, but credited here anyway for provenance.
