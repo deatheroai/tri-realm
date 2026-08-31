@@ -212,10 +212,31 @@ Only starts once Phase 1a has been reviewed and the direction holds.
   `castleStructures.test.ts`, updated `placement.test.ts`); 1 new E2E test
   confirms the default type and that switching type changes new
   placements; all pre-existing tests still pass unchanged.
-- `todo` Generic save/load of a `RealmMap` + entity state — tested against
-  land data first, but not land-specific in implementation.
-- `todo` E2E coverage: spawn on a land map, walk around, place a castle
-  piece, reload, confirm it's still there.
+- `done` Generic save/load of a `RealmMap` + entity state
+  (`src/world/realmMapStorage.ts`): `serializeRealmMap`/`deserializeRealmMap`
+  (structural validation, never throws — a corrupted/foreign save falls
+  back to null so the caller can start fresh instead of crashing) and
+  `saveRealmMap`/`loadRealmMap`/`clearRealmMap` keyed by `RealmMap.id`,
+  against an injected `RealmMapStorageDriver` (matches `localStorage`'s
+  shape) rather than the global directly — keeps the module pure/testable
+  under Vitest's DOM-less "node" environment, and the backend swappable
+  later. Realm-agnostic throughout: validated against land data (the only
+  realm that exists) but nothing in the module is land-specific.
+  `PlacedStructure` gained a `materialId` field (`src/world/realmMap.ts`)
+  so a restored piece rebuilds looking the way it was built, not reverting
+  to a default material — safe to add now since no real save existed
+  before this item. `main.ts` loads-or-creates the land map on startup
+  (falling back to fresh on any storage error), rebuilds a mesh per
+  restored structure, restores the player's last position from a restored
+  `EntityRef`, and saves after every successful placement (deliberately
+  not continuously/on-unload — land-walk's E2E tests reload mid-scenario
+  expecting a fresh spawn when nothing's been built yet). 9 new unit tests
+  (`realmMapStorage.test.ts`); existing tests updated for the new
+  `materialId` field.
+- `done` E2E coverage (`e2e/land-save-load.spec.ts`): walk, place a castle
+  piece, reload — the structure and the player's position both survive;
+  a separate test confirms a fresh visit with nothing saved still starts
+  clean. 2 new E2E tests; all pre-existing tests still pass unchanged.
 - `blocked` (on Phase 2/3 existing) Land↔air and land↔sea portal
   implementation — the `Portal` schema exists here, but wiring an actual
   transition needs a real target realm to land in.

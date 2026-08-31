@@ -1,7 +1,9 @@
 import type { RealmMap } from "../world/realmMap";
 import type { TerrainPlacementRule } from "../world/placementValidation";
 
-const LAND_MAP_ID = "land-01";
+/** Also this land map's `RealmMap.id`, and the key `saveRealmMap`/
+ * `loadRealmMap` (`src/world/realmMapStorage.ts`) persist it under. */
+export const LAND_MAP_ID = "land-01";
 
 /** Square ground footprint — shared by the RealmMap's `bounds` and
  * scene.ts's rendered ground mesh so the two can't drift apart, the same
@@ -12,9 +14,11 @@ export const LAND_MAP_SIZE = 50;
  * The hardcoded Phase 1a land map, now expressed as a real `RealmMap`
  * instead of scattered constants. `structures` starts empty — pieces are
  * added at runtime via `addStructure` as the player places them.
- * `entities`/`portals` stay empty until they have a real consumer
- * (save/load for entities, a scoped air/sea realm for portals) — see
- * `src/world/realmMap.ts`.
+ * `entities` starts empty too but now has a real consumer:
+ * `main.ts` fills it with the player's current position right before
+ * saving (`src/world/realmMapStorage.ts`), so a reload can restore where
+ * they were, not just what they built. `portals` stays empty until a
+ * scoped air/sea realm gives it something to point at.
  */
 export function createLandRealmMap(): RealmMap {
   return {

@@ -71,6 +71,14 @@ that operate on it are written **once** and reused by all three realms:
 
 - **Map loader** — parses a `RealmMap`, regardless of which realm it's for.
 - **Save/load** — persists/restores `RealmMap` + entity state generically.
+  Implemented (`BACKLOG.md` Phase 1b) in `src/world/realmMapStorage.ts`:
+  serialize/validate/deserialize plus save/load/clear against an injected
+  storage driver (matches `localStorage`'s shape) rather than the global
+  directly, so the module stays realm-agnostic and testable without a DOM.
+  `main.ts` is the only place that wires in the real `window.localStorage`
+  and decides *when* to save (on placement) and *what* counts as entity
+  state to persist (the player's current position) — the module itself
+  doesn't know any of that.
 - **Structure placement validation** — checks a proposed `PlacedStructure`
   against `terrain`/existing structures; realm-specific rules (e.g. "can't
   place a castle on open water" vs. "can place a dock at the shoreline")
