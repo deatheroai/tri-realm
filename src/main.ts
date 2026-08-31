@@ -6,15 +6,16 @@ import { TouchJoystick } from "./input/touchJoystick";
 import { combineMoveInputs } from "./input/combineMoveInputs";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
-import { createLandRealmMap, landTerrainPlacementRule } from "./land/landRealmMap";
+import { createLandRealmMap, landTerrainPlacementRule, LAND_MAP_ID } from "./land/landRealmMap";
 import { createCastlePieceMesh, castlePieceGroundOffset } from "./land/placement";
 import {
   CASTLE_STRUCTURE_TYPES,
   DEFAULT_CASTLE_STRUCTURE_TYPE_ID,
   findCastleStructureType,
 } from "./land/castleStructures";
-import { addStructure, sampleTerrainHeight } from "./world/realmMap";
+import { addStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
+import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
 import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
@@ -59,7 +60,23 @@ window.addEventListener("resize", onResize);
 // realmMap.ts, src/land/landRealmMap.ts) instead of hardcoded constants —
 // `landMap` is reassigned (immutably) as structures are placed, mirroring
 // how `movement` is reassigned each frame below.
-let landMap = createLandRealmMap();
+//
+// A previous session's save (src/world/realmMapStorage.ts) is restored
+// here if one exists; `localStorage` can throw (private browsing, storage
+// disabled) or hold a corrupted/foreign value, so a failure here falls
+// back to a fresh map rather than breaking the app.
+const PLAYER_ENTITY_ID = "player";
+
+function loadOrCreateLandMap(): RealmMap {
+  try {
+    return loadRealmMap(LAND_MAP_ID, window.localStorage) ?? createLandRealmMap();
+  } catch (err) {
+    console.warn("Failed to load saved land map, starting fresh:", err);
+    return createLandRealmMap();
+  }
+}
+
+let landMap = loadOrCreateLandMap();
 
 // Same terrain the ground mesh itself is built from (scene.ts) — movement
 // collision and the rendered terrain can't drift apart, and both now go
@@ -70,7 +87,7 @@ const input = new KeyboardInput();
 
 const structuresHud = document.getElementById("hud-structures");
 
-function updateStructuresHud(lastPosition?: THREE.Vector3): void {
+function updateStructuresHud(lastPosition?: Vec3): void {
   if (!structuresHud) return;
   const placedCount = landMap.structures.length;
   structuresHud.textContent = `Structures: ${placedCount}`;
@@ -81,7 +98,10 @@ function updateStructuresHud(lastPosition?: THREE.Vector3): void {
     structuresHud.dataset.lastZ = lastPosition.z.toFixed(3);
   }
 }
-updateStructuresHud();
+// A restored save's last structure counts as "last placed" too, so the
+// HUD (and E2E assertions against it) reflect a reload the same way they
+// reflect a fresh placement.
+updateStructuresHud(landMap.structures[landMap.structures.length - 1]?.position);
 
 // Test-only hook: projects a world point to screen pixels the same way the
 // renderer does, so E2E tests can click a placed piece's actual position
@@ -138,6 +158,32 @@ let currentStructureTypeId = DEFAULT_CASTLE_STRUCTURE_TYPE_ID;
 // — a structure type's `dimensions` already has the shape it wants.
 const castleStructureFootprintOf = (typeId: string) => findCastleStructureType(typeId).dimensions;
 
+// `landMap.structures` is data only — a restored save has no meshes yet,
+// so rebuild one per structure (same type/material it was placed with) and
+// add it to the scene before the first frame renders.
+for (const structure of landMap.structures) {
+  const restoredPiece = createCastlePieceMesh(structure.type, structure.materialId);
+  restoredPiece.position.set(structure.position.x, structure.position.y, structure.position.z);
+  scene.add(restoredPiece);
+  placedMeshes.set(structure.id, restoredPiece);
+}
+
+// Saved on every successful placement (not continuously/on-unload — the
+// existing land-walk E2E tests reload mid-scenario and rely on a fresh
+// spawn when nothing's been built yet, so persistence is deliberately
+// scoped to "you built something," not every frame of movement).
+function persistLandMap(): void {
+  try {
+    const mapWithEntities: RealmMap = {
+      ...landMap,
+      entities: [{ id: PLAYER_ENTITY_ID, position: movement.position }],
+    };
+    saveRealmMap(mapWithEntities, window.localStorage);
+  } catch (err) {
+    console.warn("Failed to save land map:", err);
+  }
+}
+
 function placeCastlePieceAt(clientX: number, clientY: number): void {
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
   pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
@@ -172,12 +218,14 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
     type: currentStructureTypeId,
     position,
     rotation: 0,
+    materialId: currentBlockMaterialId,
   });
   landMap = map;
   placedMeshes.set(structure.id, piece);
 
   scene.add(piece);
   updateStructuresHud(piece.position);
+  persistLandMap();
 }
 
 // The touch-zone (joystick) only becomes pointer-interactive on touch
@@ -243,8 +291,12 @@ if (devStructurePanel) {
 
 const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
 
+// Resume where the player left off if a save had their position; otherwise
+// the usual fresh-spawn point.
+const savedPlayerPosition = landMap.entities.find((e) => e.id === PLAYER_ENTITY_ID)?.position;
+
 let movement: LandMovementState = {
-  position: { x: 0, y: sampleTerrainHeight(landMap.terrain, 0, 0), z: 0 },
+  position: savedPlayerPosition ?? { x: 0, y: sampleTerrainHeight(landMap.terrain, 0, 0), z: 0 },
   velocityY: 0,
 };
 

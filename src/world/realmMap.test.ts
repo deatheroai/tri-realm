@@ -31,6 +31,7 @@ describe("addStructure", () => {
       type: "castle-piece-placeholder",
       position: { x: 1, y: 2, z: 3 },
       rotation: 0,
+      materialId: "stone",
     });
 
     expect(map.structures).toHaveLength(0); // original untouched
@@ -45,6 +46,7 @@ describe("addStructure", () => {
       type: "castle-piece-placeholder",
       position: { x: 1, y: 2, z: 3 },
       rotation: 0.5,
+      materialId: "stone",
     });
 
     expect(structure.id).toBeTruthy();
@@ -52,13 +54,14 @@ describe("addStructure", () => {
     expect(structure.type).toBe("castle-piece-placeholder");
     expect(structure.position).toEqual({ x: 1, y: 2, z: 3 });
     expect(structure.rotation).toBe(0.5);
+    expect(structure.materialId).toBe("stone");
   });
 
   it("generates distinct ids for successive structures on the same map", () => {
     const map = emptyLandMap();
 
-    const first = addStructure(map, { type: "a", position: { x: 0, y: 0, z: 0 }, rotation: 0 });
-    const second = addStructure(first.map, { type: "b", position: { x: 1, y: 0, z: 1 }, rotation: 0 });
+    const first = addStructure(map, { type: "a", position: { x: 0, y: 0, z: 0 }, rotation: 0, materialId: "stone" });
+    const second = addStructure(first.map, { type: "b", position: { x: 1, y: 0, z: 1 }, rotation: 0, materialId: "wood" });
 
     expect(second.structure.id).not.toBe(first.structure.id);
     expect(second.map.structures.map((s) => s.id)).toEqual([first.structure.id, second.structure.id]);

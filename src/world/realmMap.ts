@@ -54,6 +54,11 @@ export interface PlacedStructure {
   position: Vec3;
   rotation: number;
   realmMapId: string;
+  /** Which block material (`src/skins/blockMaterials.ts`) this piece was
+   * built with — stored per-instance, not just picked at creation time, so
+   * a reload (`src/world/realmMapStorage.ts`) can rebuild the same-looking
+   * piece instead of every restored piece reverting to a default look. */
+  materialId: string;
 }
 
 /** An avatar/NPC currently occupying this map. Not yet populated for the

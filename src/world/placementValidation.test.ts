@@ -40,7 +40,7 @@ describe("validatePlacement", () => {
   });
 
   it("rejects a placement that genuinely overlaps an existing structure", () => {
-    const map: RealmMap = { ...emptyMap(), structures: [{ id: "s1", type: "cube", position: { x: 0, y: 0, z: 0 }, rotation: 0, realmMapId: "land-01" }] };
+    const map: RealmMap = { ...emptyMap(), structures: [{ id: "s1", type: "cube", position: { x: 0, y: 0, z: 0 }, rotation: 0, realmMapId: "land-01", materialId: "stone" }] };
 
     const result = validatePlacement(map, "cube", { x: 0.2, y: 0, z: 0.2 }, footprintOf, alwaysWalkable);
 
@@ -48,7 +48,7 @@ describe("validatePlacement", () => {
   });
 
   it("allows stacking directly on top of an existing structure (touching, not overlapping)", () => {
-    const map: RealmMap = { ...emptyMap(), structures: [{ id: "s1", type: "cube", position: { x: 0, y: 0.5, z: 0 }, rotation: 0, realmMapId: "land-01" }] };
+    const map: RealmMap = { ...emptyMap(), structures: [{ id: "s1", type: "cube", position: { x: 0, y: 0.5, z: 0 }, rotation: 0, realmMapId: "land-01", materialId: "stone" }] };
 
     // Same x/z footprint, but sitting exactly on top: centers 1 unit apart
     // for two 1-unit-tall cubes — flush, not overlapping.
@@ -58,7 +58,7 @@ describe("validatePlacement", () => {
   });
 
   it("does not reject a placement far away from any existing structure", () => {
-    const map: RealmMap = { ...emptyMap(), structures: [{ id: "s1", type: "cube", position: { x: -4, y: 0, z: -4 }, rotation: 0, realmMapId: "land-01" }] };
+    const map: RealmMap = { ...emptyMap(), structures: [{ id: "s1", type: "cube", position: { x: -4, y: 0, z: -4 }, rotation: 0, realmMapId: "land-01", materialId: "stone" }] };
 
     const result = validatePlacement(map, "cube", { x: 4, y: 0, z: 4 }, footprintOf, alwaysWalkable);
 
