@@ -223,3 +223,76 @@ test("a block's real photographed texture loads in and takes over from the gener
 
   expect(errors).toEqual([]);
 });
+
+// The air avatar (src/air/airScene.ts, Phase 2) shares AvatarView with
+// land's — one skin choice, not one per realm — see main.ts's
+// airAvatarView. These live in e2e/skins.spec.ts rather than
+// e2e/air-flight.spec.ts (World's file) since this is Skins-track
+// behavior, just exercised through the Air realm.
+test.describe("air avatar shares Skins' skin-switching with land", () => {
+  test("Fox is the default in the air realm too, without console errors", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
+    page.on("console", (msg) => {
+      if (msg.type() === "error") errors.push(msg.text());
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()), { timeout: 5000 })
+      .toBe("air");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("fox");
+    expect(errors).toEqual([]);
+  });
+
+  test("switching skin while in the air realm updates the air avatar", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()), { timeout: 5000 })
+      .toBe("air");
+
+    await page.locator("#dev-skin-panel button", { hasText: "Robot" }).click();
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("robot");
+  });
+
+  test("a skin chosen in the air realm carries over to land, and vice versa", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()), { timeout: 5000 })
+      .toBe("air");
+
+    await page.locator("#dev-skin-panel button", { hasText: "Robot" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("robot");
+
+    await page.getByRole("button", { name: "Land" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()), { timeout: 5000 })
+      .toBe("land");
+    // Land's own AvatarView already had this skin queued up from the same
+    // button click above — no need to click anything again.
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("robot");
+
+    await page.locator("#dev-skin-panel button", { hasText: "Capsule" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("capsule");
+
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("capsule");
+  });
+});

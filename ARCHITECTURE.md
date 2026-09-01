@@ -187,7 +187,31 @@ to game logic.
   turns the model to face its actual movement direction — necessary once
   a skin has a real "front" (unlike the rotationally-symmetric capsule).
 - glTF loads are cached by URL (module-level `Map`) so switching back to
-  an already-loaded skin is instant.
+  an already-loaded skin is instant — but the cached scene graph is never
+  handed out directly. `buildVisual` clones it (`SkeletonUtils`' `clone`,
+  not `Object3D.clone` — these are skinned/animated meshes, and a plain
+  clone doesn't rebuild the skeleton's bone bindings) before adding it to
+  a view's root. That's what makes `AvatarView` genuinely reusable across
+  more than one realm at once (below) rather than land-specific: a
+  three.js `Object3D` can only have one parent, so two views both
+  wanting "Fox" loaded at the same time would otherwise fight over the
+  same instance — whichever set it last would silently steal the model
+  out from under the other.
+- **Realm-agnostic by construction, proven by a second realm using it**:
+  `main.ts` holds two independent `AvatarView` instances — one per
+  realm's own avatar `Group` (land's from `scene.ts`, air's from
+  `src/air/airScene.ts`) — since both realms' scenes persist
+  simultaneously (only one renders per frame, per the "no continuous
+  blending" note above) and each therefore needs its own live visual.
+  The dev skin panel drives both together on every click, so the
+  player's chosen skin is one shared identity, not a separate choice per
+  realm; each `AvatarView.setSkin` no-ops when already on that skin, so
+  this is safe regardless of which realm happens to be active. Air uses
+  the same `moveInputToAnimationState`/`faceDirection` calls land does,
+  against its own horizontal `MoveInput` — a real air-specific mapping
+  (e.g. accounting for vertical velocity, hover vs. glide vs. dive) is
+  future refinement, not required for the skin system itself to work
+  correctly in a second realm.
 
 ### Block materials (`src/skins/blockMaterials.ts`, `src/skins/proceduralTextures.ts`)
 

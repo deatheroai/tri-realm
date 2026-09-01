@@ -50,7 +50,40 @@ describe("AvatarView", () => {
 
     expect(view.skinId).toBe("fox");
     expect(root.children).toHaveLength(1);
-    expect(root.children[0]).toBe(fakeModel);
+    // Not fakeModel itself — AvatarView clones the loaded scene graph (see
+    // the two-views-share-one-skin test below for why) — but a real clone
+    // of it, not some unrelated object.
+    expect(root.children[0]).not.toBe(fakeModel);
+    expect(root.children[0]).toBeInstanceOf(THREE.Group);
+  });
+
+  it("gives two AvatarView instances their own independent visual for the same skin, instead of fighting over one shared object", async () => {
+    // A real regression: land's and air's AvatarView (src/main.ts) can both
+    // have "fox" selected at once. Before AvatarView cloned the loaded
+    // scene graph, the second view.setSkin("fox") would silently steal the
+    // model out from under the first (a three.js Object3D can only have
+    // one parent) — this asserts both roots keep their own visible child.
+    const fakeModel = new THREE.Group();
+    fakeModel.add(new THREE.Mesh(new THREE.BoxGeometry()));
+    const fakeClip = new THREE.AnimationClip("Walk", 1, []);
+    vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue({
+      scene: fakeModel,
+      animations: [fakeClip],
+      scenes: [fakeModel],
+      cameras: [],
+      asset: {},
+    } as never);
+
+    const rootA = new THREE.Group();
+    const rootB = new THREE.Group();
+    const viewA = new AvatarView(rootA);
+    const viewB = new AvatarView(rootB);
+
+    await Promise.all([viewA.setSkin("fox"), viewB.setSkin("fox")]);
+
+    expect(rootA.children).toHaveLength(1);
+    expect(rootB.children).toHaveLength(1);
+    expect(rootA.children[0]).not.toBe(rootB.children[0]);
   });
 
   it("falls back to the procedural capsule if the gltf model fails to load", async () => {

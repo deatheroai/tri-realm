@@ -53,16 +53,25 @@ const ground = groundOrUndefined;
 
 // Air realm (BACKLOG.md Phase 2) — its own scene/avatar/movement, switched
 // to live via the dev realm panel below. No RealmMap wiring yet here (no
-// placement/save-load in air's scope) and no AvatarView/skin-switching
-// either — this is air's Phase 1a-equivalent rough vertical slice: prove
-// the flight controller and open-sky content, same visual-first
-// sequencing land started with, before generalizing further.
+// placement/save-load in air's scope) — this is still air's Phase
+// 1a-equivalent rough vertical slice for that. Skin-switching *is* wired
+// (below) — AvatarView is realm-agnostic by construction, and the player's
+// chosen skin should carry over between realms, not reset on Land<->Air.
 const airScene = createAirScene();
 const airAvatarOrUndefined = airScene.getObjectByName("avatar");
 if (!airAvatarOrUndefined) {
   throw new Error("Missing avatar in air scene");
 }
 const airAvatar = airAvatarOrUndefined;
+
+// A second, independent AvatarView — not a shared one — because land's and
+// air's avatar live in separate Scenes/Groups at once (only one is
+// rendered per frame, but both persist). AvatarView itself clones its
+// loaded glTF scene graph per instance (src/skins/avatarView.ts) precisely
+// so two views can hold the same skin simultaneously without one stealing
+// the model out from under the other.
+const airAvatarView = new AvatarView(airAvatar);
+void airAvatarView.setSkin(DEFAULT_AVATAR_SKIN_ID);
 
 function onResize(): void {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -127,6 +136,7 @@ declare global {
   interface Window {
     __projectToScreen?: (x: number, y: number, z: number) => { x: number; y: number };
     __getAvatarSkinId?: () => string;
+    __getAirAvatarSkinId?: () => string;
     __getAvatarWorldHeight?: () => number;
     __getLastPlacedColor?: () => number | undefined;
     __getLastPlacedMapUuid?: () => string | undefined;
@@ -143,6 +153,7 @@ window.__projectToScreen = (x, y, z) => {
   };
 };
 window.__getAvatarSkinId = () => avatarView.skinId;
+window.__getAirAvatarSkinId = () => airAvatarView.skinId;
 // World-space height of whatever's currently rendering inside the avatar
 // group — lets skin scale be checked/tuned against a real number instead
 // of by eye (see BACKLOG.md: Robot originally shipped far too tall).
@@ -286,7 +297,15 @@ if (devSkinPanel) {
   for (const skin of AVATAR_SKINS) {
     const btn = document.createElement("button");
     btn.textContent = skin.label;
-    btn.addEventListener("click", () => void avatarView.setSkin(skin.id));
+    // Drives both realms' AvatarView together — the player's chosen skin
+    // is one shared choice, not a separate one per realm (see the
+    // airAvatarView comment above). Each AvatarView is independently a
+    // no-op if this skin is already selected, so switching realms and
+    // then clicking the same skin again is harmless.
+    btn.addEventListener("click", () => {
+      void avatarView.setSkin(skin.id);
+      void airAvatarView.setSkin(skin.id);
+    });
     avatarRow.appendChild(btn);
   }
 
@@ -412,11 +431,17 @@ function animate(): void {
     targetPosition = movement.position;
     cameraLookAtY = movement.position.y + 1;
   } else {
-    // Air has no skin-switching/animation yet (todo — see BACKLOG.md);
-    // the avatar stays the plain procedural capsule airScene.ts builds.
     const vertical = input.getVerticalInput();
     airMovement = stepAirMovement(airMovement, moveInput, vertical, dt);
     airAvatar.position.set(airMovement.position.x, airMovement.position.y, airMovement.position.z);
+
+    // Same animation-state mapping land uses — a horizontal-only
+    // idle/walk/run intent, reused as-is for air's idle/glide/boost rather
+    // than inventing a separate air-specific mapping (e.g. accounting for
+    // vertical velocity) this cycle; a real refinement, not a blocker.
+    airAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
+    airAvatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
+    airAvatarView.update(dt);
 
     targetPosition = airMovement.position;
     cameraLookAtY = airMovement.position.y;
