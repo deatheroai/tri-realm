@@ -16,6 +16,8 @@ import {
 import { addStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
+import { createAirScene } from "./air/airScene";
+import { stepAirMovement, type AirMovementState } from "./air/airMovement";
 import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
@@ -48,6 +50,19 @@ if (!groundOrUndefined) {
   throw new Error("Missing ground in scene");
 }
 const ground = groundOrUndefined;
+
+// Air realm (BACKLOG.md Phase 2) — its own scene/avatar/movement, switched
+// to live via the dev realm panel below. No RealmMap wiring yet here (no
+// placement/save-load in air's scope) and no AvatarView/skin-switching
+// either — this is air's Phase 1a-equivalent rough vertical slice: prove
+// the flight controller and open-sky content, same visual-first
+// sequencing land started with, before generalizing further.
+const airScene = createAirScene();
+const airAvatarOrUndefined = airScene.getObjectByName("avatar");
+if (!airAvatarOrUndefined) {
+  throw new Error("Missing avatar in air scene");
+}
+const airAvatar = airAvatarOrUndefined;
 
 function onResize(): void {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -116,6 +131,8 @@ declare global {
     __getLastPlacedColor?: () => number | undefined;
     __getLastPlacedMapUuid?: () => string | undefined;
     __getLastPlacedType?: () => string | undefined;
+    __getActiveRealm?: () => "land" | "air";
+    __getAirAltitude?: () => number;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -197,6 +214,11 @@ function persistLandMap(): void {
 }
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
+  // Placement is land-only for now — the ground/placedMeshes raycast
+  // targets belong to the land scene, which isn't even rendered while
+  // viewing air.
+  if (activeRealm !== "land") return;
+
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
   pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(pointerNdc, camera);
@@ -301,6 +323,34 @@ if (devStructurePanel) {
   devStructurePanel.appendChild(structureRow);
 }
 
+// Which realm's scene/movement module is currently active. No portals yet
+// (BACKLOG.md Phase 2's last item, blocked on Phase 3 too) — this dev-only
+// switcher is the temporary bridge that makes air reviewable now instead
+// of waiting on real portal mechanics, same "in-app preview" spirit as the
+// skin/structure dev panels above.
+type Realm = "land" | "air";
+let activeRealm: Realm = "land";
+
+const devRealmPanel = document.getElementById("dev-realm-panel");
+if (devRealmPanel) {
+  const realmRow = document.createElement("div");
+  realmRow.textContent = "Realm: ";
+  const realms: Array<{ id: Realm; label: string }> = [
+    { id: "land", label: "Land" },
+    { id: "air", label: "Air" },
+  ];
+  for (const realm of realms) {
+    const btn = document.createElement("button");
+    btn.textContent = realm.label;
+    btn.addEventListener("click", () => {
+      activeRealm = realm.id;
+    });
+    realmRow.appendChild(btn);
+  }
+  devRealmPanel.appendChild(realmRow);
+}
+window.__getActiveRealm = () => activeRealm;
+
 const ZERO_INPUT: MoveInput = { moveX: 0, moveZ: 0, run: false };
 
 // Resume where the player left off if a save had their position; otherwise
@@ -311,6 +361,18 @@ let movement: LandMovementState = {
   position: savedPlayerPosition ?? { x: 0, y: sampleTerrainHeight(landMap.terrain, 0, 0), z: 0 },
   velocityY: 0,
 };
+
+// Air has no saved state yet (todo, once air's own Phase 2b hardening
+// wires in the RealmMap/save-load path land already has) — always spawns
+// fresh at the air scene's own starting position.
+let airMovement: AirMovementState = {
+  position: { x: airAvatar.position.x, y: airAvatar.position.y, z: airAvatar.position.z },
+  velocity: { x: 0, y: 0, z: 0 },
+};
+// Test-only hook: #hud-position only ever displays x/z (land has no
+// vertical movement to show), so this is how E2E coverage verifies
+// ascend/descend actually changes altitude.
+window.__getAirAltitude = () => airMovement.position.y;
 
 const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
 
@@ -327,20 +389,40 @@ function animate(): void {
     input.getMoveInput(),
     touchJoystick?.getMoveInput() ?? ZERO_INPUT,
   );
-  movement = stepLandMovement(movement, moveInput, groundHeightAt, dt);
-  avatar.position.set(
-    movement.position.x,
-    movement.position.y + AVATAR_GROUND_OFFSET,
-    movement.position.z,
-  );
 
-  // Skin-swapping (AvatarView) is purely visual — it never touches
-  // movement.position or stepLandMovement's inputs, only what's rendered.
-  avatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
-  avatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
-  avatarView.update(dt);
+  // Only the active realm's movement module runs each frame — a realm
+  // transition swaps which one, no continuous blending (ARCHITECTURE.md).
+  let targetPosition: Vec3;
+  let cameraLookAtY: number;
 
-  const target = desiredCameraPosition(movement.position, cameraOffset);
+  if (activeRealm === "land") {
+    movement = stepLandMovement(movement, moveInput, groundHeightAt, dt);
+    avatar.position.set(
+      movement.position.x,
+      movement.position.y + AVATAR_GROUND_OFFSET,
+      movement.position.z,
+    );
+
+    // Skin-swapping (AvatarView) is purely visual — it never touches
+    // movement.position or stepLandMovement's inputs, only what's rendered.
+    avatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
+    avatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
+    avatarView.update(dt);
+
+    targetPosition = movement.position;
+    cameraLookAtY = movement.position.y + 1;
+  } else {
+    // Air has no skin-switching/animation yet (todo — see BACKLOG.md);
+    // the avatar stays the plain procedural capsule airScene.ts builds.
+    const vertical = input.getVerticalInput();
+    airMovement = stepAirMovement(airMovement, moveInput, vertical, dt);
+    airAvatar.position.set(airMovement.position.x, airMovement.position.y, airMovement.position.z);
+
+    targetPosition = airMovement.position;
+    cameraLookAtY = airMovement.position.y;
+  }
+
+  const target = desiredCameraPosition(targetPosition, cameraOffset);
   const t = smoothingFactor(0.12, dt);
   const nextCameraPos = lerpVec3(
     { x: camera.position.x, y: camera.position.y, z: camera.position.z },
@@ -348,14 +430,14 @@ function animate(): void {
     t,
   );
   camera.position.set(nextCameraPos.x, nextCameraPos.y, nextCameraPos.z);
-  camera.lookAt(movement.position.x, movement.position.y + 1, movement.position.z);
+  camera.lookAt(targetPosition.x, cameraLookAtY, targetPosition.z);
 
   if (hud) {
-    hud.textContent = `x: ${movement.position.x.toFixed(2)}  z: ${movement.position.z.toFixed(2)}`;
-    hud.dataset.x = movement.position.x.toFixed(3);
-    hud.dataset.z = movement.position.z.toFixed(3);
+    hud.textContent = `x: ${targetPosition.x.toFixed(2)}  z: ${targetPosition.z.toFixed(2)}`;
+    hud.dataset.x = targetPosition.x.toFixed(3);
+    hud.dataset.z = targetPosition.z.toFixed(3);
   }
 
-  renderer.render(scene, camera);
+  renderer.render(activeRealm === "land" ? scene : airScene, camera);
 }
 animate();

@@ -1,3 +1,5 @@
+import { computeVerticalInput } from "./verticalInput";
+
 export interface MoveInput {
   moveX: number; // -1 (left) .. 1 (right)
   moveZ: number; // -1 (forward) .. 1 (backward)
@@ -42,5 +44,10 @@ export class KeyboardInput {
 
   getMoveInput(): MoveInput {
     return computeMoveInput(this.pressed);
+  }
+
+  /** Air's vertical axis (ascend/descend) — land ignores this entirely. */
+  getVerticalInput(): number {
+    return computeVerticalInput(this.pressed);
   }
 }

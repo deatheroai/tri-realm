@@ -66,6 +66,12 @@ interface PlacedStructure {
 }
 ```
 
+`TerrainField`'s `kind` now has two real variants
+(`src/world/realmMap.ts`): `"land-heightfield"` and `"air-open-volume"`
+(air's is a nominal baseline only — flight has no ground collision to
+sample it for). `sampleTerrainHeight` is the one place that dispatches on
+`kind`; sea adds a third case there once it's scoped, same shape.
+
 Because every realm's map is an instance of this one schema, the systems
 that operate on it are written **once** and reused by all three realms:
 
@@ -124,8 +130,17 @@ realm's map the avatar currently occupies:
   cares which device produced its input — mobile support was added without
   touching `stepLandMovement` at all.
 - **Land module:** walk/run, gravity, ground collision, jump.
-- **Air module** *(built when air realm is scoped)*: flight — free
-  movement with its own feel (lift/momentum, not literally freefall-only).
+- **Air module** (`src/air/airMovement.ts`, `BACKLOG.md` Phase 2): free 3D
+  flight, no gravity or ground collision (air is "mostly open volume").
+  Horizontal movement reuses land's `MoveInput` (`moveX`/`moveZ`, `run`
+  doubling as boost); vertical is a separate axis
+  (`src/input/verticalInput.ts` — Space/Control, land has no equivalent).
+  Its distinct feel: velocity exponentially approaches a target velocity
+  each frame rather than snapping to it (same frame-rate-independent
+  technique as `followCamera.ts`'s `smoothingFactor`) — genuine
+  lift/momentum, not just "land's controller with gravity switched off."
+  A dev-only realm switcher (`#dev-realm-panel`) makes this reviewable now
+  without waiting on real land↔air portals.
 - **Sea module** *(built when sea realm is scoped)*: swim/buoyancy —
   resistance and vertical drift distinct from both land and air.
 

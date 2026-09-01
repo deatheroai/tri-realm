@@ -1,6 +1,13 @@
 import type { Vec3 } from "../math/vec3";
 import { terrainHeightAt as landHeightfieldAt } from "../land/terrain";
 
+// Nominal reference altitude for the air realm's terrain — flight
+// (src/air/airMovement.ts) has no gravity or ground collision, so
+// nothing reads this for physics; kept so every TerrainField kind still
+// has a real sampler, the same way land's does, rather than silently
+// having none once a second realm exists.
+const AIR_OPEN_VOLUME_BASELINE = 0;
+
 /**
  * The shared `RealmMap` schema from `ARCHITECTURE.md` — the shape every
  * realm's (land/air/sea) map data conforms to, regardless of which realm
@@ -12,11 +19,11 @@ import { terrainHeightAt as landHeightfieldAt } from "../land/terrain";
  */
 
 /**
- * A realm's terrain, described generically enough that air/sea can add
- * their own kinds later without changing this type's consumers. Land is
- * the only realm built so far, so there's exactly one variant.
+ * A realm's terrain, described generically enough that a new realm can
+ * add its own kind later without changing this type's consumers. Sea
+ * doesn't exist yet, so there are still just the two.
  */
-export type TerrainField = { kind: "land-heightfield" };
+export type TerrainField = { kind: "land-heightfield" } | { kind: "air-open-volume" };
 
 /**
  * Samples a `TerrainField`'s height at a world (x, z) coordinate. This
@@ -24,17 +31,19 @@ export type TerrainField = { kind: "land-heightfield" };
  * formula" — everything else (movement collision, ground-mesh
  * generation) goes through here rather than importing a realm's formula
  * directly, so a `RealmMap`'s `terrain` field is genuinely
- * realm-agnostic to its callers. Air/sea add a `case` here once they're
- * scoped (`BACKLOG.md` Phase 2/3), matching how `ARCHITECTURE.md`
- * describes systems being "written once and reused by all three realms."
+ * realm-agnostic to its callers. Sea adds a `case` here once it's scoped
+ * (`BACKLOG.md` Phase 3), matching how `ARCHITECTURE.md` describes
+ * systems being "written once and reused by all three realms."
  */
 export function sampleTerrainHeight(terrain: TerrainField, x: number, z: number): number {
   switch (terrain.kind) {
     case "land-heightfield":
       return landHeightfieldAt(x, z);
+    case "air-open-volume":
+      return AIR_OPEN_VOLUME_BASELINE;
     default: {
-      const exhaustive: never = terrain.kind;
-      throw new Error(`No terrain sampler for kind: ${String(exhaustive)}`);
+      const exhaustive: never = terrain;
+      throw new Error(`No terrain sampler for kind: ${String((exhaustive as TerrainField).kind)}`);
     }
   }
 }
@@ -61,10 +70,10 @@ export interface PlacedStructure {
   materialId: string;
 }
 
-/** An avatar/NPC currently occupying this map. Not yet populated for the
- * player avatar — that starts once save/load (BACKLOG.md Phase 1b) gives
- * it a consumer; keeping it empty until then avoids syncing it every
- * frame for nothing to read. */
+/** An avatar/NPC currently occupying this map. Populated at save time
+ * (`src/world/realmMapStorage.ts` + `main.ts`), not synced continuously —
+ * kept empty between saves rather than updated every frame for nothing
+ * to read in the meantime. */
 export interface EntityRef {
   id: string;
   position: Vec3;

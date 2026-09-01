@@ -21,6 +21,12 @@ describe("sampleTerrainHeight", () => {
     expect(sampleTerrainHeight(terrain, 3, -7)).toBe(terrainHeightAt(3, -7));
     expect(sampleTerrainHeight(terrain, 12, 4)).toBe(terrainHeightAt(12, 4));
   });
+
+  it("returns a real, finite number for an air-open-volume terrain", () => {
+    const terrain = { kind: "air-open-volume" as const };
+
+    expect(Number.isFinite(sampleTerrainHeight(terrain, 3, -7))).toBe(true);
+  });
 });
 
 describe("addStructure", () => {
