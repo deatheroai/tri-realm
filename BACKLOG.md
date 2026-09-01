@@ -324,9 +324,30 @@ without a fresh check-in.
   ascend/descend, and switching back to land without cross-realm
   interference. **Review checkpoint: pending your look at the deployed
   app — try the Air button in the dev panel.**
-- `todo` Wire Skins' `AvatarView` (skin-switching/animation) to the air
-  avatar too — currently land-only; air always shows the plain procedural
-  capsule. Cross-track, not blocking.
+- `done` Wired Skins' `AvatarView` (skin-switching/animation) to the air
+  avatar. `main.ts` now holds a second, independent `AvatarView` for
+  `airAvatar` — both realms' avatar `Group`s persist at once (only one
+  scene renders per frame), so each needs its own live visual — driven
+  together by the same dev-panel skin buttons, so the player's chosen
+  skin carries across Land↔Air rather than resetting. Air reuses land's
+  `moveInputToAnimationState`/`faceDirection` against its own horizontal
+  `MoveInput` for now (a real air-specific animation mapping is future
+  refinement, not required for this to work).
+  **Found and fixed a real latent bug while wiring this in**: `AvatarView`
+  was handing out its cached glTF scene graph directly, reused byte-for-
+  byte across every `setSkin` call — harmless with only one consumer
+  (land, until now), but a three.js `Object3D` can only have one parent,
+  so a second simultaneous consumer (air) selecting the same skin would
+  silently steal the model out from under the first. Fixed in
+  `src/skins/avatarView.ts` with `SkeletonUtils`' `clone` (not
+  `Object3D.clone` — these are skinned/animated meshes and a plain clone
+  doesn't rebuild bone bindings), so every `AvatarView` gets its own
+  independent instance. 2 new unit tests (one directly reproducing two
+  views sharing one skin), 3 new E2E tests (air's own default, switching
+  while in air, and skin identity surviving a realm switch both
+  directions) — in `e2e/skins.spec.ts` since this is Skins-track
+  behavior, just exercised through the Air realm. Verified visually with
+  real screenshots of both Fox and Robot flying in the air realm.
 - `todo` Air `RealmMap` content (floating islands/platforms) as real
   `PlacedStructure`-equivalent data instead of the current hardcoded
   `FLOATING_PLATFORM_POSITIONS` array — part of air's own Phase 1b-style

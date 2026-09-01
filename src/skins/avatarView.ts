@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 import {
   AVATAR_SKINS,
   FALLBACK_AVATAR_SKIN_ID,
@@ -90,7 +91,14 @@ export class AvatarView {
 
     try {
       const gltf = await loadGltf(skin.modelUrl!);
-      const model = gltf.scene;
+      // Clone, don't reuse, the cached scene graph — loadGltf's cache can
+      // now be shared by more than one AvatarView at once (land's and
+      // air's, src/main.ts), and a three.js Object3D can only ever have
+      // one parent: adding gltf.scene to a second view's root would
+      // silently steal it out from under the first. SkeletonUtils' clone,
+      // not Object3D.clone — these are skinned/animated meshes, and a
+      // plain clone doesn't rebuild the skeleton's bone bindings.
+      const model = cloneSkinned(gltf.scene);
       model.scale.setScalar(skin.scale ?? 1);
 
       let mixer: THREE.AnimationMixer | null = null;
