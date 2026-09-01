@@ -28,13 +28,15 @@ each track edits its own section; see file ownership below for code.
 
 ### File ownership (minimizes merge conflicts between the two tracks)
 
-- **World owns:** `src/land/`, `src/math/`, `src/input/` (movement/
-  touch/keyboard — not the skin-switcher panel), `src/camera.ts`,
-  terrain/ground/landmark code in `src/scene.ts`, `e2e/land-*.spec.ts`,
-  `e2e/castle-placement.spec.ts`, `e2e/touch-controls.spec.ts`.
+- **World owns:** `src/land/`, `src/air/`, `src/world/`, `src/math/`,
+  `src/input/` (movement/touch/keyboard — not the skin-switcher panel),
+  `src/camera.ts`, terrain/ground/landmark code in `src/scene.ts`,
+  `e2e/land-*.spec.ts`, `e2e/air-*.spec.ts`, `e2e/castle-placement.spec.ts`,
+  `e2e/touch-controls.spec.ts`, and its own dev panels in `src/main.ts` /
+  `index.html` (`#dev-structure-panel`, `#dev-realm-panel`).
 - **Skins owns:** `src/skins/`, `public/assets/`, the avatar-`Group`
-  creation in `src/scene.ts`, the dev-panel wiring in `src/main.ts` /
-  `index.html`, `e2e/skins.spec.ts`.
+  creation in `src/scene.ts`, its own dev panel (`#dev-skin-panel`) in
+  `src/main.ts` / `index.html`, `e2e/skins.spec.ts`.
 - **Genuinely shared** (both tracks may touch — expect occasional
   overlap to resolve by hand, not a sign something's wrong): the rest of
   `src/main.ts` (both wire into the same per-frame loop), the rest of

@@ -116,7 +116,8 @@
         max-width: min(70vw, 320px);
       }
       #dev-skin-panel,
-      #dev-structure-panel {
+      #dev-structure-panel,
+      #dev-realm-panel {
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -129,14 +130,16 @@
         max-width: 100%;
       }
       #dev-skin-panel > div,
-      #dev-structure-panel > div {
+      #dev-structure-panel > div,
+      #dev-realm-panel > div {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 2px;
       }
       #dev-skin-panel button,
-      #dev-structure-panel button {
+      #dev-structure-panel button,
+      #dev-realm-panel button {
         font: inherit;
         color: #d9822b;
         background: rgba(217, 130, 43, 0.12);
@@ -146,7 +149,8 @@
         cursor: pointer;
       }
       #dev-skin-panel button:hover,
-      #dev-structure-panel button:hover {
+      #dev-structure-panel button:hover,
+      #dev-realm-panel button:hover {
         background: rgba(217, 130, 43, 0.25);
       }
     </style>
@@ -164,6 +168,7 @@
     <div id="dev-panels">
       <div id="dev-skin-panel">🔧 skins</div>
       <div id="dev-structure-panel">🏰 structures</div>
+      <div id="dev-realm-panel">🌍 realm</div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

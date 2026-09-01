@@ -289,14 +289,52 @@ Only starts once Phase 1a has been reviewed and the direction holds.
 
 ## Phase 2 — Air realm
 
-- `blocked` (on Phase 1b completing) Air realm scoping: movement feel,
-  floating terrain/platform content — needs its own design pass before
-  building, same way land got `ARCHITECTURE.md` treatment.
-- `todo` Flight avatar controller module — hardcoded/minimal content
-  first, same visual-first sequencing as land, before generalizing.
-- `todo` Air `RealmMap` content (floating islands/platforms).
+Phase 1b completed 2026-08-31/09-01, unblocking this phase per its own
+"blocked (on Phase 1b completing)" gate — content specifics for a new
+realm are left to my judgement as it's actually built, per the
+2026-08-26 world-model decision (`DECISIONS.md`), so this proceeded
+without a fresh check-in.
+
+- `done` Air realm scoping + flight avatar controller
+  (`src/air/airMovement.ts`, `src/air/airScene.ts`,
+  `src/air/airRealmMap.ts`) — this phase's design pass and its first
+  hardcoded/minimal content in one cycle, same visual-first sequencing
+  land's Phase 1a started with (a rough, reviewable slice before any
+  further generalizing). Free 3D flight: horizontal reuses land's
+  `MoveInput` (`run` doubles as boost), a new vertical axis
+  (`src/input/verticalInput.ts` — Space/Control, land has no equivalent)
+  drives ascend/descend, no gravity or ground collision. Distinct feel
+  from land: velocity exponentially approaches a target each frame
+  instead of snapping to it (same technique as the follow-camera's
+  smoothing) — genuine momentum, not land's controller with gravity
+  switched off. `createAirScene()` builds an open sky volume with
+  scattered floating platforms for parallax (`ARCHITECTURE.md`: each
+  realm gets its own realm-appropriate floating content) and a plain
+  procedural-capsule avatar — no skin-switching/animation wired to air
+  yet (`todo` below). `RealmMap`/`TerrainField` gained a real
+  `"air-open-volume"` kind (`src/world/realmMap.ts`) for schema
+  completeness, though nothing reads it for collision; `createAirRealmMap`
+  itself isn't wired into `main.ts` yet — no placement/save-load in air's
+  scope this cycle, mirroring how land's own `RealmMap` waited for
+  Phase 1b. Reviewable now via a new dev-only `#dev-realm-panel`
+  (Land/Air) — no portals needed yet. 19 new unit tests
+  (`airMovement.test.ts`, `airScene.test.ts`, `airRealmMap.test.ts`,
+  `verticalInput.test.ts`, plus 1 in `realmMap.test.ts`); 4 new E2E tests
+  (`e2e/air-flight.spec.ts`) cover realm switching, horizontal flight,
+  ascend/descend, and switching back to land without cross-realm
+  interference. **Review checkpoint: pending your look at the deployed
+  app — try the Air button in the dev panel.**
+- `todo` Wire Skins' `AvatarView` (skin-switching/animation) to the air
+  avatar too — currently land-only; air always shows the plain procedural
+  capsule. Cross-track, not blocking.
+- `todo` Air `RealmMap` content (floating islands/platforms) as real
+  `PlacedStructure`-equivalent data instead of the current hardcoded
+  `FLOATING_PLATFORM_POSITIONS` array — part of air's own Phase 1b-style
+  hardening pass, once this rough slice is reviewed. Wires
+  `createAirRealmMap` into `main.ts` for the first time.
 - `todo` Land↔air portal — exact flavor (stairway vs. hot-air-balloon) is
   a pending decision in `DECISIONS.md`; build whichever is chosen there.
+  Replaces the dev-only realm switcher with the real transition.
 
 ## Phase 3 — Sea realm
 
