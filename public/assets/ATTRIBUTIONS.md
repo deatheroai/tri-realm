@@ -1,6 +1,10 @@
 # Asset attributions
 
-Required credits for third-party assets bundled in `public/assets/`.
+Required credits for third-party assets bundled in `public/assets/`. Also
+surfaced in the deployed app itself (`src/skins/attributions.ts`, an
+"ⓘ Credits" toggle bottom-center) — this file is still the source of truth
+and the fuller explanation of provenance/licensing reasoning; keep both in
+sync when an entry here changes.
 
 ## `models/fox.glb`
 
@@ -14,7 +18,7 @@ Source: [KhronosGroup/glTF-Sample-Models](https://github.com/KhronosGroup/glTF-S
 - glTF conversion by @AsoboStudio and @scurest.
 
 The CC-BY component requires attribution wherever this asset (or a derivative) ships —
-keep this file, and carry the same credit into any future in-app credits screen.
+carried into the in-app credits screen (2026-09-02, see above) as well as this file.
 
 ## `models/robot.glb`
 

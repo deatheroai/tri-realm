@@ -153,6 +153,51 @@
       #dev-realm-panel button:hover {
         background: rgba(217, 130, 43, 0.25);
       }
+      /*
+       * Real, player-facing (unlike the dev panels above) — required by the
+       * Fox's CC BY 4.0 rigging/animation credit (public/assets/
+       * ATTRIBUTIONS.md), which legally needs attribution wherever the
+       * asset ships, not just in repo docs. Bottom-center: the only corner
+       * #hud-position/#hud-structures haven't already claimed.
+       */
+      #credits {
+        position: fixed;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        font: 12px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+        text-align: center;
+      }
+      #credits-toggle {
+        font: inherit;
+        color: #8f9bab;
+        opacity: 0.7;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 2px 6px;
+      }
+      #credits-toggle:hover {
+        opacity: 1;
+      }
+      #credits-panel {
+        display: none;
+        margin-top: 4px;
+        background: rgba(16, 21, 28, 0.85);
+        border: 1px solid rgba(143, 155, 171, 0.3);
+        border-radius: 6px;
+        padding: 8px 10px;
+        max-width: min(90vw, 480px);
+        text-align: left;
+        color: #8f9bab;
+      }
+      #credits-panel.open {
+        display: block;
+      }
+      #credits-panel a {
+        color: #d9822b;
+      }
     </style>
   </head>
   <body>
@@ -169,6 +214,10 @@
       <div id="dev-skin-panel">🔧 skins</div>
       <div id="dev-structure-panel">🏰 structures</div>
       <div id="dev-realm-panel">🌍 realm</div>
+    </div>
+    <div id="credits">
+      <button id="credits-toggle" type="button" aria-expanded="false">ⓘ Credits</button>
+      <div id="credits-panel"></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -13,7 +13,7 @@ import { AVATAR_SKINS } from "../src/skins/avatarSkins";
  * fixed corner).
  */
 async function boundingBoxesOverlap(page: Page): Promise<Array<{ a: string; b: string }>> {
-  const selectors = ["#hud-controls", "#hud-position", "#hud-structures", "#dev-panels > *"];
+  const selectors = ["#hud-controls", "#hud-position", "#hud-structures", "#dev-panels > *", "#credits"];
   const boxes: Array<{ label: string; box: { x: number; y: number; width: number; height: number } }> = [];
 
   for (const selector of selectors) {
@@ -294,5 +294,40 @@ test.describe("air avatar shares Skins' skin-switching with land", () => {
     await expect
       .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()), { timeout: 5000 })
       .toBe("capsule");
+  });
+});
+
+// Regression guard for the compliance gap this closes: the Fox's CC BY 4.0
+// rigging/animation (public/assets/ATTRIBUTIONS.md) legally requires
+// attribution wherever the asset ships — that credit needs to actually
+// reach a real player in the deployed app, not just live in a repo file.
+test.describe("in-app credits", () => {
+  test("is collapsed by default and reveals the required Fox rig credit on click", async ({ page }) => {
+    await page.goto("/");
+
+    const panel = page.locator("#credits-panel");
+    await expect(panel).not.toHaveClass(/open/);
+
+    await page.locator("#credits-toggle").click();
+    await expect(panel).toHaveClass(/open/);
+    await expect(panel).toContainText("tomkranis");
+    await expect(panel).toContainText("CC BY 4.0");
+
+    // A real, working link — not just text mentioning the license.
+    const licenseLink = panel.getByRole("link", { name: "CC BY 4.0" });
+    await expect(licenseLink).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
+  });
+
+  test("toggles closed again on a second click", async ({ page }) => {
+    await page.goto("/");
+
+    const toggle = page.locator("#credits-toggle");
+    const panel = page.locator("#credits-panel");
+
+    await toggle.click();
+    await expect(panel).toHaveClass(/open/);
+
+    await toggle.click();
+    await expect(panel).not.toHaveClass(/open/);
   });
 });
