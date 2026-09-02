@@ -221,6 +221,26 @@ surfaced.
   current steep ~31° elevation makes an elongated quadruped read as
   compressed/vertical rather than clearly "a fox." Not a blocker, just
   worth a look with real content in view.
+- `done` **In-app credits screen** — with the other Skins items this
+  cycle blocked (princess figure, castle-piece models) on external
+  access or World's file ownership, picked up something `public/assets/
+  ATTRIBUTIONS.md` itself had flagged as outstanding: "carry the same
+  credit into any future in-app credits screen." That screen didn't
+  exist — the Fox's CC BY 4.0 rigging/animation credit lived only in a
+  repo doc, not anywhere a real player of the deployed app would see it,
+  which is a genuine (if minor) compliance gap given CC BY legally
+  requires attribution wherever the asset ships.
+  `src/skins/attributions.ts` is a structured, tested mirror of the
+  markdown file; a small "ⓘ Credits" toggle (bottom-center — the one
+  corner `#hud-position`/`#hud-structures` hadn't claimed) expands to
+  list every bundled asset with real license/creator links. Real,
+  player-facing UI, deliberately not part of the dev-only `#dev-panels`
+  column. 5 new unit tests (entry shape, real https links, no
+  duplicates, and specifically that the compliance-critical Fox-rig
+  entry can't be silently dropped), 2 new E2E tests (reveals the
+  required credit on click, toggles closed again), `#credits` added to
+  the overlap-regression check. Verified visually at both desktop and a
+  narrow (390px) viewport — no overlap, readable either way.
 
 ## Phase 1b — Harden into the real architecture
 
