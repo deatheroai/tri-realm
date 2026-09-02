@@ -10,11 +10,10 @@ on these.
 
 ## Pending Decisions
 
-- **Exact form of the land↔air and land↔sea portals** — e.g. a stairway or
-  hot-air-balloon launch point for land↔air, a dive spot / underground
-  passage / beach for land↔sea. Deferred until Phase 2/3 (`BACKLOG.md`)
-  are actually scoped; the world model only requires that portals exist
-  as named transition points, not which flavor each one takes.
+- **Exact form of the land↔sea portal** — e.g. a dive spot, underground
+  passage, or beach. Deferred until Phase 3 (`BACKLOG.md`) is actually
+  scoped; the world model only requires that a portal exist as a named
+  transition point, not which flavor it takes.
 
 ## Needs Your Action (not decisions — steps only you can take)
 
@@ -224,3 +223,18 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
   rather than filed only as a Skins backlog item because it's relevant
   to World's still-blocked castle-piece-model-pack item too — worth
   checking this same mirror before assuming that's still blocked.
+
+- **2026-09-02 — Land↔air portal flavor: hot-air-balloon launch point
+  first, stairway second — want both eventually.** Asked via
+  `AskUserQuestion` now that air is scoped (`BACKLOG.md` Phase 2)
+  enough to build a real portal against. You confirmed both flavors are
+  wanted long-term and left the build order to my judgement; picked the
+  balloon first for being the more visually/thematically distinctive of
+  the two (a plain stairway reads as just a taller wall next to the
+  existing castle pieces) — worth proving the portal *mechanism* against
+  the more demanding visual first. The generic `Portal`
+  transition system (`ARCHITECTURE.md`) is realm-agnostic either way, so
+  adding the stairway later is a second catalog entry, not new plumbing.
+  Land↔sea's flavor stays a separate, still-pending decision (moved back
+  to Pending above) — sea isn't scoped yet, so there's nothing concrete
+  to weigh flavors against.

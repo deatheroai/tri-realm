@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { terrainHeightAt } from "./land/terrain";
 import { LAND_MAP_SIZE } from "./land/landRealmMap";
+import { LAND_PORTAL_POSITION } from "./world/landAirPortal";
+import { createPortalMarkerMesh } from "./world/portalMarker";
 import { AVATAR_GROUND_OFFSET, createProceduralAvatarMesh } from "./skins/avatarView";
 
 const GROUND_SIZE = LAND_MAP_SIZE;
@@ -80,6 +82,15 @@ export function createScene(): THREE.Scene {
   avatarRoot.add(createProceduralAvatarMesh());
   avatarRoot.position.set(0, terrainHeightAt(0, 0) + AVATAR_GROUND_OFFSET, 0);
   scene.add(avatarRoot);
+
+  // The land<->air portal (src/world/landAirPortal.ts) — purely visual
+  // here; the actual trigger is proximity to LAND_PORTAL_POSITION,
+  // checked in main.ts against the RealmMap's own Portal data, not this
+  // mesh's position (which is placed at that same shared constant so the
+  // two can't drift apart).
+  const portalMarker = createPortalMarkerMesh();
+  portalMarker.position.set(LAND_PORTAL_POSITION.x, LAND_PORTAL_POSITION.y, LAND_PORTAL_POSITION.z);
+  scene.add(portalMarker);
 
   return scene;
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createAirRealmMap, AIR_MAP_SIZE } from "./airRealmMap";
+import { AIR_LAND_PORTAL_ID } from "../world/landAirPortal";
 
 describe("createAirRealmMap", () => {
   it("returns an air RealmMap with the expected shape", () => {
@@ -11,7 +12,14 @@ describe("createAirRealmMap", () => {
     expect(map.bounds).toEqual({ width: AIR_MAP_SIZE, depth: AIR_MAP_SIZE });
     expect(map.structures).toEqual([]);
     expect(map.entities).toEqual([]);
-    expect(map.portals).toEqual([]);
+  });
+
+  it("includes the air-land portal", () => {
+    const map = createAirRealmMap();
+
+    expect(map.portals).toHaveLength(1);
+    expect(map.portals[0]?.id).toBe(AIR_LAND_PORTAL_ID);
+    expect(map.portals[0]?.targetRealmMapId).toBe("land-01");
   });
 
   it("returns a fresh, independent map each call", () => {

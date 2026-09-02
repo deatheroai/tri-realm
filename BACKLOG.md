@@ -371,11 +371,42 @@ without a fresh check-in.
 - `todo` Air `RealmMap` content (floating islands/platforms) as real
   `PlacedStructure`-equivalent data instead of the current hardcoded
   `FLOATING_PLATFORM_POSITIONS` array — part of air's own Phase 1b-style
-  hardening pass, once this rough slice is reviewed. Wires
-  `createAirRealmMap` into `main.ts` for the first time.
-- `todo` Land↔air portal — exact flavor (stairway vs. hot-air-balloon) is
-  a pending decision in `DECISIONS.md`; build whichever is chosen there.
-  Replaces the dev-only realm switcher with the real transition.
+  hardening pass, once this rough slice is reviewed. `createAirRealmMap`
+  is wired into `main.ts` now (for the portal below), so this is "make
+  the floating platforms real data too," not "wire it in for the first
+  time" anymore.
+- `done` Land↔air portal — hot-air-balloon flavor, built first per your
+  answer to the `AskUserQuestion` check-in (`DECISIONS.md`, 2026-09-02):
+  both flavors wanted eventually, balloon prioritized for being more
+  visually/thematically distinctive than a stairway (worth proving the
+  portal *mechanism* against the more demanding visual). Generic,
+  realm-agnostic transition system (`ARCHITECTURE.md`):
+  `src/world/portalTransition.ts`'s `findNearbyPortal` (proximity — walk
+  or fly within `PORTAL_TRIGGER_RADIUS`, no click needed) is the only
+  piece that knows what a "portal" is; `main.ts`'s `maybeTriggerPortal`
+  is the only piece that knows realms exist (swaps `activeRealm`, resets
+  the destination's movement state, no continuous blending). Both
+  portals' shared coordinates/ids live in one neutral module
+  (`src/world/landAirPortal.ts`) — land's and air's `RealmMap` files
+  would otherwise need to import *each other* (a real circular-import
+  risk, since each portal needs the other realm's map id and arrival
+  spot) — and both sit on a straight +x line from their realm's own
+  spawn, deliberately reachable by holding one direction key rather than
+  a precise diagonal (also what makes this reliably E2E-testable).
+  A 1.5s cooldown after each transition guards against instantly
+  bouncing back through the portal just arrived near, on top of the
+  arrival spot already sitting clear of the trigger radius. Visual: a
+  shared hot-air-balloon mesh (`src/world/portalMarker.ts` — a sphere
+  balloon over a box basket, same rough-primitives language as everything
+  else) placed at each portal's actual trigger position, so the marker
+  and the mechanism can't drift apart. The dev-only `#dev-realm-panel`
+  switcher stays too — a "cheat" for quick review/testing, real portals
+  are now the in-world way to do it. 15 new unit tests
+  (`portalTransition.test.ts`, `portalMarker.test.ts`,
+  `landAirPortal.test.ts`, plus coverage in both realm-map test files);
+  3 new E2E tests (`e2e/land-air-portal.spec.ts`) cover both directions
+  and the anti-bounce-back cooldown. Land↔sea's flavor is still a
+  separate pending decision — sea isn't scoped yet.
 
 ## Phase 3 — Sea realm
 

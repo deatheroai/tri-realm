@@ -1,5 +1,6 @@
 import type { RealmMap } from "../world/realmMap";
 import type { TerrainPlacementRule } from "../world/placementValidation";
+import { LAND_AIR_PORTAL } from "../world/landAirPortal";
 
 /** Also this land map's `RealmMap.id`, and the key `saveRealmMap`/
  * `loadRealmMap` (`src/world/realmMapStorage.ts`) persist it under. */
@@ -17,8 +18,9 @@ export const LAND_MAP_SIZE = 50;
  * `entities` starts empty too but now has a real consumer:
  * `main.ts` fills it with the player's current position right before
  * saving (`src/world/realmMapStorage.ts`), so a reload can restore where
- * they were, not just what they built. `portals` stays empty until a
- * scoped air/sea realm gives it something to point at.
+ * they were, not just what they built. `portals` now has a real one —
+ * the land↔air hot-air-balloon (`src/world/landAirPortal.ts`,
+ * `BACKLOG.md` Phase 2; land↔sea still awaits its own scoped realm).
  */
 export function createLandRealmMap(): RealmMap {
   return {
@@ -28,7 +30,7 @@ export function createLandRealmMap(): RealmMap {
     terrain: { kind: "land-heightfield" },
     structures: [],
     entities: [],
-    portals: [],
+    portals: [LAND_AIR_PORTAL],
   };
 }
 
