@@ -226,6 +226,19 @@ to game logic.
   future refinement, not required for the skin system itself to work
   correctly in a second realm.
 
+### In-app credits (`src/skins/attributions.ts`)
+
+A structured, in-app mirror of `public/assets/ATTRIBUTIONS.md` — a small
+"ⓘ Credits" toggle (bottom-center, the one corner the HUD text hadn't
+claimed) expands to list every bundled asset's license and creator, each a
+real link. Unlike the dev-only skin/structure/realm panels, this one is
+real, player-facing UI: the Fox's rigging/animation is CC BY 4.0, which
+legally requires attribution wherever the asset ships, not just in repo
+docs — this is what makes that true of the deployed app itself, not a
+courtesy. `ATTRIBUTIONS.md` stays the source of truth (fuller reasoning,
+kept in sync by hand); `attributions.ts` is deliberately just the
+structured subset a UI needs (asset/license/licenseUrl/creator).
+
 ### Block materials (`src/skins/blockMaterials.ts`, `src/skins/proceduralTextures.ts`)
 
 `BLOCK_MATERIALS[]` pairs a base `color` (hue) with a `textureKind` —

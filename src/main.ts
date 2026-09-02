@@ -25,6 +25,7 @@ import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
 import { BLOCK_MATERIALS, DEFAULT_BLOCK_MATERIAL_ID } from "./skins/blockMaterials";
+import { ATTRIBUTIONS } from "./skins/attributions";
 
 const app = document.getElementById("app");
 if (!app) {
@@ -325,6 +326,42 @@ if (devSkinPanel) {
 
   devSkinPanel.appendChild(avatarRow);
   devSkinPanel.appendChild(materialRow);
+}
+
+// Real, player-facing credits (not dev-only, unlike the panels above/below)
+// — required by the Fox's CC BY 4.0 rigging/animation credit
+// (public/assets/ATTRIBUTIONS.md), which legally needs attribution
+// wherever the asset ships. Collapsed by default; expands on click/tap.
+const creditsToggle = document.getElementById("credits-toggle");
+const creditsPanel = document.getElementById("credits-panel");
+if (creditsToggle && creditsPanel) {
+  for (const entry of ATTRIBUTIONS) {
+    const line = document.createElement("div");
+    line.append(`${entry.asset} — `);
+    if (entry.creatorUrl) {
+      const creatorLink = document.createElement("a");
+      creatorLink.href = entry.creatorUrl;
+      creatorLink.target = "_blank";
+      creatorLink.rel = "noopener";
+      creatorLink.textContent = entry.creator;
+      line.append(creatorLink);
+    } else {
+      line.append(entry.creator);
+    }
+    line.append(", ");
+    const licenseLink = document.createElement("a");
+    licenseLink.href = entry.licenseUrl;
+    licenseLink.target = "_blank";
+    licenseLink.rel = "noopener";
+    licenseLink.textContent = entry.license;
+    line.append(licenseLink);
+    creditsPanel.appendChild(line);
+  }
+
+  creditsToggle.addEventListener("click", () => {
+    const isOpen = creditsPanel.classList.toggle("open");
+    creditsToggle.setAttribute("aria-expanded", String(isOpen));
+  });
 }
 
 // Dev-only structure-type switcher (not child-facing UI) — separate panel
