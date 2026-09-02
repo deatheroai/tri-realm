@@ -382,11 +382,11 @@ if (devStructurePanel) {
   devStructurePanel.appendChild(structureRow);
 }
 
-// Which realm's scene/movement module is currently active. No portals yet
-// (BACKLOG.md Phase 2's last item, blocked on Phase 3 too) — this dev-only
-// switcher is the temporary bridge that makes air reviewable now instead
-// of waiting on real portal mechanics, same "in-app preview" spirit as the
-// skin/structure dev panels above.
+// Which realm's scene/movement module is currently active. The real
+// land<->air portal (below, maybeTriggerPortal) is the in-world way to
+// switch now — this dev-only panel stays as a "cheat" for quick review/
+// testing, same "in-app preview" spirit as the skin/structure dev panels
+// above.
 type Realm = "land" | "air";
 let activeRealm: Realm = "land";
 
