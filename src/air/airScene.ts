@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { AIR_PORTAL_POSITION } from "../world/landAirPortal";
+import { createPortalMarkerMesh } from "../world/portalMarker";
 import { createProceduralAvatarMesh } from "../skins/avatarView";
 
 const SKY_COLOR = 0x8fc7e8;
@@ -51,6 +53,15 @@ export function createAirScene(): THREE.Scene {
   avatarRoot.add(createProceduralAvatarMesh());
   avatarRoot.position.set(0, AVATAR_SPAWN_HEIGHT, 0);
   scene.add(avatarRoot);
+
+  // The air-side end of the land<->air portal (src/world/landAirPortal.ts)
+  // — purely visual here; the actual trigger is proximity to
+  // AIR_PORTAL_POSITION, checked in main.ts against the RealmMap's own
+  // Portal data, not this mesh's position (placed at that same shared
+  // constant so the two can't drift apart).
+  const portalMarker = createPortalMarkerMesh();
+  portalMarker.position.set(AIR_PORTAL_POSITION.x, AIR_PORTAL_POSITION.y, AIR_PORTAL_POSITION.z);
+  scene.add(portalMarker);
 
   return scene;
 }

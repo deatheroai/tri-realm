@@ -90,20 +90,33 @@ that operate on it are written **once** and reused by all three realms:
   place a castle on open water" vs. "can place a dock at the shoreline")
   are supplied as pluggable rule sets per realm, not separate systems.
 - **Portal transition** — moves an avatar from one `RealmMap` to another by
-  id, using shared logic regardless of source/target realm.
+  id, using shared logic regardless of source/target realm. Implemented
+  (`BACKLOG.md` Phase 2): `src/world/portalTransition.ts`'s
+  `findNearbyPortal` is the realm-agnostic half — proximity-based (walk
+  or fly within a trigger radius, no click needed), it only knows the
+  `Portal` shape, not that realms exist. `main.ts`'s `maybeTriggerPortal`
+  is the realm-aware half — swaps `activeRealm` and resets the
+  destination's movement state (a transition swaps, it never blends), on
+  a short cooldown so arriving next to a portal doesn't immediately
+  trigger it again.
 
 ### Realm connections
 
 Realms connect via **portals** — explicit, named transition points stored
 in the map data, not a seamless walk/fly/swim between physical spaces:
 
-- **Land ↔ Air:** e.g. a stairway or a hot-air-balloon launch point.
-- **Land ↔ Sea:** e.g. a dive spot, an underground passage, or a beach.
+- **Land ↔ Air:** a hot-air-balloon launch point, built first
+  (`src/world/landAirPortal.ts`) — a stairway is still wanted as a second
+  flavor later (`DECISIONS.md`, 2026-09-02). Both portals' shared
+  coordinates/ids live in one neutral module rather than land's and air's
+  `RealmMap` files importing each other (which would be circular, since
+  each portal needs the other realm's map id and arrival spot).
+- **Land ↔ Sea:** e.g. a dive spot, an underground passage, or a beach —
+  still a pending decision (`DECISIONS.md`), deferred until sea is scoped.
 
-The exact flavor of each portal is a content decision, not a structural
-one (see `DECISIONS.md`'s Pending section) — the schema only requires that
-a portal exist, point at a target map, and land the avatar at a spawn
-position there.
+The exact flavor of a not-yet-built portal is a content decision, not a
+structural one — the schema only requires that a portal exist, point at
+a target map, and land the avatar at a spawn position there.
 
 ### Distinct realm identity
 

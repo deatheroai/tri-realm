@@ -16,7 +16,10 @@ import {
 import { addStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
+import { findNearbyPortal } from "./world/portalTransition";
+import { PORTAL_TRIGGER_RADIUS } from "./world/landAirPortal";
 import { createAirScene } from "./air/airScene";
+import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";
 import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
@@ -51,13 +54,13 @@ if (!groundOrUndefined) {
 }
 const ground = groundOrUndefined;
 
-// Air realm (BACKLOG.md Phase 2) — its own scene/avatar/movement, switched
-// to live via the dev realm panel below. No RealmMap wiring yet here (no
-// placement/save-load in air's scope) — this is still air's Phase
-// 1a-equivalent rough vertical slice for that. Skin-switching *is* wired
-// (below) — AvatarView is realm-agnostic by construction, and the player's
-// chosen skin should carry over between realms, not reset on Land<->Air.
+// Air realm (BACKLOG.md Phase 2) — its own scene/avatar/movement, reached
+// either via the dev realm panel below or, now that both ends are scoped,
+// the real land<->air portal (src/world/landAirPortal.ts). Still no
+// placement/save-load in air's scope — `airMap` exists only to hold its
+// portal back to land; structures/entities stay unused for now.
 const airScene = createAirScene();
+const airMap = createAirRealmMap();
 const airAvatarOrUndefined = airScene.getObjectByName("avatar");
 if (!airAvatarOrUndefined) {
   throw new Error("Missing avatar in air scene");
@@ -393,6 +396,33 @@ let airMovement: AirMovementState = {
 // ascend/descend actually changes altitude.
 window.__getAirAltitude = () => airMovement.position.y;
 
+// Portal transition (ARCHITECTURE.md's "Portal transition system",
+// src/world/portalTransition.ts) — proximity-based: walking/flying within
+// PORTAL_TRIGGER_RADIUS of a portal swaps the active realm and teleports
+// to its targetSpawnPosition. A short cooldown after each transition
+// (rather than relying solely on the arrival spot being far enough from
+// the portal, though it is — see landAirPortal.ts) is the actual
+// guarantee against instantly bouncing back through the portal you just
+// arrived near.
+const PORTAL_COOLDOWN_SECONDS = 1.5;
+let portalCooldown = 0;
+
+function maybeTriggerPortal(position: Vec3): void {
+  if (portalCooldown > 0) return;
+  const map = activeRealm === "land" ? landMap : airMap;
+  const portal = findNearbyPortal(map, position, PORTAL_TRIGGER_RADIUS);
+  if (!portal) return;
+
+  if (portal.targetRealmMapId === AIR_MAP_ID) {
+    airMovement = { position: { ...portal.targetSpawnPosition }, velocity: { x: 0, y: 0, z: 0 } };
+    activeRealm = "air";
+  } else {
+    movement = { position: { ...portal.targetSpawnPosition }, velocityY: 0 };
+    activeRealm = "land";
+  }
+  portalCooldown = PORTAL_COOLDOWN_SECONDS;
+}
+
 const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
 
 const hud = document.getElementById("hud-position");
@@ -464,5 +494,11 @@ function animate(): void {
   }
 
   renderer.render(activeRealm === "land" ? scene : airScene, camera);
+
+  // Checked after this frame's render, so a transition takes effect
+  // starting next frame — no partial-frame mix of old/new realm state
+  // (a realm transition swaps, it doesn't blend, per ARCHITECTURE.md).
+  portalCooldown = Math.max(0, portalCooldown - dt);
+  maybeTriggerPortal(targetPosition);
 }
 animate();

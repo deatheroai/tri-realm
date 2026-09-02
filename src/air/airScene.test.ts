@@ -37,4 +37,10 @@ describe("createAirScene", () => {
 
     expect(lights.length).toBeGreaterThan(0);
   });
+
+  it("includes the air-land portal marker", () => {
+    const scene = createAirScene();
+
+    expect(scene.getObjectByName("portal-marker")).toBeInstanceOf(THREE.Group);
+  });
 });

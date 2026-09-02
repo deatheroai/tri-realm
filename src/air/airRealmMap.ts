@@ -1,4 +1,5 @@
 import type { RealmMap } from "../world/realmMap";
+import { AIR_LAND_PORTAL } from "../world/landAirPortal";
 
 /** Also this air map's `RealmMap.id`. */
 export const AIR_MAP_ID = "air-01";
@@ -10,9 +11,10 @@ export const AIR_MAP_SIZE = 60;
 
 /**
  * The hardcoded Phase 2 air map — this realm's equivalent of
- * `createLandRealmMap`'s first pass: real `RealmMap` shape, no portals or
- * structures yet (building isn't in air's Phase 2 scope; portals need a
- * scoped source/target on both ends).
+ * `createLandRealmMap`'s first pass: real `RealmMap` shape, no
+ * structures yet (building isn't in air's Phase 2 scope), but a real
+ * portal back to land now that both ends are scoped
+ * (`src/world/landAirPortal.ts`).
  */
 export function createAirRealmMap(): RealmMap {
   return {
@@ -22,6 +24,6 @@ export function createAirRealmMap(): RealmMap {
     terrain: { kind: "air-open-volume" },
     structures: [],
     entities: [],
-    portals: [],
+    portals: [AIR_LAND_PORTAL],
   };
 }
