@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createAirRealmMap, AIR_MAP_SIZE } from "./airRealmMap";
+import { createAirRealmMap, AIR_MAP_SIZE, AIR_FLOATING_PLATFORM_POSITIONS } from "./airRealmMap";
 import { AIR_LAND_PORTAL_ID } from "../world/landAirPortal";
 
 describe("createAirRealmMap", () => {
@@ -8,10 +8,19 @@ describe("createAirRealmMap", () => {
 
     expect(map.realm).toBe("air");
     expect(map.id).toBeTruthy();
-    expect(map.terrain).toEqual({ kind: "air-open-volume" });
+    expect(map.terrain).toEqual({ kind: "air-open-volume", platforms: AIR_FLOATING_PLATFORM_POSITIONS });
     expect(map.bounds).toEqual({ width: AIR_MAP_SIZE, depth: AIR_MAP_SIZE });
     expect(map.structures).toEqual([]);
     expect(map.entities).toEqual([]);
+  });
+
+  it("has real, non-empty floating-platform data", () => {
+    expect(AIR_FLOATING_PLATFORM_POSITIONS.length).toBeGreaterThan(0);
+    for (const position of AIR_FLOATING_PLATFORM_POSITIONS) {
+      expect(Number.isFinite(position.x)).toBe(true);
+      expect(Number.isFinite(position.y)).toBe(true);
+      expect(Number.isFinite(position.z)).toBe(true);
+    }
   });
 
   it("includes the air-land portal", () => {

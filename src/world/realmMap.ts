@@ -21,9 +21,13 @@ const AIR_OPEN_VOLUME_BASELINE = 0;
 /**
  * A realm's terrain, described generically enough that a new realm can
  * add its own kind later without changing this type's consumers. Sea
- * doesn't exist yet, so there are still just the two.
+ * doesn't exist yet, so there are still just the two. Air's carries
+ * `platforms` — real positional data for its floating content, matching
+ * this schema's own documented intent ("air -> mostly open volume +
+ * floating terrain") — replacing what was a hardcoded array local to
+ * `airScene.ts` (`BACKLOG.md` Phase 2 hardening).
  */
-export type TerrainField = { kind: "land-heightfield" } | { kind: "air-open-volume" };
+export type TerrainField = { kind: "land-heightfield" } | { kind: "air-open-volume"; platforms: Vec3[] };
 
 /**
  * Samples a `TerrainField`'s height at a world (x, z) coordinate. This

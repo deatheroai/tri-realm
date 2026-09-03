@@ -2,17 +2,9 @@ import * as THREE from "three";
 import { AIR_PORTAL_POSITION } from "../world/landAirPortal";
 import { createPortalMarkerMesh } from "../world/portalMarker";
 import { createProceduralAvatarMesh } from "../skins/avatarView";
+import { AIR_FLOATING_PLATFORM_POSITIONS } from "./airRealmMap";
 
 const SKY_COLOR = 0x8fc7e8;
-
-const FLOATING_PLATFORM_POSITIONS: Array<[number, number, number]> = [
-  [6, 2, -8],
-  [-8, 6, -4],
-  [10, -3, 6],
-  [-6, 8, 8],
-  [3, 12, 14],
-  [-12, -2, -10],
-];
 
 const AVATAR_SPAWN_HEIGHT = 5;
 
@@ -22,9 +14,11 @@ const AVATAR_SPAWN_HEIGHT = 5;
  * "its own realm-appropriate floating elements"), and a player-controlled
  * avatar. No ground plane, no ground collision — flight
  * (`src/air/airMovement.ts`) is free 3D movement, matching air's "mostly
- * open volume" terrain per the `RealmMap` schema. Rough/hardcoded per
- * `AUTONOMY.md`'s visual-first sequencing — this is air's Phase 2
- * equivalent of land's very first Phase 1a slice.
+ * open volume" terrain per the `RealmMap` schema. Platform positions come
+ * from `airRealmMap.ts`'s `AIR_FLOATING_PLATFORM_POSITIONS` — real
+ * `RealmMap.terrain` data now, not a hardcoded array local to this file
+ * (`BACKLOG.md` Phase 2 hardening) — so the visual and the map data can't
+ * drift apart.
  *
  * The avatar `Group` here is a small, intentional duplicate of
  * `scene.ts`'s pattern rather than a shared refactor — avatar-`Group`
@@ -41,9 +35,9 @@ export function createAirScene(): THREE.Scene {
   scene.add(ambient, sun);
 
   const platformMaterial = new THREE.MeshStandardMaterial({ color: 0xe4d9c4 });
-  for (const [x, y, z] of FLOATING_PLATFORM_POSITIONS) {
+  for (const position of AIR_FLOATING_PLATFORM_POSITIONS) {
     const platform = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.6, 10), platformMaterial);
-    platform.position.set(x, y, z);
+    platform.position.set(position.x, position.y, position.z);
     platform.name = "landmark";
     scene.add(platform);
   }
