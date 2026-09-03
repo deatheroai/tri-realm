@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { createAirScene } from "./airScene";
+import { AIR_FLOATING_PLATFORM_POSITIONS } from "./airRealmMap";
 
 describe("createAirScene", () => {
   it("includes a player avatar group with a default visual, and no ground", () => {
@@ -22,12 +23,14 @@ describe("createAirScene", () => {
     expect(avatar?.position.y).toBeGreaterThan(0);
   });
 
-  it("includes scattered floating platforms for movement parallax", () => {
+  it("places one platform per AIR_FLOATING_PLATFORM_POSITIONS entry, at that entry's position", () => {
     const scene = createAirScene();
 
     const landmarks = scene.children.filter((child) => child.name === "landmark");
 
-    expect(landmarks.length).toBeGreaterThan(0);
+    expect(landmarks).toHaveLength(AIR_FLOATING_PLATFORM_POSITIONS.length);
+    const landmarkPositions = landmarks.map((l) => ({ x: l.position.x, y: l.position.y, z: l.position.z }));
+    expect(landmarkPositions).toEqual(AIR_FLOATING_PLATFORM_POSITIONS);
   });
 
   it("includes at least one light so the scene isn't pitch black", () => {

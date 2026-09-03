@@ -23,7 +23,7 @@ describe("sampleTerrainHeight", () => {
   });
 
   it("returns a real, finite number for an air-open-volume terrain", () => {
-    const terrain = { kind: "air-open-volume" as const };
+    const terrain = { kind: "air-open-volume" as const, platforms: [] };
 
     expect(Number.isFinite(sampleTerrainHeight(terrain, 3, -7))).toBe(true);
   });

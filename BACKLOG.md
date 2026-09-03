@@ -303,9 +303,14 @@ Only starts once Phase 1a has been reviewed and the direction holds.
   piece, reload — the structure and the player's position both survive;
   a separate test confirms a fresh visit with nothing saved still starts
   clean. 2 new E2E tests; all pre-existing tests still pass unchanged.
-- `blocked` (on Phase 2/3 existing) Land↔air and land↔sea portal
-  implementation — the `Portal` schema exists here, but wiring an actual
-  transition needs a real target realm to land in.
+- `done` Land↔air portal implementation — see Phase 2 below
+  (`src/world/portalTransition.ts`, `src/world/landAirPortal.ts`); the
+  generic transition system lives here in `src/world/`, exercised first
+  against land↔air.
+- `blocked` (on Phase 3 existing) Land↔sea portal implementation — the
+  `Portal` schema and the generic transition system both already exist;
+  wiring an actual transition just needs sea as a real target realm to
+  land in.
 
 ## Phase 2 — Air realm
 
@@ -368,13 +373,24 @@ without a fresh check-in.
   directions) — in `e2e/skins.spec.ts` since this is Skins-track
   behavior, just exercised through the Air realm. Verified visually with
   real screenshots of both Fox and Robot flying in the air realm.
-- `todo` Air `RealmMap` content (floating islands/platforms) as real
-  `PlacedStructure`-equivalent data instead of the current hardcoded
-  `FLOATING_PLATFORM_POSITIONS` array — part of air's own Phase 1b-style
-  hardening pass, once this rough slice is reviewed. `createAirRealmMap`
-  is wired into `main.ts` now (for the portal below), so this is "make
-  the floating platforms real data too," not "wire it in for the first
-  time" anymore.
+- `done` Air `RealmMap` content: floating platforms are real
+  `RealmMap.terrain` data now, not a hardcoded array local to
+  `airScene.ts`. `TerrainField`'s air variant
+  (`src/world/realmMap.ts`) gained a `platforms: Vec3[]` field — matches
+  this schema's own documented intent ("air -> mostly open volume +
+  floating terrain"), the same way land's variant already carries its
+  height formula. The actual position data
+  (`AIR_FLOATING_PLATFORM_POSITIONS`) moved to `src/air/airRealmMap.ts`;
+  both `createAirRealmMap`'s `terrain.platforms` and `airScene.ts`'s
+  meshes now read from that one array, so the visual and the map data
+  can't drift apart (same pattern as `terrainHeightAt` or
+  `landAirPortal.ts`'s shared portal positions). Placed as
+  `PlacedStructure`s was considered and rejected: those represent
+  player-built things (validated via `placementValidation.ts`), while
+  platforms are world-authored content — `terrain` is the correct home
+  per the schema's own comments. 3 new/updated unit tests; no behavior
+  change, so no new E2E coverage needed — existing tests confirm nothing
+  broke.
 - `done` Land↔air portal — hot-air-balloon flavor, built first per your
   answer to the `AskUserQuestion` check-in (`DECISIONS.md`, 2026-09-02):
   both flavors wanted eventually, balloon prioritized for being more
