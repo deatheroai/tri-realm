@@ -294,6 +294,16 @@ redeploy. Exists specifically so asset iteration (swap a file, refresh,
 click the button) doesn't require a rebuild/redeploy cycle per asset
 tried.
 
+The currently-selected option in each row is marked (`main.ts`'s
+`setActiveButton`, a shared `.active` class any dev panel row can adopt)
+— reflects the *actual* resolved state, not just an assumed click
+outcome: the avatar row waits on `AvatarView.setSkin`'s own promise and
+reads back `avatarView.skinId`, so if a load ever fails and falls back to
+the procedural capsule (see above), the panel shows that real outcome
+rather than the skin that was clicked. Without this the panels gave no
+visual feedback about current state at all — made reviewing the deployed
+preview harder than it needed to be.
+
 ### Where assets actually come from
 
 This session's network policy blocks the free-asset sites (kenney.nl,

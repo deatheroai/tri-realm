@@ -154,6 +154,23 @@
         background: rgba(217, 130, 43, 0.25);
       }
       /*
+       * Marks whichever option a dev panel row currently has selected —
+       * without this, the panels were silent about current state, making
+       * it harder to review the deployed preview (e.g. "did that click
+       * actually select Robot?"). Shared selector so any dev panel row can
+       * adopt the same `.active` class on its currently-selected button;
+       * only the skin/material rows (Skins-owned) actually apply it so far
+       * (see main.ts's setActiveButton).
+       */
+      #dev-skin-panel button.active,
+      #dev-structure-panel button.active,
+      #dev-realm-panel button.active {
+        background: rgba(217, 130, 43, 0.55);
+        border-color: #d9822b;
+        color: #10151c;
+        font-weight: bold;
+      }
+      /*
        * Real, player-facing (unlike the dev panels above) — required by the
        * Fox's CC BY 4.0 rigging/animation credit (public/assets/
        * ATTRIBUTIONS.md), which legally needs attribution wherever the

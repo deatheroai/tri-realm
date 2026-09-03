@@ -331,3 +331,48 @@ test.describe("in-app credits", () => {
     await expect(panel).not.toHaveClass(/open/);
   });
 });
+
+// Regression guard: the dev panels used to give no visual feedback about
+// which skin/material was actually selected — reviewing the deployed
+// preview meant trusting your own memory of the last click. main.ts's
+// setActiveButton fixes that for the Avatar/Blocks rows.
+test.describe("dev panel active-state highlighting", () => {
+  test("Fox is marked active on first load, without needing a click", async ({ page }) => {
+    await page.goto("/");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("fox");
+    await expect(page.locator("#dev-skin-panel button", { hasText: "Fox" })).toHaveClass(/active/);
+    await expect(page.locator("#dev-skin-panel button", { hasText: "Robot" })).not.toHaveClass(/active/);
+  });
+
+  test("clicking a skin marks it active and un-marks the previous one", async ({ page }) => {
+    await page.goto("/");
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("fox");
+
+    const robotButton = page.locator("#dev-skin-panel button", { hasText: "Robot" });
+    await robotButton.click();
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("robot");
+    await expect(robotButton).toHaveClass(/active/);
+    await expect(page.locator("#dev-skin-panel button", { hasText: "Fox" })).not.toHaveClass(/active/);
+  });
+
+  test("Sandstone is marked active on first load, and clicking Gold moves it there", async ({ page }) => {
+    await page.goto("/");
+
+    const sandstoneButton = page.locator("#dev-skin-panel button", { hasText: "Sandstone" });
+    await expect(sandstoneButton).toHaveClass(/active/);
+
+    const goldButton = page.locator("#dev-skin-panel button", { hasText: "Gold" });
+    await goldButton.click();
+
+    await expect(goldButton).toHaveClass(/active/);
+    await expect(sandstoneButton).not.toHaveClass(/active/);
+  });
+});
