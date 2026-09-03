@@ -47,7 +47,12 @@ if (!avatarOrUndefined) {
 const avatar = avatarOrUndefined;
 
 const avatarView = new AvatarView(avatar);
-void avatarView.setSkin(DEFAULT_AVATAR_SKIN_ID);
+// Captured (not just fired-and-forgotten) so the dev skin panel, built
+// later, can reflect whichever skin actually ends up selected once this
+// resolves — DEFAULT_AVATAR_SKIN_ID almost always, but AvatarView falls
+// back to the procedural capsule on a load failure, and the panel should
+// show that real outcome, not just assume the click/default succeeded.
+const initialAvatarSkin = avatarView.setSkin(DEFAULT_AVATAR_SKIN_ID);
 
 const groundOrUndefined = scene.getObjectByName("ground");
 if (!groundOrUndefined) {
@@ -290,6 +295,22 @@ const touchJoystick =
     ? new TouchJoystick(touchZone, joystickBase, joystickKnob, { onTap: placeCastlePieceAt })
     : null;
 
+/**
+ * Marks exactly one button in a dev panel row as the currently-selected
+ * option (adds the shared `.active` class, removes it from siblings) —
+ * without this the panels were silent about current state, making it
+ * harder to review the deployed preview ("did that click actually select
+ * Robot?"). Any dev panel row can reuse this; only the rows below
+ * (Skins-owned) call it so far.
+ */
+function setActiveButton(row: HTMLElement, activeButton: HTMLButtonElement): void {
+  for (const child of row.children) {
+    if (child instanceof HTMLButtonElement) {
+      child.classList.toggle("active", child === activeButton);
+    }
+  }
+}
+
 // Dev-only skin switcher (not child-facing UI) — cycles the avatar's skin
 // and the block material used for new placements, live, no redeploy. See
 // DECISIONS.md for why this exists now (in-app preview, since real asset
@@ -298,31 +319,54 @@ const devSkinPanel = document.getElementById("dev-skin-panel");
 if (devSkinPanel) {
   const avatarRow = document.createElement("div");
   avatarRow.textContent = "Avatar: ";
+  const avatarButtonsById = new Map<string, HTMLButtonElement>();
   for (const skin of AVATAR_SKINS) {
     const btn = document.createElement("button");
     btn.textContent = skin.label;
+    avatarButtonsById.set(skin.id, btn);
     // Drives both realms' AvatarView together — the player's chosen skin
     // is one shared choice, not a separate one per realm (see the
     // airAvatarView comment above). Each AvatarView is independently a
     // no-op if this skin is already selected, so switching realms and
     // then clicking the same skin again is harmless.
     btn.addEventListener("click", () => {
-      void avatarView.setSkin(skin.id);
+      void avatarView.setSkin(skin.id).then(() => {
+        // Reflects whichever skin land's AvatarView actually resolved to
+        // (could differ from what was clicked if the load failed and it
+        // fell back to the procedural capsule instead), not just an
+        // assumption that the click succeeded.
+        const resolvedButton = avatarButtonsById.get(avatarView.skinId);
+        if (resolvedButton) setActiveButton(avatarRow, resolvedButton);
+      });
       void airAvatarView.setSkin(skin.id);
     });
     avatarRow.appendChild(btn);
   }
+  // Reflects the real outcome of the app's own startup skin load (not
+  // just an optimistic guess) once it resolves — see initialAvatarSkin
+  // above.
+  void initialAvatarSkin.then(() => {
+    const resolvedButton = avatarButtonsById.get(avatarView.skinId);
+    if (resolvedButton) setActiveButton(avatarRow, resolvedButton);
+  });
 
   const materialRow = document.createElement("div");
   materialRow.textContent = "Blocks: ";
+  const materialButtonsById = new Map<string, HTMLButtonElement>();
   for (const material of BLOCK_MATERIALS) {
     const btn = document.createElement("button");
     btn.textContent = material.label;
+    materialButtonsById.set(material.id, btn);
     btn.addEventListener("click", () => {
       currentBlockMaterialId = material.id;
+      setActiveButton(materialRow, btn);
     });
     materialRow.appendChild(btn);
   }
+  // Materials apply synchronously (no async load to wait on) — reflect the
+  // startup default (currentBlockMaterialId, initialized above) right away.
+  const defaultMaterialButton = materialButtonsById.get(currentBlockMaterialId);
+  if (defaultMaterialButton) setActiveButton(materialRow, defaultMaterialButton);
 
   devSkinPanel.appendChild(avatarRow);
   devSkinPanel.appendChild(materialRow);

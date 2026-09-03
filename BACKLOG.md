@@ -221,6 +221,18 @@ surfaced.
   current steep ~31° elevation makes an elongated quadruped read as
   compressed/vertical rather than clearly "a fox." Not a blocker, just
   worth a look with real content in view.
+  **Investigated 2026-09-03, deliberately still not done**: the actual
+  elevation angle comes from `cameraOffset` in `main.ts` (genuinely
+  shared, not `src/camera.ts` which only sets an initial pre-follow
+  pose) — so it's technically reachable, not blocked on file ownership
+  the way I'd assumed. But changing it moves where the ground plane
+  lands on screen, and several E2E tests across *both* tracks
+  (`castle-placement.spec.ts`, `land-save-load.spec.ts`,
+  `touch-controls.spec.ts`, plus my own `skins.spec.ts`) click at
+  hardcoded viewport-ratio positions that assume today's framing — a
+  wide blast radius across files I don't own, for a "worth a look, not
+  blocking" polish item. Left alone rather than force it through solo;
+  flagging the real reason instead of silently skipping it again.
 - `done` **In-app credits screen** — with the other Skins items this
   cycle blocked (princess figure, castle-piece models) on external
   access or World's file ownership, picked up something `public/assets/
@@ -241,6 +253,23 @@ surfaced.
   required credit on click, toggles closed again), `#credits` added to
   the overlap-regression check. Verified visually at both desktop and a
   narrow (390px) viewport — no overlap, readable either way.
+- `done` **Dev panel active-state highlighting** — same "usual items all
+  blocked/out-of-scope" situation as the credits screen above, so picked
+  up a real gap noticed while reviewing: the skin/material dev panel
+  buttons gave no visual feedback about which option was actually
+  selected, only a hover state — reviewing the deployed preview meant
+  trusting your own memory of the last click. `main.ts`'s
+  `setActiveButton` (a shared `.active` class any dev panel row can
+  adopt) now highlights the current selection in both the Avatar and
+  Blocks rows, correct on first load (no click needed) and updated on
+  every switch. The avatar row specifically reflects `AvatarView`'s
+  actually-*resolved* skin (via its `setSkin` promise), not just the
+  clicked one — stays honest if a load ever fails and falls back to the
+  procedural capsule, rather than showing a skin that isn't really
+  active. 3 new E2E tests, verified visually with real screenshots
+  (default state, and after switching both an avatar skin and a block
+  material). Structure-type/realm rows (World's) can adopt the same
+  shared class later; not touched this cycle.
 
 ## Phase 1b — Harden into the real architecture
 
