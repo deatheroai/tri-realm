@@ -39,6 +39,17 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     scale: 0.4,
     animationClipNames: { idle: "Idle", walk: "Walking", run: "Running" },
   },
+  {
+    id: "princess",
+    label: "Princess",
+    kind: "gltf",
+    modelUrl: "/assets/models/princess.glb",
+    // At scale 1 the model measured ~1.90 world units tall (via
+    // window.__getAvatarWorldHeight) — already close to Capsule's ~1.8, so
+    // no correction needed (unlike Robot above). No rig/animation in the
+    // source model — static pose only, no idle/walk/run clips (see
+    // ATTRIBUTIONS.md for why).
+  },
   { id: "capsule", label: "Capsule", kind: "procedural" },
 ];
 

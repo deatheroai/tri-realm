@@ -45,4 +45,11 @@ export const ATTRIBUTIONS: readonly AttributionEntry[] = [
     creator: "ambientCG",
     creatorUrl: "https://ambientcg.com",
   },
+  {
+    asset: 'Princess model ("Apple White (Royal Pirate)")',
+    license: "CC BY 4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    creator: "oaktyler1996 (Sketchfab)",
+    creatorUrl: "https://sketchfab.com/3d-models/apple-white-royal-pirate-365255d49d5e46e8a25b2bf921ef5b64",
+  },
 ];

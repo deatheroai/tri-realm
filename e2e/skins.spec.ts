@@ -155,6 +155,38 @@ test("switching to Robot loads it, then switching back to Fox still works", asyn
   expect(errors).toEqual([]);
 });
 
+// Princess has no animation clips at all (see ATTRIBUTIONS.md) — unlike
+// Robot/Fox, its AvatarView never creates a mixer. This guards that the
+// no-animation path (buildVisual's `if (gltf.animations.length > 0)`
+// branch simply not running) still loads and swaps cleanly rather than
+// throwing on an absent mixer/actions.
+test("switching to Princess (no animation clips) loads it, then switching back to Fox still works", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Princess" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("princess");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Fox" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  expect(errors).toEqual([]);
+});
+
 // Compares texture *identity* (map.uuid), not .color: once a material's
 // real photographed texture loads (realBlockTextures.ts), .color resets to
 // white for every material except Gold, so .color alone can't reliably
@@ -313,8 +345,12 @@ test.describe("in-app credits", () => {
     await expect(panel).toContainText("tomkranis");
     await expect(panel).toContainText("CC BY 4.0");
 
-    // A real, working link — not just text mentioning the license.
-    const licenseLink = panel.getByRole("link", { name: "CC BY 4.0" });
+    // A real, working link — not just text mentioning the license. Scoped to
+    // the Fox rig's own credit line: other CC-BY-4.0 assets (e.g. Princess)
+    // render their own "CC BY 4.0" link too, so an unscoped lookup by name
+    // is ambiguous once more than one CC-BY entry exists.
+    const foxLine = panel.locator("div", { hasText: "tomkranis" });
+    const licenseLink = foxLine.getByRole("link", { name: "CC BY 4.0" });
     await expect(licenseLink).toHaveAttribute("href", "https://creativecommons.org/licenses/by/4.0/");
   });
 
