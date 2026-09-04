@@ -136,10 +136,11 @@ surfaced.
   stays within 0.5x–1.8x Capsule's — verified it actually catches this
   exact regression by reverting to `scale: 1` and watching it fail with
   the real ratio (2.68x) in the assertion message, then restoring the fix.
-- `todo` **Still want:** a "princess figure"-style skin specifically —
-  none of the reachable CC0/CC-BY sources (Khronos glTF-Sample-Assets,
-  three.js's bundled examples) have a plausible match. Checked again
-  2026-08-31 against the new GitHub-releases mirror
+- `done` **Superseded, see the Princess entry below.** Originally: "Still
+  want a 'princess figure'-style skin specifically — none of the
+  reachable CC0/CC-BY sources (Khronos glTF-Sample-Assets, three.js's
+  bundled examples) have a plausible match. Checked again 2026-08-31
+  against the new GitHub-releases mirror
   (`DECISIONS.md`/`ARCHITECTURE.md`) — no help there either: Quaternius's
   character/animal packs are marked `unpulled` in that mirror's own
   index (no archive pinned yet, still routes to the blocked
@@ -270,6 +271,30 @@ surfaced.
   (default state, and after switching both an avatar skin and a block
   material). Structure-type/realm rows (World's) can adopt the same
   shared class later; not touched this cycle.
+- `done` **Princess avatar skin — the long-blocked item, unblocked by you
+  directly.** Every reachable CC0/CC-BY source came up empty (see the
+  superseded item above); you found and hand-delivered the actual asset:
+  "Apple White (Royal Pirate)" by oaktyler1996 on Sketchfab, CC-BY 4.0
+  (`public/assets/ATTRIBUTIONS.md` has the full credit). The raw export
+  was not directly usable: ~43MB (6 mesh chunks, ~607K triangles, four
+  2048×2048 textures — likely AI-mesh-generated, per an embedded node
+  name) and no rig/animation at all. Reprocessed with
+  `@gltf-transform/cli`: simplified to a single ~22K-triangle mesh
+  (meshoptimizer) and textures resized to 512×512, landing at a ~2.4MB
+  `public/assets/models/princess.glb` — heavier than Fox/Robot but the
+  model genuinely has more surface detail (clothing, face, trim).
+  `scale` measured for real via `window.__getAvatarWorldHeight` (not
+  guessed, same discipline as the Robot-scale fix above): ~1.90 at
+  scale 1, already close to Capsule's ~1.8, so no correction needed.
+  No animation clips exist in the source, so `animationClipNames` is
+  omitted — Princess renders in its authored static pose regardless of
+  movement state (documented in `ATTRIBUTIONS.md` and the catalog
+  entry's own comment). 1 new E2E test guards the no-mixer path
+  specifically; the existing height-sanity and dev-panel-listing E2E
+  tests cover it automatically since both iterate `AVATAR_SKINS`. The
+  in-app credits E2E test needed a small fix: it looked up the "CC BY
+  4.0" license link by name alone, which became ambiguous once a second
+  CC-BY asset existed — rescoped to the Fox-specific credit line.
 
 ## Phase 1b — Harden into the real architecture
 

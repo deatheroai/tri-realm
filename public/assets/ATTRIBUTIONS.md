@@ -49,3 +49,19 @@ by this session's network policy but that mirror isn't (see `DECISIONS.md`).
   (GL convention), and roughness maps for all four; gold also carries a metalness map.
 
 CC0 — no attribution legally required, but credited here anyway for provenance.
+
+## `models/princess.glb`
+
+Source: [Sketchfab](https://sketchfab.com/3d-models/apple-white-royal-pirate-365255d49d5e46e8a25b2bf921ef5b64),
+"Apple White (Royal Pirate)" by [oaktyler1996](https://sketchfab.com/oaktyler1996).
+
+- Model: [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — requires attribution wherever
+  this asset (or a derivative) ships, carried into the in-app credits screen as well as this file.
+- Static model — no rig or animation clips in the source file, so this skin has no idle/walk/run
+  animation (unlike Fox and Robot); it renders in its authored pose regardless of movement state.
+- Heavily reprocessed before committing: the source export was ~43MB (6 mesh chunks, ~607K
+  triangles total, four 2048×2048 textures) — far too large to ship as-is. Simplified to a single
+  ~22K-triangle mesh (meshoptimizer, via `@gltf-transform/cli optimize`) and textures resized to
+  512×512, bringing the packed `.glb` down to ~2.4MB. This is a lossy simplification of the
+  original artist's geometry; the CC-BY credit is for the underlying work, not a claim that this
+  file is unmodified.
