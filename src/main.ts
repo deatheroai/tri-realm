@@ -21,6 +21,9 @@ import { PORTAL_TRIGGER_RADIUS } from "./world/landAirPortal";
 import { createAirScene } from "./air/airScene";
 import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";
+import { createSeaScene } from "./sea/seaScene";
+import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y } from "./sea/seaRealmMap";
+import { stepSeaMovement, type SeaMovementState } from "./sea/seaMovement";
 import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
@@ -81,6 +84,23 @@ const airAvatar = airAvatarOrUndefined;
 // the model out from under the other.
 const airAvatarView = new AvatarView(airAvatar);
 void airAvatarView.setSkin(DEFAULT_AVATAR_SKIN_ID);
+
+// Sea realm (BACKLOG.md Phase 3) — same "own scene/avatar/movement, no
+// placement/save-load yet" shape air's Phase 2 first item started with.
+// `seaMap` holds no portal yet — the land<->sea flavor is still a pending
+// decision (DECISIONS.md), so there's nothing concrete to wire in; this
+// realm is reachable only via the dev realm panel for now, same as air
+// was before its own portal existed.
+const seaScene = createSeaScene();
+const seaMap = createSeaRealmMap();
+const seaAvatarOrUndefined = seaScene.getObjectByName("avatar");
+if (!seaAvatarOrUndefined) {
+  throw new Error("Missing avatar in sea scene");
+}
+const seaAvatar = seaAvatarOrUndefined;
+
+const seaAvatarView = new AvatarView(seaAvatar);
+void seaAvatarView.setSkin(DEFAULT_AVATAR_SKIN_ID);
 
 function onResize(): void {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -150,8 +170,9 @@ declare global {
     __getLastPlacedColor?: () => number | undefined;
     __getLastPlacedMapUuid?: () => string | undefined;
     __getLastPlacedType?: () => string | undefined;
-    __getActiveRealm?: () => "land" | "air";
+    __getActiveRealm?: () => "land" | "air" | "sea";
     __getAirAltitude?: () => number;
+    __getSeaDepth?: () => number;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -324,11 +345,11 @@ if (devSkinPanel) {
     const btn = document.createElement("button");
     btn.textContent = skin.label;
     avatarButtonsById.set(skin.id, btn);
-    // Drives both realms' AvatarView together — the player's chosen skin
-    // is one shared choice, not a separate one per realm (see the
-    // airAvatarView comment above). Each AvatarView is independently a
-    // no-op if this skin is already selected, so switching realms and
-    // then clicking the same skin again is harmless.
+    // Drives all three realms' AvatarView together — the player's chosen
+    // skin is one shared choice, not a separate one per realm (see the
+    // airAvatarView/seaAvatarView comments above). Each AvatarView is
+    // independently a no-op if this skin is already selected, so switching
+    // realms and then clicking the same skin again is harmless.
     btn.addEventListener("click", () => {
       void avatarView.setSkin(skin.id).then(() => {
         // Reflects whichever skin land's AvatarView actually resolved to
@@ -339,6 +360,7 @@ if (devSkinPanel) {
         if (resolvedButton) setActiveButton(avatarRow, resolvedButton);
       });
       void airAvatarView.setSkin(skin.id);
+      void seaAvatarView.setSkin(skin.id);
     });
     avatarRow.appendChild(btn);
   }
@@ -431,7 +453,7 @@ if (devStructurePanel) {
 // switch now — this dev-only panel stays as a "cheat" for quick review/
 // testing, same "in-app preview" spirit as the skin/structure dev panels
 // above.
-type Realm = "land" | "air";
+type Realm = "land" | "air" | "sea";
 let activeRealm: Realm = "land";
 
 const devRealmPanel = document.getElementById("dev-realm-panel");
@@ -441,6 +463,7 @@ if (devRealmPanel) {
   const realms: Array<{ id: Realm; label: string }> = [
     { id: "land", label: "Land" },
     { id: "air", label: "Air" },
+    { id: "sea", label: "Sea" },
   ];
   for (const realm of realms) {
     const btn = document.createElement("button");
@@ -477,6 +500,16 @@ let airMovement: AirMovementState = {
 // ascend/descend actually changes altitude.
 window.__getAirAltitude = () => airMovement.position.y;
 
+// Sea has no saved state yet either (same "todo" as air) — always spawns
+// fresh at the sea scene's own starting position.
+let seaMovement: SeaMovementState = {
+  position: { x: seaAvatar.position.x, y: seaAvatar.position.y, z: seaAvatar.position.z },
+  velocity: { x: 0, y: 0, z: 0 },
+};
+// Test-only hook, mirrors __getAirAltitude — how E2E coverage verifies
+// dive/surface (and passive buoyant drift) actually change depth.
+window.__getSeaDepth = () => seaMovement.position.y;
+
 // Portal transition (ARCHITECTURE.md's "Portal transition system",
 // src/world/portalTransition.ts) — proximity-based: walking/flying within
 // PORTAL_TRIGGER_RADIUS of a portal swaps the active realm and teleports
@@ -488,15 +521,23 @@ window.__getAirAltitude = () => airMovement.position.y;
 const PORTAL_COOLDOWN_SECONDS = 1.5;
 let portalCooldown = 0;
 
+function activeRealmMap(): RealmMap {
+  if (activeRealm === "land") return landMap;
+  if (activeRealm === "air") return airMap;
+  return seaMap;
+}
+
 function maybeTriggerPortal(position: Vec3): void {
   if (portalCooldown > 0) return;
-  const map = activeRealm === "land" ? landMap : airMap;
-  const portal = findNearbyPortal(map, position, PORTAL_TRIGGER_RADIUS);
+  const portal = findNearbyPortal(activeRealmMap(), position, PORTAL_TRIGGER_RADIUS);
   if (!portal) return;
 
   if (portal.targetRealmMapId === AIR_MAP_ID) {
     airMovement = { position: { ...portal.targetSpawnPosition }, velocity: { x: 0, y: 0, z: 0 } };
     activeRealm = "air";
+  } else if (portal.targetRealmMapId === seaMap.id) {
+    seaMovement = { position: { ...portal.targetSpawnPosition }, velocity: { x: 0, y: 0, z: 0 } };
+    activeRealm = "sea";
   } else {
     movement = { position: { ...portal.targetSpawnPosition }, velocityY: 0 };
     activeRealm = "land";
@@ -541,7 +582,7 @@ function animate(): void {
 
     targetPosition = movement.position;
     cameraLookAtY = movement.position.y + 1;
-  } else {
+  } else if (activeRealm === "air") {
     const vertical = input.getVerticalInput();
     airMovement = stepAirMovement(airMovement, moveInput, vertical, dt);
     airAvatar.position.set(airMovement.position.x, airMovement.position.y, airMovement.position.z);
@@ -556,6 +597,20 @@ function animate(): void {
 
     targetPosition = airMovement.position;
     cameraLookAtY = airMovement.position.y;
+  } else {
+    const vertical = input.getVerticalInput();
+    seaMovement = stepSeaMovement(seaMovement, moveInput, vertical, dt, SEA_FLOOR_Y, SEA_SURFACE_Y);
+    seaAvatar.position.set(seaMovement.position.x, seaMovement.position.y, seaMovement.position.z);
+
+    // Same reused idle/walk/run mapping air's branch uses — a real
+    // sea-specific mapping (e.g. a distinct swim-stroke animation) is
+    // future refinement, not required for this to work.
+    seaAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
+    seaAvatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
+    seaAvatarView.update(dt);
+
+    targetPosition = seaMovement.position;
+    cameraLookAtY = seaMovement.position.y;
   }
 
   const target = desiredCameraPosition(targetPosition, cameraOffset);
@@ -574,7 +629,8 @@ function animate(): void {
     hud.dataset.z = targetPosition.z.toFixed(3);
   }
 
-  renderer.render(activeRealm === "land" ? scene : airScene, camera);
+  const activeScene = activeRealm === "land" ? scene : activeRealm === "air" ? airScene : seaScene;
+  renderer.render(activeScene, camera);
 
   // Checked after this frame's render, so a transition takes effect
   // starting next frame — no partial-frame mix of old/new realm state

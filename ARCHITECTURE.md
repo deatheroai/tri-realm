@@ -66,11 +66,15 @@ interface PlacedStructure {
 }
 ```
 
-`TerrainField`'s `kind` now has two real variants
-(`src/world/realmMap.ts`): `"land-heightfield"` and `"air-open-volume"`
-(air's is a nominal baseline only — flight has no ground collision to
-sample it for). `sampleTerrainHeight` is the one place that dispatches on
-`kind`; sea adds a third case there once it's scoped, same shape.
+`TerrainField`'s `kind` now has three real variants (`src/world/
+realmMap.ts`): `"land-heightfield"`, `"air-open-volume"` (a nominal
+baseline only — flight has no ground collision to sample it for), and
+`"sea-floor"` (`floorY`/`surfaceY` — the swimmable band's bounds — plus
+`wreckage`, real floating-content positions, same shape as air's
+`platforms`). `sampleTerrainHeight` is the one place that dispatches on
+`kind`, returning `floorY` for sea (the one surface a swimmer can rest
+on, land's closest equivalent) even though `stepSeaMovement` itself takes
+`floorY`/`surfaceY` directly rather than going through this.
 
 Because every realm's map is an instance of this one schema, the systems
 that operate on it are written **once** and reused by all three realms:
@@ -154,8 +158,21 @@ realm's map the avatar currently occupies:
   lift/momentum, not just "land's controller with gravity switched off."
   A dev-only realm switcher (`#dev-realm-panel`) makes this reviewable now
   without waiting on real land↔air portals.
-- **Sea module** *(built when sea realm is scoped)*: swim/buoyancy —
-  resistance and vertical drift distinct from both land and air.
+- **Sea module** (`src/sea/seaMovement.ts`, `BACKLOG.md` Phase 3):
+  swim/buoyancy — resistance and vertical drift distinct from both land
+  and air. Horizontal reuses land's `MoveInput` (`run` as a stronger
+  "kick") but accelerates more sluggishly and tops out lower than air's
+  flight — reads as water resistance, not air with smaller numbers.
+  Vertical reuses air's axis (`src/input/verticalInput.ts`) for active
+  dive/surface, but isn't purely input-driven: with no vertical input
+  held, passive buoyancy drifts the swimmer toward the surface — genuine
+  vertical drift neither land nor air has — which active input overrides
+  outright rather than adding to. Unlike air's free volume, position is
+  bounded between the sea floor and the water surface (the `TerrainField`
+  above), with vertical velocity zeroing out on hitting either bound
+  instead of banking a wasted push against it. A dev-only realm switcher
+  (`#dev-realm-panel`) makes this reviewable now without waiting on a
+  real land↔sea portal, same as air's own first pass.
 
 A realm transition (via portal) swaps the active movement module and
 teleports the avatar to the target map's spawn position — no continuous
