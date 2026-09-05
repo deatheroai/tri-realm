@@ -16,6 +16,16 @@ export const AVATAR_GROUND_OFFSET = CAPSULE_LENGTH / 2 + CAPSULE_RADIUS;
 
 const ANIMATION_CROSSFADE_SECONDS = 0.2;
 
+// Sea's own use of pitch (dive nose-down, surface nose-up) — see
+// setVerticalPitch below. A vertical velocity at or beyond this magnitude
+// (m/s) maps to the full MAX_PITCH_ANGLE; land/air never call this method
+// at all (pure yaw via faceDirection is enough for them), so these numbers
+// are tuned against sea's own vertical range (src/sea/seaMovement.ts:
+// +/-2 m/s active dive/surface, +0.5 m/s idle buoyancy drift) without sea
+// needing to know anything about how AvatarView turns that into an angle.
+const MAX_PITCH_ANGLE = THREE.MathUtils.degToRad(30);
+const PITCH_VELOCITY_FOR_MAX_ANGLE = 2;
+
 export function createProceduralAvatarMesh(): THREE.Mesh {
   return new THREE.Mesh(
     new THREE.CapsuleGeometry(CAPSULE_RADIUS, CAPSULE_LENGTH, 4, 8),
@@ -152,6 +162,28 @@ export class AvatarView {
     const delta = THREE.MathUtils.euclideanModulo(targetAngle - this.root.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
     const t = Math.min(1, turnSpeed * dt);
     this.root.rotation.y += delta * t;
+  }
+
+  /**
+   * Pitches the avatar to lean into vertical movement — sea's own use
+   * (diving noses the model down, surfacing/buoyancy noses it up),
+   * distinct from land/air's pure yaw-only faceDirection since neither of
+   * those realms has meaningful vertical velocity to react to. Purely
+   * visual, same "skins never touch movement state" split faceDirection
+   * keeps — callers pass their own movement's vertical velocity in, this
+   * never reads it back out. No-op (smoothly returns to level) when
+   * verticalVelocity is 0, so a skin switched away from sea mid-tilt still
+   * settles back to neutral rather than freezing pitched.
+   */
+  setVerticalPitch(verticalVelocity: number, dt: number, pitchSpeed = 6): void {
+    // Negated: verified against a real side-on render (not guessed) that
+    // positive rotation.x noses the model *down*, not up, for this root's
+    // axis convention — same discipline as the Robot-scale/Fox-camera
+    // lessons elsewhere in this codebase (render and look, don't infer).
+    const targetPitch =
+      -THREE.MathUtils.clamp(verticalVelocity / PITCH_VELOCITY_FOR_MAX_ANGLE, -1, 1) * MAX_PITCH_ANGLE;
+    const t = Math.min(1, pitchSpeed * dt);
+    this.root.rotation.x += (targetPitch - this.root.rotation.x) * t;
   }
 
   update(dt: number): void {

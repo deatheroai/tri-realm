@@ -173,6 +173,7 @@ declare global {
     __getActiveRealm?: () => "land" | "air" | "sea";
     __getAirAltitude?: () => number;
     __getSeaDepth?: () => number;
+    __getSeaAvatarPitch?: () => number;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -509,6 +510,10 @@ let seaMovement: SeaMovementState = {
 // Test-only hook, mirrors __getAirAltitude — how E2E coverage verifies
 // dive/surface (and passive buoyant drift) actually change depth.
 window.__getSeaDepth = () => seaMovement.position.y;
+// Test-only hook: how E2E coverage verifies setVerticalPitch actually
+// tilts the rendered model (src/skins/avatarView.ts), not just that
+// dive/surface change depth (__getSeaDepth already covers that).
+window.__getSeaAvatarPitch = () => seaAvatar.rotation.x;
 
 // Portal transition (ARCHITECTURE.md's "Portal transition system",
 // src/world/portalTransition.ts) — proximity-based: walking/flying within
@@ -602,10 +607,15 @@ function animate(): void {
     seaMovement = stepSeaMovement(seaMovement, moveInput, vertical, dt, SEA_FLOOR_Y, SEA_SURFACE_Y);
     seaAvatar.position.set(seaMovement.position.x, seaMovement.position.y, seaMovement.position.z);
 
-    // Same reused idle/walk/run mapping air's branch uses — a real
-    // sea-specific mapping (e.g. a distinct swim-stroke animation) is
-    // future refinement, not required for this to work.
+    // Same reused idle/walk/run mapping air's branch uses — a distinct
+    // swim-stroke animation is still future refinement, not required for
+    // this to work — but sea does get one real sea-specific visual: pitch
+    // (setVerticalPitch, src/skins/avatarView.ts) leans the model into its
+    // actual vertical velocity, nose-down diving / nose-up surfacing —
+    // land/air have no meaningful vertical velocity to react to, so
+    // neither calls this.
     seaAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
+    seaAvatarView.setVerticalPitch(seaMovement.velocity.y, dt);
     seaAvatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
     seaAvatarView.update(dt);
 

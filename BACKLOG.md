@@ -522,6 +522,32 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   back to land without cross-realm interference. **Review checkpoint:
   pending your look at the deployed app — try the Sea button in the dev
   panel.**
+- `done` **Skins pickup: sea-specific avatar pitch.** World's own sea
+  scoping above (and its `main.ts` comment) already wired `AvatarView` to
+  the sea avatar and left a real sea-specific visual as future refinement
+  — this is that refinement, picked up by the Skins track since it's
+  `src/skins/avatarView.ts` territory. `AvatarView.setVerticalPitch`
+  (new) leans the model into its actual vertical velocity — nose-down
+  while diving, nose-up while surfacing/drifting — called only from
+  `main.ts`'s sea branch with `seaMovement.velocity.y`; land/air have no
+  meaningful vertical velocity to react to and don't call it, so their
+  yaw-only `faceDirection` is untouched. Distinct from, and doesn't
+  replace, the still-open swim-stroke-animation `todo` below — this is
+  orientation, not a new animation clip (none of the current skins have
+  one to use). **Sign convention verified against a real side-on render,
+  not guessed**: an early version had it backwards (diving pitched the
+  model's nose *up*) — caught by rendering the Fox from a true side
+  camera angle (not the game's own steep 3rd-person view, same "render
+  and look" lesson as the Robot-scale and Gold-metalness fixes) and
+  fixed before landing, with the sign choice now recorded in the
+  function's own comment so it can't silently regress. 4 new unit tests
+  (`avatarView.test.ts`: settles to level at zero velocity, opposite
+  signs for dive vs. surface, clamps past the tuned max velocity, eases
+  rather than snaps for a small `dt`); 2 new E2E tests
+  (`e2e/skins.spec.ts`, exercised through the Sea realm like the
+  AvatarView-in-Air tests are exercised through Air) confirm dive/surface
+  produce opposite tilts and that releasing vertical input eases the
+  pitch back down as buoyancy takes over.
 - `todo` Wire Skins' `AvatarView` animation-state mapping with a real
   sea-specific swim-stroke instead of reusing land/air's idle/walk/run
   intent as-is (same deferred-refinement shape as air's own

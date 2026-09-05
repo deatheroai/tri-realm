@@ -227,21 +227,38 @@ to game logic.
   wanting "Fox" loaded at the same time would otherwise fight over the
   same instance — whichever set it last would silently steal the model
   out from under the other.
-- **Realm-agnostic by construction, proven by a second realm using it**:
-  `main.ts` holds two independent `AvatarView` instances — one per
-  realm's own avatar `Group` (land's from `scene.ts`, air's from
-  `src/air/airScene.ts`) — since both realms' scenes persist
+- **Realm-agnostic by construction, proven by a second (then third)
+  realm using it**: `main.ts` holds three independent `AvatarView`
+  instances — one per realm's own avatar `Group` (land's from
+  `scene.ts`, air's from `src/air/airScene.ts`, sea's from
+  `src/sea/seaScene.ts`) — since all three realms' scenes persist
   simultaneously (only one renders per frame, per the "no continuous
   blending" note above) and each therefore needs its own live visual.
-  The dev skin panel drives both together on every click, so the
+  The dev skin panel drives all three together on every click, so the
   player's chosen skin is one shared identity, not a separate choice per
   realm; each `AvatarView.setSkin` no-ops when already on that skin, so
-  this is safe regardless of which realm happens to be active. Air uses
-  the same `moveInputToAnimationState`/`faceDirection` calls land does,
-  against its own horizontal `MoveInput` — a real air-specific mapping
-  (e.g. accounting for vertical velocity, hover vs. glide vs. dive) is
-  future refinement, not required for the skin system itself to work
-  correctly in a second realm.
+  this is safe regardless of which realm happens to be active. Air and
+  sea both reuse the same `moveInputToAnimationState`/`faceDirection`
+  calls land does, against their own horizontal `MoveInput` — a real
+  air/sea-specific animation *clip* mapping (e.g. a distinct swim-stroke)
+  is still future refinement, not required for the skin system itself to
+  work correctly in a third realm (`BACKLOG.md`).
+- **Sea's one real realm-specific visual: vertical pitch.**
+  `AvatarView.setVerticalPitch(verticalVelocity, dt)` leans the model
+  into its actual vertical velocity — nose-down while diving, nose-up
+  while surfacing or passively drifting — smoothed the same
+  turn-speed-based-lerp way `faceDirection` eases yaw. Only sea's branch
+  in `main.ts` calls it (with `seaMovement.velocity.y`); land has no
+  vertical velocity and air's is `todo` (BACKLOG.md), so both stay
+  perfectly level as before. The angle-per-velocity mapping (clamped at
+  a tuned max velocity, so wildly fast dives don't over-rotate the model)
+  is `AvatarView`'s own constant, not something sea's movement code needs
+  to know about. **The sign was verified against a real side-on render,
+  not inferred**: an initial version had diving pitch the nose *up* —
+  caught by rendering the Fox from a genuine side camera angle (not the
+  game's own steep 3rd-person view, which makes pitch direction hard to
+  read by eye) before landing, same discipline as the Robot-scale and
+  Gold-metalness fixes below.
 
 ### In-app credits (`src/skins/attributions.ts`)
 

@@ -412,3 +412,62 @@ test.describe("dev panel active-state highlighting", () => {
     await expect(sandstoneButton).not.toHaveClass(/active/);
   });
 });
+
+// Sea's own visual, distinct from land/air: AvatarView.setVerticalPitch
+// leans the model into its actual vertical velocity (dive nose-down,
+// surface nose-up) instead of staying perfectly level like land/air's
+// yaw-only faceDirection. Exercised through the Sea realm since that's
+// the only realm with meaningful vertical velocity, same as the
+// AvatarView-in-Air tests above are exercised through the Air realm.
+test.describe("sea avatar vertical pitch", () => {
+  test("diving and surfacing tilt the avatar in opposite directions", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sea" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("sea");
+
+    await page.keyboard.down("ControlLeft");
+    await page.waitForTimeout(500);
+    await page.keyboard.up("ControlLeft");
+    const divePitch = await page.evaluate(() => window.__getSeaAvatarPitch?.());
+    if (divePitch === undefined) throw new Error("__getSeaAvatarPitch not available");
+    expect(divePitch).not.toBeCloseTo(0, 2);
+
+    await page.keyboard.down("Space");
+    await page.waitForTimeout(1000); // cross back through level and settle pitched the other way
+    await page.keyboard.up("Space");
+    const surfacePitch = await page.evaluate(() => window.__getSeaAvatarPitch?.());
+
+    // Opposite sign, not just "different" — diving and surfacing are
+    // opposite vertical directions and should read as opposite tilts.
+    expect(Math.sign(surfacePitch!)).not.toBe(Math.sign(divePitch));
+  });
+
+  test("pitch settles back toward level once vertical input is released and buoyancy takes over", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sea" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("sea");
+
+    await page.keyboard.down("ControlLeft");
+    await page.waitForTimeout(500);
+    await page.keyboard.up("ControlLeft");
+    const divePitch = await page.evaluate(() => window.__getSeaAvatarPitch?.());
+    if (divePitch === undefined) throw new Error("__getSeaAvatarPitch not available");
+    // Diving noses the model down — positive rotation.x for this model's
+    // axis convention (verified against a real side-on render, see
+    // setVerticalPitch's own comment in src/skins/avatarView.ts).
+    expect(divePitch).toBeGreaterThan(0);
+
+    // No input held now — buoyancy alone drifts velocity positive again
+    // (surfacing direction), which should ease the pitch back down toward
+    // — and past — level rather than leaving it pinned at the diving angle.
+    await page.waitForTimeout(1500);
+    const settledPitch = await page.evaluate(() => window.__getSeaAvatarPitch?.());
+    expect(settledPitch!).toBeLessThan(divePitch);
+  });
+});
