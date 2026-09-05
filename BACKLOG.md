@@ -336,10 +336,13 @@ Only starts once Phase 1a has been reviewed and the direction holds.
   (`src/world/portalTransition.ts`, `src/world/landAirPortal.ts`); the
   generic transition system lives here in `src/world/`, exercised first
   against land↔air.
-- `blocked` (on Phase 3 existing) Land↔sea portal implementation — the
-  `Portal` schema and the generic transition system both already exist;
-  wiring an actual transition just needs sea as a real target realm to
-  land in.
+- `blocked` (on the land↔sea portal flavor decision, `DECISIONS.md`) Land↔sea
+  portal implementation — the `Portal` schema, the generic transition
+  system, and now sea itself (Phase 3) all already exist; wiring an actual
+  transition just needs the portal's flavor decided. See the duplicate
+  `todo` under Phase 3 below (same item, tracked in both places since it
+  sits at the Phase 1b/Phase 3 boundary, same as the original Phase 2 entry
+  did for land↔air).
 
 ## Phase 2 — Air realm
 
@@ -455,13 +458,57 @@ without a fresh check-in.
 
 ## Phase 3 — Sea realm
 
-- `blocked` (on Phase 1b completing) Sea realm scoping: movement feel,
-  floating/underwater content.
-- `todo` Swim/buoyancy avatar controller module — hardcoded/minimal
-  content first, same visual-first sequencing as land.
-- `todo` Sea `RealmMap` content (sea floor, floating docks/wreckage).
+Phase 1b completed 2026-08-31/09-01, unblocking this phase per its own
+"blocked (on Phase 1b completing)" gate, same as Phase 2 (Air) did —
+content specifics are left to my judgement per the 2026-08-26 world-model
+decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
+
+- `done` Sea realm scoping + swim/buoyancy avatar controller
+  (`src/sea/seaMovement.ts`, `src/sea/seaScene.ts`, `src/sea/seaRealmMap.ts`)
+  — this phase's design pass and its first hardcoded/minimal content in one
+  cycle, same visual-first sequencing land's Phase 1a and air's Phase 2
+  both started with. `TerrainField` gained a real `"sea-floor"` kind
+  (`src/world/realmMap.ts`: `floorY`/`surfaceY`/`wreckage`), matching the
+  schema's own documented intent ("sea -> sea-floor depth + water
+  surface"). Reuses land's `MoveInput` (`run` doubles as a stronger "kick")
+  and air's vertical axis (`src/input/verticalInput.ts` — dive/surface),
+  but the actual feel is genuinely its own, not air reskinned: horizontal
+  accelerates more sluggishly and tops out lower (reads as water
+  resistance), and vertical isn't purely input-driven — with no vertical
+  input held, passive buoyancy drifts the swimmer toward the surface
+  (`BUOYANCY_DRIFT_SPEED`), which active dive/surface input overrides
+  outright rather than adding to. Also bounded, unlike air's free volume:
+  position clamps between the sea floor and the water surface, with
+  vertical velocity zeroing out on hitting either bound instead of banking
+  a wasted push against it. `createSeaScene()` builds a fogged underwater
+  volume (dimmer, cool-tinted lighting; a translucent surface plane; a sea
+  floor) with scattered floating wreckage for parallax (`ARCHITECTURE.md`:
+  each realm gets its own realm-appropriate floating content) and a plain
+  procedural-capsule avatar — no skin-switching/animation-mapping
+  refinement beyond reusing land/air's, same deferred polish air's own
+  first Phase 2 item left for itself. No land↔sea portal yet (still a
+  pending decision, `DECISIONS.md`) and no placement/save-load in sea's
+  scope this cycle, mirroring how air's own first item left both for
+  later. Reviewable now via `#dev-realm-panel`'s new "Sea" button. 21 new
+  unit tests (`seaMovement.test.ts`, `seaRealmMap.test.ts`,
+  `seaScene.test.ts`, plus 1 in `realmMap.test.ts`); 5 new E2E tests
+  (`e2e/sea-swim.spec.ts`) cover realm switching, horizontal swimming,
+  passive buoyant drift, active dive/surface overriding it, and switching
+  back to land without cross-realm interference. **Review checkpoint:
+  pending your look at the deployed app — try the Sea button in the dev
+  panel.**
+- `todo` Wire Skins' `AvatarView` animation-state mapping with a real
+  sea-specific swim-stroke instead of reusing land/air's idle/walk/run
+  intent as-is (same deferred-refinement shape as air's own
+  animation-mapping todo before its dedicated wiring pass).
+- `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
+  current hardcoded wreckage boxes, once reviewed.
 - `todo` Land↔sea portal — exact flavor (dive spot / underground passage /
-  beach) is a pending decision in `DECISIONS.md`.
+  beach) is a pending decision in `DECISIONS.md`; the generic transition
+  system (`src/world/portalTransition.ts`) and `main.ts`'s
+  `maybeTriggerPortal` already handle a third realm target, so wiring an
+  actual portal in is a `landSeaPortal.ts` module (same shape as
+  `landAirPortal.ts`) once the flavor is decided, not new plumbing.
 
 ## Later / unscoped
 
