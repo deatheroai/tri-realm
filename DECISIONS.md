@@ -11,9 +11,18 @@ on these.
 ## Pending Decisions
 
 - **Exact form of the land↔sea portal** — e.g. a dive spot, underground
-  passage, or beach. Deferred until Phase 3 (`BACKLOG.md`) is actually
-  scoped; the world model only requires that a portal exist as a named
-  transition point, not which flavor it takes.
+  passage, or beach. Previously deferred until Phase 3 was actually
+  scoped — that happened this cycle (2026-09-05, `BACKLOG.md`: sea realm
+  scoping + swim/buoyancy controller), so there's now something concrete
+  to weigh flavors against (a bounded floor/surface swim volume, same as
+  land↔air's balloon was weighed against air's open-volume flight). This
+  session couldn't ask live (unattended scheduled run — `AskUserQuestion`
+  wasn't available in this environment either), so it's still sitting
+  here for the next time you check in, same bar as land↔air's portal
+  decision used. The world model only requires that a portal exist as a
+  named transition point, not which flavor it takes — not a blocker on
+  other Phase 3 work in the meantime (see the `todo`s logged alongside it
+  in `BACKLOG.md`).
 
 ## Needs Your Action (not decisions — steps only you can take)
 
