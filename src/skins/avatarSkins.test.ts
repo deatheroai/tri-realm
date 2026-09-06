@@ -37,6 +37,21 @@ describe("AVATAR_SKINS catalog", () => {
       }
     }
   });
+
+  it("at least one skin declares real swim-specific animation clips (the long-open sea-swim-animation backlog item)", () => {
+    const swimCapable = AVATAR_SKINS.filter(
+      (s) => s.animationClipNames?.swimIdle && s.animationClipNames?.swimActive,
+    );
+    expect(swimCapable.length).toBeGreaterThan(0);
+  });
+
+  it("a skin with swimIdle also declares swimActive, and vice versa — half a swim mapping is a bug, not a valid state", () => {
+    for (const skin of AVATAR_SKINS) {
+      const hasIdle = Boolean(skin.animationClipNames?.swimIdle);
+      const hasActive = Boolean(skin.animationClipNames?.swimActive);
+      expect(hasIdle).toBe(hasActive);
+    }
+  });
 });
 
 describe("moveInputToAnimationState", () => {

@@ -1,4 +1,11 @@
-export type MoveAnimationState = "idle" | "walk" | "run";
+/**
+ * "swimIdle"/"swimActive" are sea-specific (src/sea/seaAnimation.ts) — only
+ * requested for a skin that actually declares them in animationClipNames
+ * (currently just "mannequin"); every other skin never gets asked for them,
+ * so this addition changes nothing about land/air or Fox/Robot/Princess/
+ * Capsule's existing idle/walk/run behavior.
+ */
+export type MoveAnimationState = "idle" | "walk" | "run" | "swimIdle" | "swimActive";
 
 export interface AvatarSkin {
   id: string;
@@ -49,6 +56,26 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     // no correction needed (unlike Robot above). No rig/animation in the
     // source model — static pose only, no idle/walk/run clips (see
     // ATTRIBUTIONS.md for why).
+  },
+  {
+    id: "mannequin",
+    label: "Mannequin",
+    kind: "gltf",
+    modelUrl: "/assets/models/mannequin.glb",
+    // At scale 1 the model measured ~1.83 world units tall (bboxMax.y from
+    // `gltf-transform inspect`, same reference points as Fox/Robot/Princess
+    // above) — already close to Capsule's ~1.8, no correction needed.
+    // The first reachable free source with real swim-stroke clips (see
+    // ATTRIBUTIONS.md) — swimIdle/swimActive here are sea-specific, only
+    // requested by src/sea/seaAnimation.ts while actively swimming; idle/
+    // walk/run cover land/air exactly like every other skin.
+    animationClipNames: {
+      idle: "Idle_Loop",
+      walk: "Walk_Loop",
+      run: "Sprint_Loop",
+      swimIdle: "Swim_Idle_Loop",
+      swimActive: "Swim_Fwd_Loop",
+    },
   },
   { id: "capsule", label: "Capsule", kind: "procedural" },
 ];

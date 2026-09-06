@@ -100,6 +100,36 @@ describe("AvatarView", () => {
     expect(root.children[0]).toBeInstanceOf(THREE.Mesh);
   });
 
+  describe("hasAnimation", () => {
+    it("is false for every state before any skin is set", () => {
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+
+      expect(view.hasAnimation("idle")).toBe(false);
+      expect(view.hasAnimation("swimIdle")).toBe(false);
+    });
+
+    it("is true only for clip names the active skin actually maps, false for ones it doesn't (e.g. swim on a non-swim skin)", async () => {
+      const fakeModel = new THREE.Group();
+      const fakeClip = new THREE.AnimationClip("Walk", 1, []);
+      vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue({
+        scene: fakeModel,
+        animations: [fakeClip],
+        scenes: [fakeModel],
+        cameras: [],
+        asset: {},
+      } as never);
+
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+      await view.setSkin("fox"); // maps walk -> "Walk", no swimIdle/swimActive entry
+
+      expect(view.hasAnimation("walk")).toBe(true);
+      expect(view.hasAnimation("swimIdle")).toBe(false);
+      expect(view.hasAnimation("swimActive")).toBe(false);
+    });
+  });
+
   it("does not throw when updating or changing move state with no animated skin active", () => {
     const root = new THREE.Group();
     const view = new AvatarView(root);

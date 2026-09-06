@@ -19,12 +19,10 @@ import type { MoveAnimationState } from "../skins/avatarSkins";
  *
  * Still reuses the shared `idle`/`walk`/`run` enum and every current
  * skin's existing clip names (`Survey`/`Walk`/`Run`, `Idle`/`Walking`/
- * `Running`) rather than inventing a fourth "swim" state — no bundled
- * skin has a distinct swim-stroke clip to map it to yet (still `todo`,
- * genuinely gated on sourcing that content, same shape as the
- * princess-figure asset search). This is the real, buildable half of
- * that backlog item: correct *when* sea shows motion, independent of
- * *which* clip eventually plays for it.
+ * `Running`) — this function's own job is purely *when* sea shows motion,
+ * independent of *which* clip eventually plays for it. See
+ * `withSwimAnimationState` below for the "which clip" half, now that a
+ * skin with real swim-stroke clips exists (`mannequin`, `BACKLOG.md`).
  */
 export function moveInputToSeaAnimationState(
   moveX: number,
@@ -36,4 +34,26 @@ export function moveInputToSeaAnimationState(
   const isSwimming = horizontalMagnitude >= 0.01 || vertical !== 0;
   if (!isSwimming) return "idle";
   return run ? "run" : "walk";
+}
+
+/**
+ * Routes `moveInputToSeaAnimationState`'s generic idle/walk/run result to
+ * the dedicated `swimIdle`/`swimActive` states when the active skin
+ * actually has them (`AvatarView.hasAnimation`, checked by the caller in
+ * `main.ts` against its own `swimIdle` clip as the stand-in for "this skin
+ * supports swimming") — every other skin keeps exactly today's walk/run
+ * behavior in the sea realm, unchanged. Deliberately collapses run vs.
+ * walk into one "active" state once a skin does have swim clips: the
+ * bundled `mannequin` skin's source library only has a single swim-stroke
+ * clip (`Swim_Fwd_Loop`, no separate sprint variant) to map either speed
+ * onto, so there's no real run/walk distinction to preserve here — a
+ * future skin with two distinct swim clips would need this reworked, not
+ * a limitation worth solving speculatively now.
+ */
+export function withSwimAnimationState(
+  genericState: MoveAnimationState,
+  skinHasSwimClips: boolean,
+): MoveAnimationState {
+  if (!skinHasSwimClips) return genericState;
+  return genericState === "idle" ? "swimIdle" : "swimActive";
 }

@@ -571,13 +571,41 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   (`seaAnimation.test.ts`); land/air keep calling the generic mapping
   unchanged — full suite verified (typecheck, 179 unit tests, build, 45
   E2E tests all pass).
-- `todo` **Still want:** a real sea-specific swim-stroke animation *clip*
-  (not just the state-mapping fixed above) — genuinely gated on sourcing
-  a skin with a distinct swim animation, same shape as the (now-resolved)
-  princess-figure search. None of the currently reachable free sources
-  (Khronos glTF-Sample-Assets, three.js's bundled examples, the
-  GitHub-releases CC0 mirror) are known to have one — not re-checked this
-  cycle, Skins' track owns asset sourcing.
+- `done` **Real sea-specific swim-stroke animation clip** — the long-open
+  item above, resolved. Found via a different reachable source than the
+  ones previously checked: `github.com/J-Ponzo/gltf-universal-animation-library`,
+  a GitHub mirror (not itch.io/quaternius.com, both still blocked) of
+  Quaternius's CC0 Universal Animation Library, ships a rigged "Mannequin"
+  mesh with 46 clips including real `Swim_Idle_Loop`/`Swim_Fwd_Loop`. New
+  5th avatar skin `mannequin` (`public/assets/models/mannequin.glb`,
+  trimmed from the source's 46 clips down to the 5 this project actually
+  uses via `@gltf-transform/cli` prune — Idle_Loop/Walk_Loop/Sprint_Loop
+  plus the two swim clips — landing at ~736KB; full provenance in
+  `ATTRIBUTIONS.md`). Height measured for real (~1.83 at scale 1, close to
+  Capsule's ~1.8, no correction needed) — same discipline as the
+  Robot-scale/Princess-scale fixes, not guessed.
+  Required real architecture, not just a new catalog entry: `MoveAnimationState`
+  (`src/skins/avatarSkins.ts`) gained `swimIdle`/`swimActive` alongside the
+  existing idle/walk/run — additive only, every other skin's clip mapping
+  is untouched. `AvatarView.hasAnimation` (new) lets a caller check whether
+  the active skin actually has a given clip; `withSwimAnimationState`
+  (new, `src/sea/seaAnimation.ts`) uses that to route sea to the dedicated
+  swim states only when the active skin has them, otherwise falling back
+  to exactly today's shared walk/run behavior — Fox/Robot/Princess/Capsule
+  are completely unaffected while swimming, verified by a dedicated E2E
+  test alongside Mannequin's own. `moveInputToSeaAnimationState` itself is
+  unchanged (still just decides *when* sea shows motion; the new function
+  decides *which* clip). 7 new unit tests (`avatarSkins.test.ts`,
+  `avatarView.test.ts`, `seaAnimation.test.ts`), 3 new E2E tests
+  (`e2e/skins.spec.ts`: Mannequin's swimIdle/swimActive states, Fox's
+  unaffected walk state, both realms' existing per-skin listing/height
+  checks cover Mannequin automatically since they iterate `AVATAR_SKINS`).
+  Verified visually with real screenshots (idle floating pose and mid-swim
+  in Sea, plus Land for the shared walk/run clips) — the source mesh is a
+  plain color-blocked mannequin (orange body, purple joint accents, no
+  textures), rougher than Fox/Robot/Princess but functional and
+  correctly-scaled; a nicer-looking swim-capable model would be a future
+  swap, not a blocker on shipping the actual clips now.
 - `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
   current hardcoded wreckage boxes, once reviewed.
 - `todo` Land↔sea portal — exact flavor (dive spot / underground passage /

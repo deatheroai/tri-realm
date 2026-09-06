@@ -96,6 +96,7 @@ test("the dev skin panel lists both avatar skins and block materials", async ({ 
   await expect(page.locator("#dev-skin-panel button", { hasText: "Capsule" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Fox" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Robot" })).toBeVisible();
+  await expect(page.locator("#dev-skin-panel button", { hasText: "Mannequin" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Sandstone" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Slate" })).toBeVisible();
 });
@@ -469,5 +470,58 @@ test.describe("sea avatar vertical pitch", () => {
     await page.waitForTimeout(1500);
     const settledPitch = await page.evaluate(() => window.__getSeaAvatarPitch?.());
     expect(settledPitch!).toBeLessThan(divePitch);
+  });
+});
+
+// The long-open "sea-specific swim-stroke animation" backlog item, now that
+// a skin with real swim clips exists ("mannequin", see ATTRIBUTIONS.md):
+// withSwimAnimationState (src/sea/seaAnimation.ts) should route sea to the
+// dedicated swimIdle/swimActive states only for a skin that actually has
+// them, leaving every other skin's shared walk/run behavior untouched.
+test.describe("sea avatar swim animation", () => {
+  test("switching to Mannequin (the swim-capable skin) requests the dedicated swim clips while swimming in sea, not the shared walk/run clips", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sea" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("sea");
+
+    await page.locator("#dev-skin-panel button", { hasText: "Mannequin" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarSkinId?.()))
+      .toBe("mannequin");
+
+    // No input yet — floating idle should already be the swim-specific
+    // idle clip, not the shared land "idle".
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarMoveState?.()))
+      .toBe("swimIdle");
+
+    await page.keyboard.down("KeyW");
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarMoveState?.()))
+      .toBe("swimActive");
+    await page.keyboard.up("KeyW");
+  });
+
+  test("Fox (no swim clips) keeps using the shared walk state while swimming in sea, unaffected by Mannequin's swim clips existing", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sea" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("sea");
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarSkinId?.()))
+      .toBe("fox"); // Fox is still the default on first load
+
+    await page.keyboard.down("KeyW");
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarMoveState?.()))
+      .toBe("walk");
+    await page.keyboard.up("KeyW");
   });
 });

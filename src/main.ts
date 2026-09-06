@@ -24,10 +24,15 @@ import { stepAirMovement, type AirMovementState } from "./air/airMovement";
 import { createSeaScene } from "./sea/seaScene";
 import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y } from "./sea/seaRealmMap";
 import { stepSeaMovement, type SeaMovementState } from "./sea/seaMovement";
-import { moveInputToSeaAnimationState } from "./sea/seaAnimation";
+import { moveInputToSeaAnimationState, withSwimAnimationState } from "./sea/seaAnimation";
 import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
-import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
+import {
+  AVATAR_SKINS,
+  DEFAULT_AVATAR_SKIN_ID,
+  moveInputToAnimationState,
+  type MoveAnimationState,
+} from "./skins/avatarSkins";
 import { BLOCK_MATERIALS, DEFAULT_BLOCK_MATERIAL_ID } from "./skins/blockMaterials";
 import { ATTRIBUTIONS } from "./skins/attributions";
 
@@ -167,6 +172,7 @@ declare global {
     __projectToScreen?: (x: number, y: number, z: number) => { x: number; y: number };
     __getAvatarSkinId?: () => string;
     __getAirAvatarSkinId?: () => string;
+    __getSeaAvatarSkinId?: () => string;
     __getAvatarWorldHeight?: () => number;
     __getLastPlacedColor?: () => number | undefined;
     __getLastPlacedMapUuid?: () => string | undefined;
@@ -175,6 +181,7 @@ declare global {
     __getAirAltitude?: () => number;
     __getSeaDepth?: () => number;
     __getSeaAvatarPitch?: () => number;
+    __getSeaAvatarMoveState?: () => MoveAnimationState;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -186,6 +193,7 @@ window.__projectToScreen = (x, y, z) => {
 };
 window.__getAvatarSkinId = () => avatarView.skinId;
 window.__getAirAvatarSkinId = () => airAvatarView.skinId;
+window.__getSeaAvatarSkinId = () => seaAvatarView.skinId;
 // World-space height of whatever's currently rendering inside the avatar
 // group — lets skin scale be checked/tuned against a real number instead
 // of by eye (see BACKLOG.md: Robot originally shipped far too tall).
@@ -515,6 +523,10 @@ window.__getSeaDepth = () => seaMovement.position.y;
 // tilts the rendered model (src/skins/avatarView.ts), not just that
 // dive/surface change depth (__getSeaDepth already covers that).
 window.__getSeaAvatarPitch = () => seaAvatar.rotation.x;
+// Test-only hook: how E2E coverage verifies withSwimAnimationState actually
+// requests the dedicated swimIdle/swimActive states for a swim-capable skin
+// (mannequin) while leaving every other skin on the shared walk/run states.
+window.__getSeaAvatarMoveState = () => seaAvatarView.moveState;
 
 // Portal transition (ARCHITECTURE.md's "Portal transition system",
 // src/world/portalTransition.ts) — proximity-based: walking/flying within
@@ -612,18 +624,23 @@ function animate(): void {
     // BACKLOG.md Phase 3): unlike land/air's purely-horizontal intent, an
     // active dive/surface hold with zero horizontal input still counts as
     // swimming, not idle — a genuine sea-specific signal the generic
-    // mapping had no way to see. Still resolves to the same shared
-    // idle/walk/run clip names, since no bundled skin has a distinct
-    // swim-stroke clip yet (that part remains a real, asset-gated `todo`).
-    // Sea also gets one other real sea-specific visual: pitch
-    // (setVerticalPitch, src/skins/avatarView.ts) leans the model into its
-    // actual vertical velocity, nose-down diving / nose-up surfacing —
-    // land/air have no meaningful vertical velocity to react to, so
-    // neither calls this.
+    // mapping had no way to see. `withSwimAnimationState` then routes that
+    // generic idle/walk/run result to the dedicated swimIdle/swimActive
+    // states, but only for a skin that actually has them (checked via
+    // `hasAnimation("swimIdle")` — currently just "mannequin") — every
+    // other skin keeps playing the shared walk/run clip while swimming,
+    // exactly as before. Sea also gets one other real sea-specific visual:
+    // pitch (setVerticalPitch, src/skins/avatarView.ts) leans the model
+    // into its actual vertical velocity, nose-down diving / nose-up
+    // surfacing — land/air have no meaningful vertical velocity to react
+    // to, so neither calls this.
     seaAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
     seaAvatarView.setVerticalPitch(seaMovement.velocity.y, dt);
     seaAvatarView.setMoveState(
-      moveInputToSeaAnimationState(moveInput.moveX, moveInput.moveZ, vertical, moveInput.run),
+      withSwimAnimationState(
+        moveInputToSeaAnimationState(moveInput.moveX, moveInput.moveZ, vertical, moveInput.run),
+        seaAvatarView.hasAnimation("swimIdle"),
+      ),
     );
     seaAvatarView.update(dt);
 

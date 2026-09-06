@@ -50,6 +50,32 @@ by this session's network policy but that mirror isn't (see `DECISIONS.md`).
 
 CC0 — no attribution legally required, but credited here anyway for provenance.
 
+## `models/mannequin.glb`
+
+Source: [J-Ponzo/gltf-universal-animation-library](https://github.com/J-Ponzo/gltf-universal-animation-library)
+(a GitHub mirror of Quaternius's Universal Animation Library, standard/free tier —
+`quaternius.com`/`quaternius.itch.io` are both blocked by this session's network policy,
+but this GitHub repo isn't, same "reachable mirror" pattern as the ambientCG textures above).
+
+- Model + all animation clips: [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/) —
+  by [Quaternius](https://www.patreon.com/quaternius).
+- The source library ships 46 clips (combat, sitting, spellcasting, and more) on a single
+  rigged "Mannequin" mesh, meant as a general-purpose animation reference rather than a
+  finished character — bundled here specifically because it's the first reachable free
+  source with genuine **swim** clips (`Swim_Idle_Loop`, `Swim_Fwd_Loop`), closing the
+  long-open "sea-specific swim-stroke animation" backlog item. Trimmed to 5 clips before
+  committing (`Idle_Loop`, `Walk_Loop`, `Sprint_Loop`, `Swim_Idle_Loop`, `Swim_Fwd_Loop` —
+  the ones this project's idle/walk/run/swim states actually use) via
+  `@gltf-transform/cli`'s `prune`, cutting the packed `.glb` from the source's ~46-clip
+  size down to ~736KB.
+- Idle/Walk/Sprint clips are wired to the usual idle/walk/run movement states, same as
+  Fox/Robot; the two Swim clips are additionally wired to sea-specific "swimIdle"/
+  "swimActive" states (`src/skins/avatarSkins.ts`, `src/sea/seaAnimation.ts`) — only used
+  when swimming in the Sea realm, every other skin (lacking swim clips) keeps using the
+  regular walk/run animation while swimming, unchanged.
+
+CC0 — no attribution legally required, but credited here anyway for provenance.
+
 ## `models/princess.glb`
 
 Source: [Sketchfab](https://sketchfab.com/3d-models/apple-white-royal-pirate-365255d49d5e46e8a25b2bf921ef5b64),

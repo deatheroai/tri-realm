@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { moveInputToSeaAnimationState } from "./seaAnimation";
+import { moveInputToSeaAnimationState, withSwimAnimationState } from "./seaAnimation";
 
 describe("moveInputToSeaAnimationState", () => {
   it("is idle with no horizontal input and no active vertical input", () => {
@@ -33,5 +33,22 @@ describe("moveInputToSeaAnimationState", () => {
   it("treats diagonal horizontal input the same as the generic mapping's magnitude check", () => {
     expect(moveInputToSeaAnimationState(0.005, 0.005, 0, false)).toBe("idle");
     expect(moveInputToSeaAnimationState(0.1, 0.1, 0, false)).toBe("walk");
+  });
+});
+
+describe("withSwimAnimationState", () => {
+  it("passes the generic state through unchanged for a skin without swim clips", () => {
+    expect(withSwimAnimationState("idle", false)).toBe("idle");
+    expect(withSwimAnimationState("walk", false)).toBe("walk");
+    expect(withSwimAnimationState("run", false)).toBe("run");
+  });
+
+  it("routes idle to swimIdle for a skin with swim clips", () => {
+    expect(withSwimAnimationState("idle", true)).toBe("swimIdle");
+  });
+
+  it("routes both walk and run to swimActive for a skin with swim clips — no separate swim-run clip exists", () => {
+    expect(withSwimAnimationState("walk", true)).toBe("swimActive");
+    expect(withSwimAnimationState("run", true)).toBe("swimActive");
   });
 });

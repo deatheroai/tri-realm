@@ -71,6 +71,11 @@ export class AvatarView {
     return this.currentSkinId;
   }
 
+  /** The last state requested via setMoveState — test-only visibility into which clip should be playing. */
+  get moveState(): MoveAnimationState {
+    return this.currentState;
+  }
+
   async setSkin(skinId: string): Promise<void> {
     if (skinId === this.currentSkinId) return;
     const skin = AVATAR_SKINS.find((s) => s.id === skinId);
@@ -133,6 +138,16 @@ export class AvatarView {
         resolvedSkinId: FALLBACK_AVATAR_SKIN_ID,
       };
     }
+  }
+
+  /**
+   * Whether the currently-active skin has a real clip wired for this state
+   * — sea uses this to decide whether to request the dedicated "swimIdle"/
+   * "swimActive" states (src/sea/seaAnimation.ts) instead of falling back
+   * to the shared idle/walk/run clips every skin has.
+   */
+  hasAnimation(state: MoveAnimationState): boolean {
+    return Boolean(this.actions[state]);
   }
 
   /** Sets which movement animation should be playing (no-op if unchanged and not forced). */
