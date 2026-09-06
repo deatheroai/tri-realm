@@ -548,10 +548,36 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   AvatarView-in-Air tests are exercised through Air) confirm dive/surface
   produce opposite tilts and that releasing vertical input eases the
   pitch back down as buoyancy takes over.
-- `todo` Wire Skins' `AvatarView` animation-state mapping with a real
-  sea-specific swim-stroke instead of reusing land/air's idle/walk/run
-  intent as-is (same deferred-refinement shape as air's own
-  animation-mapping todo before its dedicated wiring pass).
+- `done` Sea-specific animation-*state* mapping
+  (`src/sea/seaAnimation.ts`, `moveInputToSeaAnimationState`): land/air's
+  generic `moveInputToAnimationState` (`src/skins/avatarSkins.ts`) only
+  looks at horizontal move intent, which is right for both of them but
+  wrong for sea — an active dive/surface hold (`vertical !== 0`, zero
+  horizontal input) is real player-driven swimming that the generic
+  mapping was scoring as "idle," so the avatar visibly stopped animating
+  while the player was actively diving/surfacing straight down or up.
+  Fixed by treating active vertical input as motion too, while
+  deliberately *not* triggering on sea's own passive buoyancy drift
+  (`BUOYANCY_DRIFT_SPEED` keeps `vertical` at exactly 0, so a player
+  holding no keys still reads as idle/floating rather than perpetually
+  "swimming"). Still resolves to the same shared `idle`/`walk`/`run`
+  clip names — no bundled skin (Fox/Robot/Princess) has a distinct
+  swim-stroke clip to map a fourth state onto, so the actual swim
+  *animation* stays the separate, asset-gated `todo` right below; this
+  closes the "wiring" half of the original item — correcting *when* sea
+  shows motion, independent of *which* clip eventually plays for it.
+  Distinct from, and doesn't overlap, the vertical-pitch item above
+  (orientation vs. state-selection). 8 new unit tests
+  (`seaAnimation.test.ts`); land/air keep calling the generic mapping
+  unchanged — full suite verified (typecheck, 179 unit tests, build, 45
+  E2E tests all pass).
+- `todo` **Still want:** a real sea-specific swim-stroke animation *clip*
+  (not just the state-mapping fixed above) — genuinely gated on sourcing
+  a skin with a distinct swim animation, same shape as the (now-resolved)
+  princess-figure search. None of the currently reachable free sources
+  (Khronos glTF-Sample-Assets, three.js's bundled examples, the
+  GitHub-releases CC0 mirror) are known to have one — not re-checked this
+  cycle, Skins' track owns asset sourcing.
 - `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
   current hardcoded wreckage boxes, once reviewed.
 - `todo` Land↔sea portal — exact flavor (dive spot / underground passage /

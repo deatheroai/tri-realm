@@ -237,12 +237,20 @@ to game logic.
   The dev skin panel drives all three together on every click, so the
   player's chosen skin is one shared identity, not a separate choice per
   realm; each `AvatarView.setSkin` no-ops when already on that skin, so
-  this is safe regardless of which realm happens to be active. Air and
-  sea both reuse the same `moveInputToAnimationState`/`faceDirection`
-  calls land does, against their own horizontal `MoveInput` — a real
-  air/sea-specific animation *clip* mapping (e.g. a distinct swim-stroke)
-  is still future refinement, not required for the skin system itself to
-  work correctly in a third realm (`BACKLOG.md`).
+  this is safe regardless of which realm happens to be active. Air reuses
+  the same `moveInputToAnimationState`/`faceDirection` calls land does,
+  against its own horizontal `MoveInput`. Sea reuses `faceDirection` but
+  has its own `moveInputToSeaAnimationState` (`src/sea/seaAnimation.ts`)
+  for *state selection*: land/air's horizontal-only intent would score an
+  active dive/surface hold with zero horizontal input as "idle," which is
+  wrong for sea specifically — that's real player-driven swimming — so
+  sea's version also counts active vertical input (but not its own
+  passive buoyancy drift, which leaves `vertical` at exactly 0) as motion.
+  Both still resolve to the same shared `idle`/`walk`/`run` clip names; a
+  real air/sea-specific animation *clip* mapping (e.g. a distinct
+  swim-stroke) remains future refinement, genuinely gated on sourcing a
+  skin with one, not required for the skin system itself to work
+  correctly in a third realm (`BACKLOG.md`).
 - **Sea's one real realm-specific visual: vertical pitch.**
   `AvatarView.setVerticalPitch(verticalVelocity, dt)` leans the model
   into its actual vertical velocity — nose-down while diving, nose-up

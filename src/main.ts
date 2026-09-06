@@ -24,6 +24,7 @@ import { stepAirMovement, type AirMovementState } from "./air/airMovement";
 import { createSeaScene } from "./sea/seaScene";
 import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y } from "./sea/seaRealmMap";
 import { stepSeaMovement, type SeaMovementState } from "./sea/seaMovement";
+import { moveInputToSeaAnimationState } from "./sea/seaAnimation";
 import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import { AVATAR_SKINS, DEFAULT_AVATAR_SKIN_ID, moveInputToAnimationState } from "./skins/avatarSkins";
@@ -607,16 +608,23 @@ function animate(): void {
     seaMovement = stepSeaMovement(seaMovement, moveInput, vertical, dt, SEA_FLOOR_Y, SEA_SURFACE_Y);
     seaAvatar.position.set(seaMovement.position.x, seaMovement.position.y, seaMovement.position.z);
 
-    // Same reused idle/walk/run mapping air's branch uses — a distinct
-    // swim-stroke animation is still future refinement, not required for
-    // this to work — but sea does get one real sea-specific visual: pitch
+    // Sea-specific animation-state mapping (src/sea/seaAnimation.ts,
+    // BACKLOG.md Phase 3): unlike land/air's purely-horizontal intent, an
+    // active dive/surface hold with zero horizontal input still counts as
+    // swimming, not idle — a genuine sea-specific signal the generic
+    // mapping had no way to see. Still resolves to the same shared
+    // idle/walk/run clip names, since no bundled skin has a distinct
+    // swim-stroke clip yet (that part remains a real, asset-gated `todo`).
+    // Sea also gets one other real sea-specific visual: pitch
     // (setVerticalPitch, src/skins/avatarView.ts) leans the model into its
     // actual vertical velocity, nose-down diving / nose-up surfacing —
     // land/air have no meaningful vertical velocity to react to, so
     // neither calls this.
     seaAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
     seaAvatarView.setVerticalPitch(seaMovement.velocity.y, dt);
-    seaAvatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
+    seaAvatarView.setMoveState(
+      moveInputToSeaAnimationState(moveInput.moveX, moveInput.moveZ, vertical, moveInput.run),
+    );
     seaAvatarView.update(dt);
 
     targetPosition = seaMovement.position;
