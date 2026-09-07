@@ -182,6 +182,7 @@ declare global {
     __getSeaDepth?: () => number;
     __getSeaAvatarPitch?: () => number;
     __getSeaAvatarMoveState?: () => MoveAnimationState;
+    __getAvatarVisualLocalY?: () => number | undefined;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -201,6 +202,14 @@ window.__getAvatarWorldHeight = () => {
   const box = new THREE.Box3().setFromObject(avatar);
   return box.max.y - box.min.y;
 };
+// Local-space y of land's avatar visual (its child inside the `avatar`
+// group `AvatarView` never repositions itself — see AvatarView.update's
+// procedural idle/movement bob, src/skins/avatarView.ts): nonzero for a
+// skin with no clip for the current move state (Capsule/Princess), exactly
+// 0 for one that does (Fox/Robot/Mannequin, whose own clip already
+// supplies motion). Lets an E2E test check the bob is actually happening
+// (or not) without screenshot diffing.
+window.__getAvatarVisualLocalY = () => avatar.children[0]?.position.y;
 window.__getLastPlacedColor = () => {
   const lastStructure = landMap.structures[landMap.structures.length - 1];
   const last = lastStructure && placedMeshes.get(lastStructure.id);

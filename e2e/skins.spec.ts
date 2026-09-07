@@ -188,6 +188,41 @@ test("switching to Princess (no animation clips) loads it, then switching back t
   expect(errors).toEqual([]);
 });
 
+// Regression guard for the procedural idle/movement "bob" (AvatarView.update,
+// src/skins/avatarView.ts): a skin with no real clip for the current move
+// state should still visibly move a little rather than reading as frozen,
+// but a skin that *does* have a real clip (its own animation already
+// supplies motion) must never get this extra offset on top of it.
+test("Princess (no animation clips) bobs while an animated skin (Fox) stays exactly still", async ({ page }) => {
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  // Fox has a real clip for every move state — its own animation carries
+  // the motion, so AvatarView.update must never add a bob on top of it.
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarVisualLocalY?.()), { timeout: 5000 })
+    .toBe(0);
+
+  await page.locator("#dev-skin-panel button", { hasText: "Princess" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("princess");
+
+  // Princess has no clips at all — sampled twice a beat apart, the bob
+  // should actually be oscillating rather than sitting at a fixed value.
+  const first = await page.evaluate(() => window.__getAvatarVisualLocalY?.());
+  await page.waitForTimeout(300);
+  const second = await page.evaluate(() => window.__getAvatarVisualLocalY?.());
+  expect(first).not.toBe(undefined);
+  expect(second).not.toBe(undefined);
+  expect(first).not.toBe(second);
+  // Small — a subtle cue, not a visible jump.
+  expect(Math.abs(first as number)).toBeLessThan(0.1);
+  expect(Math.abs(second as number)).toBeLessThan(0.1);
+});
+
 // Compares texture *identity* (map.uuid), not .color: once a material's
 // real photographed texture loads (realBlockTextures.ts), .color resets to
 // white for every material except Gold, so .color alone can't reliably

@@ -267,6 +267,17 @@ to game logic.
   game's own steep 3rd-person view, which makes pitch direction hard to
   read by eye) before landing, same discipline as the Robot-scale and
   Gold-metalness fixes below.
+- **Procedural idle/movement "bob" for skins with no real clip.**
+  `bobOffset(elapsedSeconds, state)` (`src/skins/avatarSkins.ts`) is a
+  pure sine-wave function — small/slow while idle, bigger/faster while
+  walking or running — and `AvatarView.update` applies it to the visual's
+  *local* y (never the root `main.ts` repositions every frame) only when
+  `hasAnimation(currentState)` is false. Today that's Capsule (never
+  animated) and Princess (no clips in the source model at all) — Fox/
+  Robot/Mannequin always have a real clip for every state they're asked
+  for, so this never fires for them and their own clip's motion is
+  untouched. Reset to 0 on every `setSkin` so a skin switch never carries
+  a stale offset into the new visual.
 
 ### In-app credits (`src/skins/attributions.ts`)
 

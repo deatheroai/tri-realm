@@ -3,7 +3,9 @@ import {
   AVATAR_SKINS,
   DEFAULT_AVATAR_SKIN_ID,
   FALLBACK_AVATAR_SKIN_ID,
+  bobOffset,
   moveInputToAnimationState,
+  type MoveAnimationState,
 } from "./avatarSkins";
 
 describe("AVATAR_SKINS catalog", () => {
@@ -69,5 +71,42 @@ describe("moveInputToAnimationState", () => {
 
   it("ignores the run flag when there's no actual movement", () => {
     expect(moveInputToAnimationState(0, 0, true)).toBe("idle");
+  });
+});
+
+describe("bobOffset", () => {
+  const states: MoveAnimationState[] = ["idle", "walk", "run", "swimIdle", "swimActive"];
+
+  it("is exactly 0 at elapsedSeconds 0 for every state", () => {
+    for (const state of states) {
+      expect(bobOffset(0, state)).toBe(0);
+    }
+  });
+
+  it("is a deterministic pure function of (elapsedSeconds, state)", () => {
+    expect(bobOffset(1.234, "walk")).toBe(bobOffset(1.234, "walk"));
+  });
+
+  it("stays within a small, bounded amplitude — this is a subtle idle/movement cue, not a visible jump", () => {
+    for (const state of states) {
+      for (let t = 0; t < 10; t += 0.05) {
+        expect(Math.abs(bobOffset(t, state))).toBeLessThanOrEqual(0.1);
+      }
+    }
+  });
+
+  it("run bobs with a bigger amplitude than idle — more motion while actually moving fast", () => {
+    const maxAmplitude = (state: MoveAnimationState) => {
+      let max = 0;
+      for (let t = 0; t < 5; t += 0.01) max = Math.max(max, Math.abs(bobOffset(t, state)));
+      return max;
+    };
+    expect(maxAmplitude("run")).toBeGreaterThan(maxAmplitude("idle"));
+  });
+
+  it("is periodic — repeats after its own period rather than drifting", () => {
+    // idle's period is 2.4s (see BOB_PARAMS) — sampling a non-round elapsed
+    // time one period later should reproduce the same value.
+    expect(bobOffset(0.7, "idle")).toBeCloseTo(bobOffset(0.7 + 2.4, "idle"), 10);
   });
 });

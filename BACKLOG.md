@@ -295,6 +295,31 @@ surfaced.
   in-app credits E2E test needed a small fix: it looked up the "CC BY
   4.0" license link by name alone, which became ambiguous once a second
   CC-BY asset existed — rescoped to the Fox-specific credit line.
+- `done` **Procedural idle/movement "bob" for skins with no real
+  animation clip.** Both this section's remaining `todo`s (Quaternius
+  castle-piece models, camera framing) were still genuinely
+  not-solo/deliberately-deferred this cycle (see their own entries below)
+  — same "pick up a real gap while the usual items are stuck" pattern as
+  the credits screen and dev-panel active-state highlighting earlier in
+  this section. The gap: Princess (no rig/animation at all) and Capsule
+  (always procedural) render in a completely static pose regardless of
+  movement, which reads as "frozen" next to Fox/Robot/Mannequin's real
+  clips. `bobOffset(elapsedSeconds, state)` (`src/skins/avatarSkins.ts`)
+  is a small pure sine-wave function — gentle/slow while idle,
+  bigger/faster while walking or running — and `AvatarView.update`
+  applies it to the visual's own *local* y (never the root `main.ts`
+  repositions every frame) only when `hasAnimation(currentState)` is
+  false, so Fox/Robot/Mannequin's real clips are completely untouched
+  (verified directly: an E2E test asserts Fox's offset stays exactly 0
+  across several frames while Princess's genuinely oscillates). Reset to
+  0 on every `setSkin` so a skin switch never carries a stale offset into
+  the new visual. No external asset needed — purely engine-side, same as
+  the generated-pattern block textures were before real photos replaced
+  them. 8 new unit tests (`avatarSkins.test.ts`: bounds/periodicity/
+  determinism/amplitude-by-state; `avatarView.test.ts`: bobs a
+  no-animation skin, never bobs an animated one, resets across a skin
+  switch), 1 new E2E test (new `window.__getAvatarVisualLocalY` debug
+  hook, same pattern as `__getAvatarWorldHeight`).
 
 ## Phase 1b — Harden into the real architecture
 

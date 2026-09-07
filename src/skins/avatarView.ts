@@ -4,6 +4,7 @@ import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 import {
   AVATAR_SKINS,
   FALLBACK_AVATAR_SKIN_ID,
+  bobOffset,
   type AvatarSkin,
   type MoveAnimationState,
 } from "./avatarSkins";
@@ -64,6 +65,11 @@ export class AvatarView {
   private currentState: MoveAnimationState = "idle";
   private currentSkinId = "";
   private facingOffset = 0;
+  private visual: THREE.Object3D | null = null;
+  // Continuous, never reset on setSkin — a skin swapped in mid-oscillation
+  // just picks up the same phase rather than jumping, and it's imperceptible
+  // either way given the tiny amplitude (see bobOffset).
+  private bobElapsed = 0;
 
   constructor(private readonly root: THREE.Object3D) {}
 
@@ -91,6 +97,8 @@ export class AvatarView {
     this.actions = built.actions;
     this.currentSkinId = built.resolvedSkinId;
     this.facingOffset = skin.facingOffset ?? 0;
+    this.visual = built.visual;
+    this.visual.position.y = 0; // fresh visual — no stale bob offset carried over
     this.playState(this.currentState, true);
   }
 
@@ -203,5 +211,15 @@ export class AvatarView {
 
   update(dt: number): void {
     this.mixer?.update(dt);
+    this.bobElapsed += dt;
+    // Only skins with no real clip for the current state get the
+    // procedural bob (Capsule always, Princess always — see bobOffset's
+    // own comment); an animated skin's actual clip already carries its own
+    // motion, so this stays exactly 0 and never fights it.
+    if (this.visual) {
+      this.visual.position.y = this.hasAnimation(this.currentState)
+        ? 0
+        : bobOffset(this.bobElapsed, this.currentState);
+    }
   }
 }

@@ -92,3 +92,28 @@ export function moveInputToAnimationState(moveX: number, moveZ: number, run: boo
   if (magnitude < 0.01) return "idle";
   return run ? "run" : "walk";
 }
+
+const BOB_PARAMS: Record<MoveAnimationState, { amplitude: number; period: number }> = {
+  idle: { amplitude: 0.02, period: 2.4 }, // slow, gentle "breathing"
+  walk: { amplitude: 0.05, period: 0.6 }, // faster/bigger — reads as footsteps
+  run: { amplitude: 0.07, period: 0.4 },
+  swimIdle: { amplitude: 0.02, period: 2.4 },
+  swimActive: { amplitude: 0.05, period: 0.6 },
+};
+
+/**
+ * Small vertical offset (world units) `AvatarView` applies to a skin's
+ * visual — never the avatar root main.ts repositions every frame — to
+ * keep a skin with no animation clip for the current state from reading
+ * as visually "dead" while it stands or moves. Today that's Capsule
+ * (never animated) and Princess (no clips in the source model at all,
+ * see ATTRIBUTIONS.md); Fox/Robot/Mannequin always have a real clip for
+ * idle/walk/run so `AvatarView` never calls this for them (only used
+ * when `hasAnimation(state)` is false). Pure and deterministic given
+ * (elapsedSeconds, state) so it's directly unit-testable without a mixer
+ * or a real clock.
+ */
+export function bobOffset(elapsedSeconds: number, state: MoveAnimationState): number {
+  const { amplitude, period } = BOB_PARAMS[state];
+  return amplitude * Math.sin((elapsedSeconds / period) * Math.PI * 2);
+}

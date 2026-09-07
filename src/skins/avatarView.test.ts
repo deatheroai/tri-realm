@@ -130,6 +130,62 @@ describe("AvatarView", () => {
     });
   });
 
+  describe("procedural idle/movement bob", () => {
+    it("bobs a skin with no clip for the current state (capsule) — the visual's local y moves off 0 over time", async () => {
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+      await view.setSkin("capsule");
+
+      view.setMoveState("run"); // biggest amplitude, easiest to observe
+      view.update(0.1);
+
+      expect(root.children[0].position.y).not.toBe(0);
+    });
+
+    it("never bobs a skin that has a real clip for the current state — its own animation is untouched", async () => {
+      const fakeModel = new THREE.Group();
+      const fakeClip = new THREE.AnimationClip("Walk", 1, []);
+      vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue({
+        scene: fakeModel,
+        animations: [fakeClip],
+        scenes: [fakeModel],
+        cameras: [],
+        asset: {},
+      } as never);
+
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+      await view.setSkin("fox"); // maps walk -> "Walk", a real clip
+
+      view.setMoveState("walk");
+      for (let i = 0; i < 5; i++) view.update(0.1);
+
+      expect(root.children[0].position.y).toBe(0);
+    });
+
+    it("resets to 0 rather than carrying a stale offset when switching from a bobbing skin to an animated one", async () => {
+      const fakeModel = new THREE.Group();
+      const fakeClip = new THREE.AnimationClip("Walk", 1, []);
+      vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue({
+        scene: fakeModel,
+        animations: [fakeClip],
+        scenes: [fakeModel],
+        cameras: [],
+        asset: {},
+      } as never);
+
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+      await view.setSkin("capsule");
+      view.setMoveState("run");
+      view.update(0.1);
+      expect(root.children[0].position.y).not.toBe(0);
+
+      await view.setSkin("fox");
+      expect(root.children[0].position.y).toBe(0);
+    });
+  });
+
   it("does not throw when updating or changing move state with no animated skin active", () => {
     const root = new THREE.Group();
     const view = new AvatarView(root);
