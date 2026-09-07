@@ -71,3 +71,57 @@ test("switching back to Land keeps land's own movement working", async ({ page }
   const z = Number(await hud.getAttribute("data-z"));
   expect(z).toBeLessThan(-0.5);
 });
+
+// The "avatar runs like on land instead of floating" gap (BACKLOG.md Phase
+// 2's original "future refinement" note): flying used to reuse land's
+// walk/run legs, which read as running through the sky rather than
+// floating. moveInputToAirAnimationState (src/air/airAnimation.ts) now
+// always keeps air on the idle clip, while setVerticalPitch (same generic
+// AvatarView method sea uses for its own dive/surface lean) sells the
+// actual motion via nose-up/nose-down tilt instead.
+test.describe("air avatar floats instead of running", () => {
+  test("flying forward stays on the idle clip, not land's walk/run legs", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(async () => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("air");
+
+    await expect
+      .poll(async () => page.evaluate(() => window.__getAirAvatarMoveState?.()))
+      .toBe("idle");
+
+    await page.keyboard.down("KeyW");
+    await page.keyboard.down("ShiftLeft"); // run/boost
+    await page.waitForTimeout(300);
+    const moveState = await page.evaluate(() => window.__getAirAvatarMoveState?.());
+    await page.keyboard.up("KeyW");
+    await page.keyboard.up("ShiftLeft");
+
+    expect(moveState).toBe("idle");
+  });
+
+  test("ascending and descending pitch the avatar in opposite directions", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(async () => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("air");
+
+    await page.keyboard.down("Space");
+    await page.waitForTimeout(500);
+    await page.keyboard.up("Space");
+    const ascendPitch = await page.evaluate(() => window.__getAirAvatarPitch?.());
+    if (ascendPitch === undefined) throw new Error("__getAirAvatarPitch not available");
+    expect(ascendPitch).not.toBeCloseTo(0, 2);
+
+    await page.keyboard.down("ControlLeft");
+    await page.waitForTimeout(1000); // cross back through level and settle pitched the other way
+    await page.keyboard.up("ControlLeft");
+    const descendPitch = await page.evaluate(() => window.__getAirAvatarPitch?.());
+
+    // Opposite sign, not just "different" — ascending and descending are
+    // opposite vertical directions and should read as opposite tilts.
+    expect(Math.sign(descendPitch!)).not.toBe(Math.sign(ascendPitch));
+  });
+});

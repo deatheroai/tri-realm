@@ -507,6 +507,33 @@ without a fresh check-in.
   3 new E2E tests (`e2e/land-air-portal.spec.ts`) cover both directions
   and the anti-bounce-back cooldown. Land↔sea's flavor is still a
   separate pending decision — sea isn't scoped yet.
+- `done` **Air-specific animation mapping** — the "real air-specific
+  animation mapping is future refinement" note left open when air first
+  launched, resolved after user feedback that the avatar "doesn't float
+  in air but runs like on land." Root cause: air was reusing land's
+  `moveInputToAnimationState`, so flying with horizontal input played
+  land's walk/run leg-cycle clips while airborne, reading as literally
+  running through the sky. No bundled skin has a dedicated flight clip
+  (same gap sea had before its Mannequin swim clips landed), so the fix
+  mirrors sea's own pre-swim-clip solution rather than inventing new
+  assets: new `moveInputToAirAnimationState`
+  (`src/air/airAnimation.ts`) always resolves to `idle`, stopping the
+  leg-cycling; `AvatarView.setVerticalPitch` (the same generic method
+  sea already uses for its dive/surface lean, `src/skins/avatarView.ts`
+  — no changes needed there, it was already realm-agnostic) is now also
+  called for air against `AirMovementState.velocity.y`, so climbing/
+  descending noses the model up/down instead of staying perfectly level.
+  Between the two, flying reads as gliding/floating rather than running,
+  with no new art required. A real flight-specific clip (banking into
+  turns, wings-out glide, etc.) remains a future asset-gated refinement,
+  same status as sea's swim animation before Mannequin — not required to
+  ship this fix. 1 new unit test (`airAnimation.test.ts`); 2 new E2E
+  tests (`e2e/air-flight.spec.ts`) confirm flying-forward-while-boosting
+  stays on the idle clip and that ascend/descend pitch in opposite
+  directions, mirroring sea's own pitch coverage. Verified visually with
+  a real screenshot (Fox mid-ascend, nose tilted up, standing idle pose
+  rather than mid-stride) — full suite passes (typecheck, 196 unit
+  tests, build, 50 E2E tests).
 
 ## Phase 3 — Sea realm
 
