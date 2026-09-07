@@ -6,6 +6,7 @@ import {
   SEA_SURFACE_Y,
   SEA_WRECKAGE_POSITIONS,
 } from "./seaRealmMap";
+import { SEA_LAND_PORTAL_ID } from "../world/landSeaPortal";
 
 describe("createSeaRealmMap", () => {
   it("returns a sea RealmMap with the expected shape", () => {
@@ -39,10 +40,12 @@ describe("createSeaRealmMap", () => {
     }
   });
 
-  it("has no portal yet — land<->sea flavor is still a pending decision", () => {
+  it("includes the sea-side end of the land<->sea diving-house portal", () => {
     const map = createSeaRealmMap();
 
-    expect(map.portals).toEqual([]);
+    expect(map.portals).toHaveLength(1);
+    expect(map.portals[0]?.id).toBe(SEA_LAND_PORTAL_ID);
+    expect(map.portals[0]?.targetRealmMapId).toBe("land-01");
   });
 
   it("returns a fresh, independent map each call", () => {

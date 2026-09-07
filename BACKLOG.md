@@ -386,15 +386,33 @@ Only starts once Phase 1a has been reviewed and the direction holds.
   (`src/world/portalTransition.ts`, `src/world/landAirPortal.ts`); the
   generic transition system lives here in `src/world/`, exercised first
   against land↔air.
-- `todo` **(World)** Land↔sea portal implementation — flavor resolved
+- `done` **(World)** Land↔sea portal implementation — flavor resolved
   2026-09-07 (`DECISIONS.md`): a diving-house structure over a basement
-  pothole. The `Portal` schema, the generic transition system, and sea
-  itself (Phase 3) all already exist — `src/world/landSeaPortal.ts`, same
-  shape as `src/world/landAirPortal.ts`, plus the diving-house structure
-  itself (model/placement — need not be player-placeable, a fixed
-  landmark is enough). See the duplicate `todo` under Phase 3 below (same
-  item, tracked in both places since it sits at the Phase 1b/Phase 3
-  boundary, same as the original Phase 2 entry did for land↔air).
+  pothole. Same shape as `src/world/landAirPortal.ts`, in a new neutral
+  `src/world/landSeaPortal.ts` (avoids the same land/sea circular-import
+  problem the air pair already solved this way): the diving house sits on
+  a straight -x line from land's spawn (the balloon already claims +x),
+  the sea-side exit floats at the sea realm's own spawn depth so it's
+  reachable by horizontal swimming alone, no dive required. `createLandRealmMap`/
+  `createSeaRealmMap` now each carry a real `Portal` for it — no changes
+  needed to `main.ts`'s `maybeTriggerPortal` at all, since it already
+  routed a `seaMap.id`-targeted portal to sea generically once sea itself
+  existed. Visuals (`src/world/divingHouseMarker.ts`) read differently at
+  each end, unlike the balloon's one shared shape: a small stone house
+  with a dark basement pothole on land, a sunken stone archway underwater
+  on the sea side — placed in `scene.ts`/`seaScene.ts` at the same shared
+  constants the trigger logic uses, so the mesh and the mechanism can't
+  drift apart. `PORTAL_TRIGGER_RADIUS` moved from `landAirPortal.ts` to
+  the genuinely realm-agnostic `portalTransition.ts` (re-exported from
+  its old home for that module's own test) now that a second portal pair
+  needs the same constant. 9 new unit tests (`landSeaPortal.test.ts`,
+  `divingHouseMarker.test.ts`, plus updated `landRealmMap.test.ts`/
+  `seaRealmMap.test.ts`); 4 new E2E tests (`e2e/land-sea-portal.spec.ts`)
+  cover both directions, the anti-bounce-back cooldown, and that the two
+  land-side portals (balloon +x, diving house -x) don't interfere with
+  each other. See the duplicate item under Phase 3 below (same item,
+  tracked in both places since it sits at the Phase 1b/Phase 3 boundary,
+  same as the original Phase 2 entry did for land↔air).
 
 ## Phase 2 — Air realm
 
@@ -635,14 +653,16 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   swap, not a blocker on shipping the actual clips now.
 - `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
   current hardcoded wreckage boxes, once reviewed.
-- `todo` **(World)** Land↔sea portal — flavor resolved 2026-09-07
+- `done` **(World)** Land↔sea portal — flavor resolved 2026-09-07
   (`DECISIONS.md`): a diving-house structure on land, with a basement
-  pothole as the actual transition point. The generic transition system
-  (`src/world/portalTransition.ts`) and `main.ts`'s `maybeTriggerPortal`
-  already handle a third realm target, so this is a `landSeaPortal.ts`
-  module (same shape as `landAirPortal.ts`) plus the diving-house
-  structure itself (model/placement — need not be player-placeable, a
-  fixed landmark is enough), not new plumbing.
+  pothole as the actual transition point. Built as `landSeaPortal.ts`
+  (same shape as `landAirPortal.ts`) plus a diving-house/sea-arch mesh
+  pair (`divingHouseMarker.ts`) — a fixed landmark, not player-placeable,
+  per the decision. Confirmed no new plumbing was actually needed: the
+  generic transition system (`src/world/portalTransition.ts`) and
+  `main.ts`'s `maybeTriggerPortal` already handled a third realm target
+  once sea itself existed. See the fuller writeup under Phase 1b above
+  (same item, tracked in both places).
 - `todo` **(Skins)** Dive-suit avatar skin for the diving-house portal
   above — a new `avatarSkins.ts` catalog entry (same wiring as Fox/
   Robot/Princess/Mannequin), plus the visual moment of swapping into it

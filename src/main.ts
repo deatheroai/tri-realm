@@ -16,8 +16,7 @@ import {
 import { addStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
-import { findNearbyPortal } from "./world/portalTransition";
-import { PORTAL_TRIGGER_RADIUS } from "./world/landAirPortal";
+import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransition";
 import { createAirScene } from "./air/airScene";
 import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";

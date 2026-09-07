@@ -1,5 +1,6 @@
 import type { Vec3 } from "../math/vec3";
 import type { RealmMap } from "../world/realmMap";
+import { SEA_LAND_PORTAL } from "../world/landSeaPortal";
 
 /** Also this sea map's `RealmMap.id`. */
 export const SEA_MAP_ID = "sea-01";
@@ -43,11 +44,11 @@ export const SEA_WRECKAGE_POSITIONS: Vec3[] = [
 /**
  * The hardcoded Phase 3 sea map — this realm's equivalent of
  * `createAirRealmMap`'s first pass: real `RealmMap` shape, no structures
- * yet (building isn't in sea's Phase 3 scope), no portal yet either (the
- * land<->sea portal's flavor is still a pending decision — `DECISIONS.md` —
- * so there's nothing concrete to wire in yet, same as land's own map before
- * air was scoped), and real floating-wreckage data instead of a
- * hardcoded array local to the scene file.
+ * yet (building isn't in sea's Phase 3 scope), and real floating-wreckage
+ * data instead of a hardcoded array local to the scene file. `portals`
+ * now has a real one — the land<->sea diving house's sea-side exit
+ * (`src/world/landSeaPortal.ts`), the flavor decided in `DECISIONS.md`
+ * 2026-09-07, same as land's own map before this cycle.
  */
 export function createSeaRealmMap(): RealmMap {
   return {
@@ -57,6 +58,6 @@ export function createSeaRealmMap(): RealmMap {
     terrain: { kind: "sea-floor", floorY: SEA_FLOOR_Y, surfaceY: SEA_SURFACE_Y, wreckage: SEA_WRECKAGE_POSITIONS },
     structures: [],
     entities: [],
-    portals: [],
+    portals: [SEA_LAND_PORTAL],
   };
 }

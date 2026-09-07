@@ -12,6 +12,15 @@ import type { Portal, RealmMap } from "./realmMap";
  * velocity, a cooldown so arriving next to a portal doesn't immediately
  * bounce back) is `main.ts`'s job — this file doesn't know realms exist.
  */
+
+/** How close (world units, all 3 axes) triggers a transition — generous
+ * on purpose (rough is fine, see `AUTONOMY.md`), not pixel-precise.
+ * Shared by every portal pair (land↔air, land↔sea, …) — moved here from
+ * `landAirPortal.ts` (still re-exported there for that module's own
+ * imports) once a second portal pair existed and needed the same
+ * constant without importing a land-air-specific module for it. */
+export const PORTAL_TRIGGER_RADIUS = 2;
+
 export function findNearbyPortal(map: RealmMap, position: Vec3, triggerRadius: number): Portal | undefined {
   return map.portals.find((portal) => distance(position, portal.position) <= triggerRadius);
 }

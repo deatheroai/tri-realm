@@ -1,5 +1,12 @@
 import type { Vec3 } from "../math/vec3";
 import { terrainHeightAt } from "../land/terrain";
+import { PORTAL_TRIGGER_RADIUS } from "./portalTransition";
+
+// Re-exported for existing consumers (this module's own test file) —
+// PORTAL_TRIGGER_RADIUS itself now lives in the realm-agnostic
+// portalTransition.ts, since landSeaPortal.ts needs the same constant
+// without importing a land-air-specific module for it.
+export { PORTAL_TRIGGER_RADIUS };
 
 /**
  * Shared coordinates/ids for the land↔air hot-air-balloon portal pair
@@ -26,10 +33,6 @@ const AIR_MAP_ID = "air-01";
 export const LAND_AIR_PORTAL_ID = "land-air-portal-1";
 export const AIR_LAND_PORTAL_ID = "air-land-portal-1";
 export const PORTAL_KIND = "hot-air-balloon";
-
-/** How close (world units, all 3 axes) triggers a transition — generous
- * on purpose (rough is fine, see `AUTONOMY.md`), not pixel-precise. */
-export const PORTAL_TRIGGER_RADIUS = 2;
 
 // Both portals sit on a straight +x line from their realm's own spawn
 // point (land spawns at x=0,z=0; air spawns at x=0,z=0 too) — deliberately

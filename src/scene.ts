@@ -2,7 +2,9 @@ import * as THREE from "three";
 import { terrainHeightAt } from "./land/terrain";
 import { LAND_MAP_SIZE } from "./land/landRealmMap";
 import { LAND_PORTAL_POSITION } from "./world/landAirPortal";
+import { LAND_PORTAL_POSITION as LAND_SEA_PORTAL_POSITION } from "./world/landSeaPortal";
 import { createPortalMarkerMesh } from "./world/portalMarker";
+import { createDivingHouseMesh } from "./world/divingHouseMarker";
 import { AVATAR_GROUND_OFFSET, createProceduralAvatarMesh } from "./skins/avatarView";
 
 const GROUND_SIZE = LAND_MAP_SIZE;
@@ -91,6 +93,17 @@ export function createScene(): THREE.Scene {
   const portalMarker = createPortalMarkerMesh();
   portalMarker.position.set(LAND_PORTAL_POSITION.x, LAND_PORTAL_POSITION.y, LAND_PORTAL_POSITION.z);
   scene.add(portalMarker);
+
+  // The land<->sea portal (src/world/landSeaPortal.ts) — a diving house,
+  // same "purely visual here, real trigger is proximity checked in
+  // main.ts" relationship as the balloon above.
+  const divingHouse = createDivingHouseMesh();
+  divingHouse.position.set(
+    LAND_SEA_PORTAL_POSITION.x,
+    LAND_SEA_PORTAL_POSITION.y,
+    LAND_SEA_PORTAL_POSITION.z,
+  );
+  scene.add(divingHouse);
 
   return scene;
 }
