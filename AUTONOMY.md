@@ -8,8 +8,7 @@ cycle rather than one-off pings.
 ## Parallel tracks
 
 As of 2026-08-30, two tracks run independently and in parallel, each on
-its own branch and its own dedicated persistent Claude Code Remote
-session, per explicit request — not sequential phases, genuinely
+its own branch, per explicit request — not sequential phases, genuinely
 concurrent daily work:
 
 - **World** — branch `claude/world-daily`, owns `BACKLOG.md`'s Phase
@@ -25,6 +24,39 @@ first's already-merged `main`, cutting collision odds) and runs the same
 cycle described below, scoped to its own track's `BACKLOG.md` section.
 This doc, `DECISIONS.md`, and `BACKLOG.md` stay single shared files —
 each track edits its own section; see file ownership below for code.
+
+As of 2026-09-04, each daily fire spins up a **fresh, disposable session**
+rather than resuming one long-lived persistent session per track —
+deliberately, so a track's chat doesn't grow unbounded over weeks of
+daily cycles. See "Feedback channel" right below for what this means for
+how you actually give feedback/decisions.
+
+### Feedback channel (daily sessions are intentionally disposable)
+
+Because each fire is a brand-new session with no memory of the last one,
+**you will never find "today's daily routine" waiting as a session you
+can reply into on mobile** — by the next fire it's already been replaced
+by a different one. Replying inside a given day's cycle session doesn't
+reach future cycles; it just talks to a session that's about to be
+discarded. (This is the actual cause of a routine's session seeming to
+"disappear" between check-ins — it isn't disappearing, a new one is
+simply standing in for it each time.)
+
+Instead:
+
+- **Give feedback/decisions in any persistent session on this repo**
+  (this one included, or the manual/legacy per-track sessions) — a plain
+  message is enough. That session updates `DECISIONS.md`'s Pending →
+  Resolved.
+- **The next automated cycle picks up the resolution for free**, because
+  step 1 of every cycle (below) reads `DECISIONS.md` from the repo itself,
+  not from any session's memory.
+- **An unattended daily fire never calls `AskUserQuestion`.** Nobody is
+  watching it live, so a question raised there just becomes a stale,
+  unanswerable prompt tied to a session that won't exist next cycle —
+  it logs the open question to `DECISIONS.md`'s Pending section instead
+  and moves on to other unblocked backlog items. The real back-and-forth
+  happens in a persistent session, on your schedule, not the cycle's.
 
 ### File ownership (minimizes merge conflicts between the two tracks)
 
@@ -103,9 +135,12 @@ procedure on demand. It reads this doc plus `DECISIONS.md` and
 Each cycle (automated or manually kicked off) does two things in order:
 
 1. **Decision check-in.** Read [`DECISIONS.md`](./DECISIONS.md)'s Pending
-   section. If it's non-empty, ask those questions directly in this
-   conversation (batched into one round, not one at a time) and record the
-   answers, moving each item to the Resolved log.
+   section. In a live, persistent session (like this one), ask those
+   questions directly in this conversation (batched into one round, not
+   one at a time) and record the answers, moving each item to the
+   Resolved log. **An automated, unattended daily fire never asks live**
+   — see "Feedback channel" above: it logs to Pending (if not already
+   logged) and keeps building other unblocked items instead of waiting.
 2. **Build cycle.** Read [`BACKLOG.md`](./BACKLOG.md) and pick the next
    unblocked, highest-priority item(s) — as much as fits in one focused
    session. Implement it with tests, run the full test suite (must pass

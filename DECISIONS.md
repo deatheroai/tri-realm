@@ -19,6 +19,28 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
 
 ## Resolved
 
+- **2026-09-07 — Daily-routine feedback channel fixed: fresh sessions
+  stay fresh, feedback moves to a persistent session + this file.** You
+  reported having to "revoke it from the email each time" after replying
+  inside a day's Skins-daily session on mobile — the routine's session
+  kept seeming to disappear. Root cause: since 2026-09-04 both daily
+  triggers spin up a brand-new, disposable session on every fire (by
+  design, so a track's chat doesn't grow unbounded over weeks) — so a
+  reply inside one day's cycle session never reaches the next day's,
+  which is a different session entirely, and an `AskUserQuestion` raised
+  inside an unattended fire became a stale prompt on a session that was
+  about to vanish. You confirmed the disposable-session design is what
+  you actually wanted (chat length, not continuity, was the concern) —
+  so the fix is the feedback channel, not the session lifecycle:
+  unattended daily fires now only log a pending question to this file's
+  Pending section and never call `AskUserQuestion`; you give
+  decisions/feedback in any persistent session on the repo instead (this
+  one, or the manual/legacy per-track sessions), which updates this file,
+  and the next automated cycle picks up the resolution by reading the
+  file — no session continuity required. Both daily triggers'
+  prompts and `AUTONOMY.md`'s "Parallel tracks" section (new "Feedback
+  channel" subsection) updated to match.
+
 - **2026-08-25 — Initial README added.** Described the project's purpose
   (a foundational engine for land/air/sea worlds with unified avatar
   navigation, a shared map representation, and player-driven construction
