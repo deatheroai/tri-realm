@@ -91,3 +91,30 @@ Source: [Sketchfab](https://sketchfab.com/3d-models/apple-white-royal-pirate-365
   512×512, bringing the packed `.glb` down to ~2.4MB. This is a lossy simplification of the
   original artist's geometry; the CC-BY credit is for the underlying work, not a claim that this
   file is unmodified.
+
+## `models/female.glb`
+
+Source: [Mesh2Motion/mesh2motion-app](https://github.com/Mesh2Motion/mesh2motion-app)
+(commit `2d3d1ff`), the `female_8` character mesh (`static/models-variation/human/female_8.glb`)
+and the shared "universal human" animation library (`static/animations/human-base-animations.glb`).
+
+- Model, rig, and animations: [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/) —
+  Mesh2Motion (`LICENSE-CC0.MD` in the source repo covers "all 3d models, blend files, rigs,
+  animations").
+- A separate skin from Princess, not a replacement — see the entry above. Princess's source file
+  genuinely has no skeleton at all, so no code or asset change can give it real limb movement; no
+  reachable princess/royal-themed *rigged* source turned up either (Sketchfab/Quaternius/Kenney
+  searched), so this uses Mesh2Motion's CC0 rig instead. It reads as a generic person, not
+  royalty — a deliberate tradeoff, kept as its own skin (`female`) rather than overwriting the
+  existing Princess.
+- The mesh and the animation library ship as two separate files with matching bone names (that's
+  the point of a shared "universal" rig) but no baked-together clips. Merged offline with a small
+  `@gltf-transform/core` script: for each of 5 clips (`Idle_A`, `Walk`, `Sprint`, `Swim_Idle`,
+  `Swim_Fwd`), every channel's target bone was matched by name into the mesh's own skeleton and
+  copied over, renamed to `Idle_Loop`/`Walk_Loop`/`Sprint_Loop`/`Swim_Idle_Loop`/`Swim_Fwd_Loop`
+  (same naming convention as Mannequin) — all 990 channels across the 5 clips matched a bone by
+  name, 0 dropped. Confirmed the walk/run clips are in-place loops (root bone's translation stays
+  at the origin throughout), so they don't fight the engine's own root-position movement, same as
+  every other skin. Packed `.glb` is ~907KB.
+
+CC0 — no attribution legally required, but credited here anyway for provenance.
