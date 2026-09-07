@@ -97,6 +97,7 @@ test("the dev skin panel lists both avatar skins and block materials", async ({ 
   await expect(page.locator("#dev-skin-panel button", { hasText: "Fox" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Robot" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Mannequin" })).toBeVisible();
+  await expect(page.locator("#dev-skin-panel button", { hasText: "Dive Suit" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Sandstone" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Slate" })).toBeVisible();
 });
@@ -615,5 +616,119 @@ test.describe("sea avatar swim animation", () => {
       .poll(() => page.evaluate(() => window.__getSeaAvatarMoveState?.()))
       .toBe("walk");
     await page.keyboard.up("KeyW");
+  });
+});
+
+// Land<->sea diving-house portal's "costume change" (DECISIONS.md,
+// 2026-09-07, BACKLOG.md's dive-suit item): the actual realm-switch
+// mechanism is World's (e2e/land-sea-portal.spec.ts), this covers the
+// Skins-owned half — the automatic dive-suit swap on the way in and the
+// revert on the way out — same split as the AvatarView-in-Air/pitch-in-Sea
+// tests above (Skins behavior, exercised through a realm transition).
+test.describe("land<->sea diving-house portal: dive-suit costume change", () => {
+  // Real timing gotcha found while writing this (not guessed): the diving
+  // house sits at x: -10 (straight -x from land spawn), so reaching it
+  // means holding KeyA — and Node-side `expect.poll` detecting the realm
+  // flip to "sea" costs a few extra real frames of round-trip time, during
+  // which KeyA is technically still held and sea's own horizontal movement
+  // (it reuses land's MoveInput) drifts the avatar sideways in x before the
+  // test can call keyboard.up. `page.waitForFunction` polls its predicate
+  // inside the page on every animation frame instead of round-tripping
+  // through Node each time, cutting that lag enough that the arrival stays
+  // close to SEA_ARRIVAL_POSITION's true x: 0 — verified directly (logged
+  // the live x while debugging) that swapping expect.poll for this here is
+  // what fixed an otherwise-consistent failure to reach the sea-side arch.
+  async function waitForRealm(page: Page, realm: "land" | "air" | "sea"): Promise<void> {
+    await page.waitForFunction((r) => window.__getActiveRealm?.() === r, realm, { timeout: 8000 });
+  }
+
+  test("walking into the diving house auto-equips the dive suit; swimming back out through the sea-side arch reverts to the skin worn before", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("fox"); // Fox is still the default on first load
+
+    // The diving house sits at (-10, ~ground, 0) — straight -x from spawn
+    // (src/world/landSeaPortal.ts).
+    await page.keyboard.down("KeyA");
+    await page.keyboard.down("ShiftLeft");
+    await waitForRealm(page, "sea");
+    await page.keyboard.up("KeyA");
+    await page.keyboard.up("ShiftLeft");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("diveSuit");
+
+    // Arriving via the portal (SEA_ARRIVAL_POSITION, z: -15,
+    // src/world/landSeaPortal.ts) sits only 3 units short of the arch's
+    // own trigger position (z: -12) — well within main.ts's 1.5s
+    // anti-bounce-back portal cooldown from the land->sea trigger just
+    // above, so swimming there immediately can race straight through the
+    // arch's trigger radius before the (global, not per-portal) cooldown
+    // clears, overshooting into sea's unbounded open water with nothing
+    // left to swim back to. Outwait the cooldown first — same real
+    // mechanism e2e/land-sea-portal.spec.ts's own "doesn't immediately
+    // bounce back" test exercises, just from the other side of it.
+    await page.waitForTimeout(1700);
+
+    // Swim back out through the sea-side arch. Short of the arch at z: -12
+    // — the *opposite* side from World's own land-sea-portal.spec.ts test,
+    // which starts from the dev panel's direct "Sea" spawn (z: 0) and so
+    // swims forward (KeyW) to reach it; from -15, reaching -12 means
+    // swimming backward (KeyS). Sea's horizontal speed is sluggish (water
+    // resistance), same generous timeout e2e/land-sea-portal.spec.ts uses
+    // for this trip.
+    await page.keyboard.down("KeyS");
+    await page.keyboard.down("ShiftLeft");
+    await waitForRealm(page, "land");
+    await page.keyboard.up("KeyS");
+    await page.keyboard.up("ShiftLeft");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("fox");
+  });
+
+  test("choosing a skin explicitly while auto-equipped clears the pending revert — returning to land keeps the explicit choice, not the pre-dive skin", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    await page.keyboard.down("KeyA");
+    await page.keyboard.down("ShiftLeft");
+    await waitForRealm(page, "sea");
+    await page.keyboard.up("KeyA");
+    await page.keyboard.up("ShiftLeft");
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("diveSuit");
+
+    // A deliberate choice made while the dive suit is auto-equipped should
+    // win over main.ts's pending "revert to Fox on return" — see
+    // applyAvatarSkin's click-handler comment.
+    await page.locator("#dev-skin-panel button", { hasText: "Robot" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("robot");
+
+    // Outwait main.ts's 1.5s anti-bounce-back portal cooldown before
+    // approaching the arch — see the previous test's comment for why,
+    // same real mechanism either way.
+    await page.waitForTimeout(1700);
+
+    // Swim back toward the arch — see the previous test's comment for why
+    // this is KeyS (backward), not KeyW, from the portal's arrival spot.
+    await page.keyboard.down("KeyS");
+    await page.keyboard.down("ShiftLeft");
+    await waitForRealm(page, "land");
+    await page.keyboard.up("KeyS");
+    await page.keyboard.up("ShiftLeft");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("robot");
   });
 });

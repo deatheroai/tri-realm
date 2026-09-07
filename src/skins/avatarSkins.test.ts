@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AVATAR_SKINS,
   DEFAULT_AVATAR_SKIN_ID,
+  DIVE_SUIT_AVATAR_SKIN_ID,
   FALLBACK_AVATAR_SKIN_ID,
   bobOffset,
   moveInputToAnimationState,
@@ -52,6 +53,21 @@ describe("AVATAR_SKINS catalog", () => {
       const hasIdle = Boolean(skin.animationClipNames?.swimIdle);
       const hasActive = Boolean(skin.animationClipNames?.swimActive);
       expect(hasIdle).toBe(hasActive);
+    }
+  });
+
+  it("DIVE_SUIT_AVATAR_SKIN_ID names a real, procedural catalog entry (auto-equipped by main.ts's diving-house portal — no asset load to fail)", () => {
+    const diveSuit = AVATAR_SKINS.find((s) => s.id === DIVE_SUIT_AVATAR_SKIN_ID);
+    expect(diveSuit).toBeDefined();
+    expect(diveSuit?.kind).toBe("procedural");
+    expect(diveSuit?.proceduralVariant).toBe("diveSuit");
+  });
+
+  it("only the dive-suit skin declares a proceduralVariant — every other procedural skin (capsule, the fallback) renders the default capsule look", () => {
+    for (const skin of AVATAR_SKINS) {
+      if (skin.kind === "procedural" && skin.id !== DIVE_SUIT_AVATAR_SKIN_ID) {
+        expect(skin.proceduralVariant).toBeUndefined();
+      }
     }
   });
 });

@@ -115,8 +115,14 @@ in the map data, not a seamless walk/fly/swim between physical spaces:
   coordinates/ids live in one neutral module rather than land's and air's
   `RealmMap` files importing each other (which would be circular, since
   each portal needs the other realm's map id and arrival spot).
-- **Land ↔ Sea:** e.g. a dive spot, an underground passage, or a beach —
-  still a pending decision (`DECISIONS.md`), deferred until sea is scoped.
+- **Land ↔ Sea:** a diving house — a small stone structure on the land
+  side, with a dive-suit costume change (Skins-owned) and the actual
+  transition through a basement pothole
+  (`src/world/landSeaPortal.ts`, `src/world/divingHouseMarker.ts`;
+  flavor decided `DECISIONS.md`, 2026-09-07). Unlike land↔air's bare
+  launch point, this one reads differently at each end — a house with a
+  dark pothole on land, a sunken stone archway underwater on the sea
+  side — rather than one shared shape at both ends.
 
 The exact flavor of a not-yet-built portal is a content decision, not a
 structural one — the schema only requires that a portal exist, point at
@@ -171,8 +177,8 @@ realm's map the avatar currently occupies:
   bounded between the sea floor and the water surface (the `TerrainField`
   above), with vertical velocity zeroing out on hitting either bound
   instead of banking a wasted push against it. A dev-only realm switcher
-  (`#dev-realm-panel`) makes this reviewable now without waiting on a
-  real land↔sea portal, same as air's own first pass.
+  (`#dev-realm-panel`) stays available as a quick "cheat" too, same as
+  land↔air's own real portal keeps its dev switcher around.
 
 A realm transition (via portal) swaps the active movement module and
 teleports the avatar to the target map's spawn position — no continuous

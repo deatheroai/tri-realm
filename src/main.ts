@@ -16,8 +16,7 @@ import {
 import { addStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
-import { findNearbyPortal } from "./world/portalTransition";
-import { PORTAL_TRIGGER_RADIUS } from "./world/landAirPortal";
+import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransition";
 import { createAirScene } from "./air/airScene";
 import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";
@@ -30,9 +29,11 @@ import { AvatarView } from "./skins/avatarView";
 import {
   AVATAR_SKINS,
   DEFAULT_AVATAR_SKIN_ID,
+  DIVE_SUIT_AVATAR_SKIN_ID,
   moveInputToAnimationState,
   type MoveAnimationState,
 } from "./skins/avatarSkins";
+import { PORTAL_KIND as DIVING_HOUSE_PORTAL_KIND } from "./world/landSeaPortal";
 import { BLOCK_MATERIALS, DEFAULT_BLOCK_MATERIAL_ID } from "./skins/blockMaterials";
 import { ATTRIBUTIONS } from "./skins/attributions";
 
@@ -355,31 +356,51 @@ function setActiveButton(row: HTMLElement, activeButton: HTMLButtonElement): voi
 // and the block material used for new placements, live, no redeploy. See
 // DECISIONS.md for why this exists now (in-app preview, since real asset
 // sourcing happens outside this session).
+//
+// Hoisted to module scope (not declared inside the `if (devSkinPanel)`
+// block below) so applyAvatarSkin — called both by a manual button click
+// and by the diving-house portal's automatic dive-suit swap further down
+// — can keep the dev panel's active-button highlighting honest either way,
+// not just when a human clicked something.
+const avatarRow = document.createElement("div");
+avatarRow.textContent = "Avatar: ";
+const avatarButtonsById = new Map<string, HTMLButtonElement>();
+
+/**
+ * Drives all three realms' AvatarView together — the player's chosen skin
+ * is one shared choice, not a separate one per realm (see the
+ * airAvatarView/seaAvatarView comments above). Each AvatarView is
+ * independently a no-op if this skin is already selected, so switching
+ * realms and then applying the same skin again is harmless — used both by
+ * the dev panel's own buttons and by the diving-house portal's automatic
+ * dive-suit swap (maybeTriggerPortal, below).
+ */
+function applyAvatarSkin(skinId: string): void {
+  void avatarView.setSkin(skinId).then(() => {
+    // Reflects whichever skin land's AvatarView actually resolved to
+    // (could differ from what was requested if the load failed and it
+    // fell back to the procedural capsule instead), not just an
+    // assumption that the request succeeded.
+    const resolvedButton = avatarButtonsById.get(avatarView.skinId);
+    if (resolvedButton) setActiveButton(avatarRow, resolvedButton);
+  });
+  void airAvatarView.setSkin(skinId);
+  void seaAvatarView.setSkin(skinId);
+}
+
 const devSkinPanel = document.getElementById("dev-skin-panel");
 if (devSkinPanel) {
-  const avatarRow = document.createElement("div");
-  avatarRow.textContent = "Avatar: ";
-  const avatarButtonsById = new Map<string, HTMLButtonElement>();
   for (const skin of AVATAR_SKINS) {
     const btn = document.createElement("button");
     btn.textContent = skin.label;
     avatarButtonsById.set(skin.id, btn);
-    // Drives all three realms' AvatarView together — the player's chosen
-    // skin is one shared choice, not a separate one per realm (see the
-    // airAvatarView/seaAvatarView comments above). Each AvatarView is
-    // independently a no-op if this skin is already selected, so switching
-    // realms and then clicking the same skin again is harmless.
     btn.addEventListener("click", () => {
-      void avatarView.setSkin(skin.id).then(() => {
-        // Reflects whichever skin land's AvatarView actually resolved to
-        // (could differ from what was clicked if the load failed and it
-        // fell back to the procedural capsule instead), not just an
-        // assumption that the click succeeded.
-        const resolvedButton = avatarButtonsById.get(avatarView.skinId);
-        if (resolvedButton) setActiveButton(avatarRow, resolvedButton);
-      });
-      void airAvatarView.setSkin(skin.id);
-      void seaAvatarView.setSkin(skin.id);
+      // An explicit choice always wins — clears any pending auto-revert
+      // from the diving-house portal's dive-suit swap (maybeTriggerPortal,
+      // below) so it never fights a player who picked something on
+      // purpose, dive suit itself included.
+      diveSuitAutoEquipped = false;
+      applyAvatarSkin(skin.id);
     });
     avatarRow.appendChild(btn);
   }
@@ -548,6 +569,18 @@ window.__getSeaAvatarMoveState = () => seaAvatarView.moveState;
 const PORTAL_COOLDOWN_SECONDS = 1.5;
 let portalCooldown = 0;
 
+// The land<->sea diving-house portal's "costume change" moment
+// (DECISIONS.md, 2026-09-07) — auto-equipped crossing into sea through
+// that specific portal, reverted crossing back through it, without
+// touching a skin the player picked by hand (see applyAvatarSkin's own
+// click-handler comment above, which clears diveSuitAutoEquipped on any
+// explicit choice). skinBeforeDiveSuit remembers what to revert to;
+// gated on portal.kind (not just "any land<->sea transition") so a future
+// second land<->sea portal with a different flavor isn't forced into the
+// same costume change.
+let diveSuitAutoEquipped = false;
+let skinBeforeDiveSuit: string | null = null;
+
 function activeRealmMap(): RealmMap {
   if (activeRealm === "land") return landMap;
   if (activeRealm === "air") return airMap;
@@ -565,9 +598,19 @@ function maybeTriggerPortal(position: Vec3): void {
   } else if (portal.targetRealmMapId === seaMap.id) {
     seaMovement = { position: { ...portal.targetSpawnPosition }, velocity: { x: 0, y: 0, z: 0 } };
     activeRealm = "sea";
+    if (portal.kind === DIVING_HOUSE_PORTAL_KIND && avatarView.skinId !== DIVE_SUIT_AVATAR_SKIN_ID) {
+      skinBeforeDiveSuit = avatarView.skinId;
+      diveSuitAutoEquipped = true;
+      applyAvatarSkin(DIVE_SUIT_AVATAR_SKIN_ID);
+    }
   } else {
     movement = { position: { ...portal.targetSpawnPosition }, velocityY: 0 };
     activeRealm = "land";
+    if (portal.kind === DIVING_HOUSE_PORTAL_KIND && diveSuitAutoEquipped && skinBeforeDiveSuit) {
+      applyAvatarSkin(skinBeforeDiveSuit);
+      diveSuitAutoEquipped = false;
+      skinBeforeDiveSuit = null;
+    }
   }
   portalCooldown = PORTAL_COOLDOWN_SECONDS;
 }

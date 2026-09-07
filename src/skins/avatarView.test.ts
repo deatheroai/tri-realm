@@ -32,6 +32,36 @@ describe("AvatarView", () => {
     expect(root.children[0]).toBeInstanceOf(THREE.Mesh);
   });
 
+  it("sets a distinct diver-shaped group (not the plain capsule) as the visual for the dive-suit skin", async () => {
+    const root = new THREE.Group();
+    const view = new AvatarView(root);
+
+    await view.setSkin("diveSuit");
+
+    expect(view.skinId).toBe("diveSuit");
+    expect(root.children).toHaveLength(1);
+    // A Group of primitives (body + mask + tank), not a single Mesh like
+    // the plain capsule — see createDiveSuitAvatarMesh.
+    const visual = root.children[0];
+    expect(visual).toBeInstanceOf(THREE.Group);
+    expect(visual.children.length).toBeGreaterThan(1);
+  });
+
+  it("keeps the dive-suit visual's rendered height close to the plain capsule's — same body dimensions, just extra small accessories", async () => {
+    const capsuleRoot = new THREE.Group();
+    await new AvatarView(capsuleRoot).setSkin("capsule");
+    const capsuleHeight =
+      new THREE.Box3().setFromObject(capsuleRoot).max.y - new THREE.Box3().setFromObject(capsuleRoot).min.y;
+
+    const diveSuitRoot = new THREE.Group();
+    await new AvatarView(diveSuitRoot).setSkin("diveSuit");
+    const diveSuitHeight =
+      new THREE.Box3().setFromObject(diveSuitRoot).max.y - new THREE.Box3().setFromObject(diveSuitRoot).min.y;
+
+    expect(diveSuitHeight).toBeGreaterThan(capsuleHeight * 0.9);
+    expect(diveSuitHeight).toBeLessThan(capsuleHeight * 1.3);
+  });
+
   it("loads a gltf skin and wires up its animation clips", async () => {
     const fakeModel = new THREE.Group();
     const fakeClip = new THREE.AnimationClip("Walk", 1, []);
