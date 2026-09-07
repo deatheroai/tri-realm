@@ -663,16 +663,53 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   `main.ts`'s `maybeTriggerPortal` already handled a third realm target
   once sea itself existed. See the fuller writeup under Phase 1b above
   (same item, tracked in both places).
-- `todo` **(Skins)** Dive-suit avatar skin for the diving-house portal
-  above — a new `avatarSkins.ts` catalog entry (same wiring as Fox/
-  Robot/Princess/Mannequin), plus the visual moment of swapping into it
-  as the avatar enters the diving house / descends the pothole. Exactly
-  how automatic the swap is (auto-equip on entry vs. keeping the
-  player's chosen skin visible underneath; whether it reverts back on
-  return to land) is left to whoever builds this — implementation
-  detail, not itself decision-worthy. Depends on the World-owned portal
-  item above existing first (or can stub against a placeholder trigger
-  if Skins' cycle runs first).
+- `done` **(Skins)** Dive-suit avatar skin for the diving-house portal
+  above — built now that the World-owned portal item existed to wire
+  against. New `avatarSkins.ts` catalog entry (`diveSuit`), `kind:
+  "procedural"` like Capsule but not the same shape: a
+  `proceduralVariant` field lets `AvatarView.buildVisual`
+  (`src/skins/avatarView.ts`) dispatch to a distinct
+  `createDiveSuitAvatarMesh` — same capsule body/footprint as the
+  default procedural mesh (so it lines up with `AVATAR_GROUND_OFFSET`
+  and reads at roughly the same height as every other skin) plus a pale
+  "glass" mask and a bright tank, rough-primitives language matching
+  `portalMarker.ts`/`divingHouseMarker.ts`. No external asset dependency
+  — same reasoning Capsule itself never needed one.
+  Auto-equip picked as the swap behavior (the implementation-detail
+  choice the original item left open): `main.ts`'s `maybeTriggerPortal`
+  equips the dive suit crossing into sea specifically through the
+  diving-house portal (checked via `Portal.kind`, not just "any
+  land<->sea transition", so a future differently-flavored land<->sea
+  portal isn't forced into the same costume change) and reverts to
+  whatever was worn before crossing back through it — but never fights
+  an explicit choice: clicking any skin button (dive suit included)
+  while auto-equipped clears the pending revert, same "an explicit
+  choice always wins" rule `setActiveButton`'s own honesty already
+  followed. Required hoisting the dev panel's skin-apply logic
+  (`applyAvatarSkin`) out of the `#dev-skin-panel` setup block to module
+  scope so both the click handler and the portal trigger share one path
+  and the active-button highlighting stays correct either way.
+  6 new unit tests (`avatarSkins.test.ts`: catalog shape;
+  `avatarView.test.ts`: distinct visual, sane height vs. Capsule), 2 new
+  E2E tests (`e2e/skins.spec.ts`: auto-equip + revert round trip,
+  explicit choice overriding the pending revert).
+  **Found and fixed a real E2E-flakiness trap while writing the
+  tests, not just guessed at**: the diving house's sea-side arrival
+  point sits close enough to the sea-side arch's own trigger that an
+  immediate return swim can race `main.ts`'s 1.5s anti-bounce-back
+  portal cooldown and blow straight through into sea's unbounded open
+  water — fixed by explicitly outwaiting the cooldown before the return
+  leg. Separately, `expect.poll`'s Node-side round trips (vs.
+  `page.waitForFunction`'s in-page polling) left just enough of a lag
+  between the real realm-flip and the test releasing its movement key
+  that residual horizontal input leaked into the new realm and drifted
+  the arrival off its intended spawn — caught by logging live position
+  during a failing run (same "render/measure, don't guess" discipline as
+  the Robot-scale and Gold-metalness fixes elsewhere in this codebase),
+  fixed by switching realm-transition waits to `page.waitForFunction`.
+  Verified visually with real screenshots (idle and mid-walk) that the
+  mesh's authored front (the mask) actually leads in the direction of
+  travel rather than trailing backward.
 
 ## Later / unscoped
 

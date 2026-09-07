@@ -34,6 +34,50 @@ export function createProceduralAvatarMesh(): THREE.Mesh {
   );
 }
 
+/**
+ * The "diveSuit" procedural variant (`src/skins/avatarSkins.ts`) — same
+ * capsule body/footprint as the default procedural mesh above (so it lines
+ * up with `AVATAR_GROUND_OFFSET` and reads as roughly the same height as
+ * every other skin) plus two small primitives distinctive enough to read
+ * as "a diver" at a glance: a mask on the face and a tank on the back —
+ * rough-primitives language, same as `portalMarker.ts`/`divingHouseMarker.ts`.
+ * Local +Z is this mesh's authored "front" — verified against a real
+ * render with the avatar walking toward the camera (same "render and
+ * look, don't guess" discipline as the Robot-scale/Gold-metalness/
+ * Fox-pitch-sign fixes elsewhere in this codebase), since `faceDirection`'s
+ * rotation puts local +Z on the leading edge when moving in world -Z
+ * (forward, see `src/input/keyboardInput.ts`) with the default
+ * `facingOffset` of 0.
+ */
+export function createDiveSuitAvatarMesh(): THREE.Group {
+  const group = new THREE.Group();
+  group.name = "dive-suit-avatar";
+
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(CAPSULE_RADIUS, CAPSULE_LENGTH, 4, 8),
+    new THREE.MeshStandardMaterial({ color: 0x1b2a35 }), // dark neoprene wetsuit
+  );
+  body.name = "dive-suit-body";
+
+  const mask = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 8),
+    new THREE.MeshStandardMaterial({ color: 0xbfe8ef, transparent: true, opacity: 0.85 }), // pale "glass" mask
+  );
+  mask.position.set(0, 0.45, 0.28); // face height, front of the body
+  mask.scale.set(1, 0.9, 0.6);
+  mask.name = "dive-suit-mask";
+
+  const tank = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.14, 0.14, 0.9, 10),
+    new THREE.MeshStandardMaterial({ color: 0xe8b93f }), // bright tank, reads clearly as equipment against the dark suit
+  );
+  tank.position.set(0, 0.05, -0.32); // strapped to the back
+  tank.name = "dive-suit-tank";
+
+  group.add(body, mask, tank);
+  return group;
+}
+
 const gltfLoader = new GLTFLoader();
 const gltfCache = new Map<string, Promise<GLTF>>();
 
@@ -109,7 +153,9 @@ export class AvatarView {
     resolvedSkinId: string;
   }> {
     if (skin.kind === "procedural") {
-      return { visual: createProceduralAvatarMesh(), mixer: null, actions: {}, resolvedSkinId: skin.id };
+      const visual =
+        skin.proceduralVariant === "diveSuit" ? createDiveSuitAvatarMesh() : createProceduralAvatarMesh();
+      return { visual, mixer: null, actions: {}, resolvedSkinId: skin.id };
     }
 
     try {
