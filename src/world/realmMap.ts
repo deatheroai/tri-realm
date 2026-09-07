@@ -20,14 +20,21 @@ const AIR_OPEN_VOLUME_BASELINE = 0;
 
 /**
  * A realm's terrain, described generically enough that a new realm can
- * add its own kind later without changing this type's consumers. Sea
- * doesn't exist yet, so there are still just the two. Air's carries
- * `platforms` — real positional data for its floating content, matching
- * this schema's own documented intent ("air -> mostly open volume +
- * floating terrain") — replacing what was a hardcoded array local to
- * `airScene.ts` (`BACKLOG.md` Phase 2 hardening).
+ * add its own kind later without changing this type's consumers. Air's
+ * carries `platforms` — real positional data for its floating content,
+ * matching this schema's own documented intent ("air -> mostly open
+ * volume + floating terrain") — replacing what was a hardcoded array
+ * local to `airScene.ts` (`BACKLOG.md` Phase 2 hardening). Sea's carries
+ * `floorY`/`surfaceY` — the swimmable band's vertical bounds, matching
+ * this schema's own documented intent ("sea -> sea-floor depth + water
+ * surface") — plus `wreckage`, real positional data for its floating
+ * docks/wreckage content, same "one source of truth" pattern as air's
+ * `platforms` (`BACKLOG.md` Phase 3).
  */
-export type TerrainField = { kind: "land-heightfield" } | { kind: "air-open-volume"; platforms: Vec3[] };
+export type TerrainField =
+  | { kind: "land-heightfield" }
+  | { kind: "air-open-volume"; platforms: Vec3[] }
+  | { kind: "sea-floor"; floorY: number; surfaceY: number; wreckage: Vec3[] };
 
 /**
  * Samples a `TerrainField`'s height at a world (x, z) coordinate. This
@@ -35,9 +42,11 @@ export type TerrainField = { kind: "land-heightfield" } | { kind: "air-open-volu
  * formula" — everything else (movement collision, ground-mesh
  * generation) goes through here rather than importing a realm's formula
  * directly, so a `RealmMap`'s `terrain` field is genuinely
- * realm-agnostic to its callers. Sea adds a `case` here once it's scoped
- * (`BACKLOG.md` Phase 3), matching how `ARCHITECTURE.md` describes
- * systems being "written once and reused by all three realms."
+ * realm-agnostic to its callers. Sea's case returns `floorY` — the sea
+ * floor is the one surface a swimmer can rest on, land's closest
+ * equivalent — even though `stepSeaMovement` itself takes `floorY`/
+ * `surfaceY` directly rather than going through this (same as air's
+ * movement never calling this for its baseline).
  */
 export function sampleTerrainHeight(terrain: TerrainField, x: number, z: number): number {
   switch (terrain.kind) {
@@ -45,6 +54,8 @@ export function sampleTerrainHeight(terrain: TerrainField, x: number, z: number)
       return landHeightfieldAt(x, z);
     case "air-open-volume":
       return AIR_OPEN_VOLUME_BASELINE;
+    case "sea-floor":
+      return terrain.floorY;
     default: {
       const exhaustive: never = terrain;
       throw new Error(`No terrain sampler for kind: ${String((exhaustive as TerrainField).kind)}`);

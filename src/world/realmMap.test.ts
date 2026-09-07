@@ -27,6 +27,12 @@ describe("sampleTerrainHeight", () => {
 
     expect(Number.isFinite(sampleTerrainHeight(terrain, 3, -7))).toBe(true);
   });
+
+  it("returns the sea floor's own floorY for a sea-floor terrain", () => {
+    const terrain = { kind: "sea-floor" as const, floorY: -10, surfaceY: 0, wreckage: [] };
+
+    expect(sampleTerrainHeight(terrain, 3, -7)).toBe(-10);
+  });
 });
 
 describe("addStructure", () => {

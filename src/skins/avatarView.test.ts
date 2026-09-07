@@ -100,6 +100,36 @@ describe("AvatarView", () => {
     expect(root.children[0]).toBeInstanceOf(THREE.Mesh);
   });
 
+  describe("hasAnimation", () => {
+    it("is false for every state before any skin is set", () => {
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+
+      expect(view.hasAnimation("idle")).toBe(false);
+      expect(view.hasAnimation("swimIdle")).toBe(false);
+    });
+
+    it("is true only for clip names the active skin actually maps, false for ones it doesn't (e.g. swim on a non-swim skin)", async () => {
+      const fakeModel = new THREE.Group();
+      const fakeClip = new THREE.AnimationClip("Walk", 1, []);
+      vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue({
+        scene: fakeModel,
+        animations: [fakeClip],
+        scenes: [fakeModel],
+        cameras: [],
+        asset: {},
+      } as never);
+
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+      await view.setSkin("fox"); // maps walk -> "Walk", no swimIdle/swimActive entry
+
+      expect(view.hasAnimation("walk")).toBe(true);
+      expect(view.hasAnimation("swimIdle")).toBe(false);
+      expect(view.hasAnimation("swimActive")).toBe(false);
+    });
+  });
+
   it("does not throw when updating or changing move state with no animated skin active", () => {
     const root = new THREE.Group();
     const view = new AvatarView(root);
@@ -109,5 +139,51 @@ describe("AvatarView", () => {
       view.update(1 / 60);
       view.faceDirection(0, -1, 1 / 60);
     }).not.toThrow();
+  });
+
+  describe("setVerticalPitch", () => {
+    it("pitches toward level (no rotation) when vertical velocity is zero", () => {
+      const root = new THREE.Group();
+      root.rotation.x = 0.4; // start already tilted, as if just done diving
+      const view = new AvatarView(root);
+
+      view.setVerticalPitch(0, 1); // dt large enough to fully settle in one call
+      expect(root.rotation.x).toBeCloseTo(0, 5);
+    });
+
+    it("pitches opposite signs for diving (negative velocity) vs. surfacing (positive velocity)", () => {
+      const diveRoot = new THREE.Group();
+      const diveView = new AvatarView(diveRoot);
+      diveView.setVerticalPitch(-2, 1);
+
+      const surfaceRoot = new THREE.Group();
+      const surfaceView = new AvatarView(surfaceRoot);
+      surfaceView.setVerticalPitch(2, 1);
+
+      expect(diveRoot.rotation.x).not.toBeCloseTo(0, 5);
+      expect(surfaceRoot.rotation.x).toBeCloseTo(-diveRoot.rotation.x, 5);
+    });
+
+    it("clamps the pitch angle rather than growing unbounded past the tuned max velocity", () => {
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+
+      view.setVerticalPitch(2, 1);
+      const atMax = root.rotation.x;
+      view.setVerticalPitch(200, 1); // wildly beyond sea's real vertical range
+      expect(root.rotation.x).toBeCloseTo(atMax, 5);
+    });
+
+    it("eases toward the target rather than snapping instantly for a small dt", () => {
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
+
+      // Positive (surfacing) velocity noses the model up, i.e. negative
+      // rotation.x for this model's axis convention (verified against a
+      // real side-on render, see setVerticalPitch's own comment).
+      view.setVerticalPitch(2, 1 / 60);
+      expect(root.rotation.x).toBeLessThan(0);
+      expect(Math.abs(root.rotation.x)).toBeLessThan(Math.PI / 6); // well short of the full 30 degrees yet
+    });
   });
 });

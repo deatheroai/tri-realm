@@ -361,10 +361,13 @@ Only starts once Phase 1a has been reviewed and the direction holds.
   (`src/world/portalTransition.ts`, `src/world/landAirPortal.ts`); the
   generic transition system lives here in `src/world/`, exercised first
   against land↔air.
-- `blocked` (on Phase 3 existing) Land↔sea portal implementation — the
-  `Portal` schema and the generic transition system both already exist;
-  wiring an actual transition just needs sea as a real target realm to
-  land in.
+- `blocked` (on the land↔sea portal flavor decision, `DECISIONS.md`) Land↔sea
+  portal implementation — the `Portal` schema, the generic transition
+  system, and now sea itself (Phase 3) all already exist; wiring an actual
+  transition just needs the portal's flavor decided. See the duplicate
+  `todo` under Phase 3 below (same item, tracked in both places since it
+  sits at the Phase 1b/Phase 3 boundary, same as the original Phase 2 entry
+  did for land↔air).
 
 ## Phase 2 — Air realm
 
@@ -480,13 +483,137 @@ without a fresh check-in.
 
 ## Phase 3 — Sea realm
 
-- `blocked` (on Phase 1b completing) Sea realm scoping: movement feel,
-  floating/underwater content.
-- `todo` Swim/buoyancy avatar controller module — hardcoded/minimal
-  content first, same visual-first sequencing as land.
-- `todo` Sea `RealmMap` content (sea floor, floating docks/wreckage).
+Phase 1b completed 2026-08-31/09-01, unblocking this phase per its own
+"blocked (on Phase 1b completing)" gate, same as Phase 2 (Air) did —
+content specifics are left to my judgement per the 2026-08-26 world-model
+decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
+
+- `done` Sea realm scoping + swim/buoyancy avatar controller
+  (`src/sea/seaMovement.ts`, `src/sea/seaScene.ts`, `src/sea/seaRealmMap.ts`)
+  — this phase's design pass and its first hardcoded/minimal content in one
+  cycle, same visual-first sequencing land's Phase 1a and air's Phase 2
+  both started with. `TerrainField` gained a real `"sea-floor"` kind
+  (`src/world/realmMap.ts`: `floorY`/`surfaceY`/`wreckage`), matching the
+  schema's own documented intent ("sea -> sea-floor depth + water
+  surface"). Reuses land's `MoveInput` (`run` doubles as a stronger "kick")
+  and air's vertical axis (`src/input/verticalInput.ts` — dive/surface),
+  but the actual feel is genuinely its own, not air reskinned: horizontal
+  accelerates more sluggishly and tops out lower (reads as water
+  resistance), and vertical isn't purely input-driven — with no vertical
+  input held, passive buoyancy drifts the swimmer toward the surface
+  (`BUOYANCY_DRIFT_SPEED`), which active dive/surface input overrides
+  outright rather than adding to. Also bounded, unlike air's free volume:
+  position clamps between the sea floor and the water surface, with
+  vertical velocity zeroing out on hitting either bound instead of banking
+  a wasted push against it. `createSeaScene()` builds a fogged underwater
+  volume (dimmer, cool-tinted lighting; a translucent surface plane; a sea
+  floor) with scattered floating wreckage for parallax (`ARCHITECTURE.md`:
+  each realm gets its own realm-appropriate floating content) and a plain
+  procedural-capsule avatar — no skin-switching/animation-mapping
+  refinement beyond reusing land/air's, same deferred polish air's own
+  first Phase 2 item left for itself. No land↔sea portal yet (still a
+  pending decision, `DECISIONS.md`) and no placement/save-load in sea's
+  scope this cycle, mirroring how air's own first item left both for
+  later. Reviewable now via `#dev-realm-panel`'s new "Sea" button. 21 new
+  unit tests (`seaMovement.test.ts`, `seaRealmMap.test.ts`,
+  `seaScene.test.ts`, plus 1 in `realmMap.test.ts`); 5 new E2E tests
+  (`e2e/sea-swim.spec.ts`) cover realm switching, horizontal swimming,
+  passive buoyant drift, active dive/surface overriding it, and switching
+  back to land without cross-realm interference. **Review checkpoint:
+  pending your look at the deployed app — try the Sea button in the dev
+  panel.**
+- `done` **Skins pickup: sea-specific avatar pitch.** World's own sea
+  scoping above (and its `main.ts` comment) already wired `AvatarView` to
+  the sea avatar and left a real sea-specific visual as future refinement
+  — this is that refinement, picked up by the Skins track since it's
+  `src/skins/avatarView.ts` territory. `AvatarView.setVerticalPitch`
+  (new) leans the model into its actual vertical velocity — nose-down
+  while diving, nose-up while surfacing/drifting — called only from
+  `main.ts`'s sea branch with `seaMovement.velocity.y`; land/air have no
+  meaningful vertical velocity to react to and don't call it, so their
+  yaw-only `faceDirection` is untouched. Distinct from, and doesn't
+  replace, the still-open swim-stroke-animation `todo` below — this is
+  orientation, not a new animation clip (none of the current skins have
+  one to use). **Sign convention verified against a real side-on render,
+  not guessed**: an early version had it backwards (diving pitched the
+  model's nose *up*) — caught by rendering the Fox from a true side
+  camera angle (not the game's own steep 3rd-person view, same "render
+  and look" lesson as the Robot-scale and Gold-metalness fixes) and
+  fixed before landing, with the sign choice now recorded in the
+  function's own comment so it can't silently regress. 4 new unit tests
+  (`avatarView.test.ts`: settles to level at zero velocity, opposite
+  signs for dive vs. surface, clamps past the tuned max velocity, eases
+  rather than snaps for a small `dt`); 2 new E2E tests
+  (`e2e/skins.spec.ts`, exercised through the Sea realm like the
+  AvatarView-in-Air tests are exercised through Air) confirm dive/surface
+  produce opposite tilts and that releasing vertical input eases the
+  pitch back down as buoyancy takes over.
+- `done` Sea-specific animation-*state* mapping
+  (`src/sea/seaAnimation.ts`, `moveInputToSeaAnimationState`): land/air's
+  generic `moveInputToAnimationState` (`src/skins/avatarSkins.ts`) only
+  looks at horizontal move intent, which is right for both of them but
+  wrong for sea — an active dive/surface hold (`vertical !== 0`, zero
+  horizontal input) is real player-driven swimming that the generic
+  mapping was scoring as "idle," so the avatar visibly stopped animating
+  while the player was actively diving/surfacing straight down or up.
+  Fixed by treating active vertical input as motion too, while
+  deliberately *not* triggering on sea's own passive buoyancy drift
+  (`BUOYANCY_DRIFT_SPEED` keeps `vertical` at exactly 0, so a player
+  holding no keys still reads as idle/floating rather than perpetually
+  "swimming"). Still resolves to the same shared `idle`/`walk`/`run`
+  clip names — no bundled skin (Fox/Robot/Princess) has a distinct
+  swim-stroke clip to map a fourth state onto, so the actual swim
+  *animation* stays the separate, asset-gated `todo` right below; this
+  closes the "wiring" half of the original item — correcting *when* sea
+  shows motion, independent of *which* clip eventually plays for it.
+  Distinct from, and doesn't overlap, the vertical-pitch item above
+  (orientation vs. state-selection). 8 new unit tests
+  (`seaAnimation.test.ts`); land/air keep calling the generic mapping
+  unchanged — full suite verified (typecheck, 179 unit tests, build, 45
+  E2E tests all pass).
+- `done` **Real sea-specific swim-stroke animation clip** — the long-open
+  item above, resolved. Found via a different reachable source than the
+  ones previously checked: `github.com/J-Ponzo/gltf-universal-animation-library`,
+  a GitHub mirror (not itch.io/quaternius.com, both still blocked) of
+  Quaternius's CC0 Universal Animation Library, ships a rigged "Mannequin"
+  mesh with 46 clips including real `Swim_Idle_Loop`/`Swim_Fwd_Loop`. New
+  5th avatar skin `mannequin` (`public/assets/models/mannequin.glb`,
+  trimmed from the source's 46 clips down to the 5 this project actually
+  uses via `@gltf-transform/cli` prune — Idle_Loop/Walk_Loop/Sprint_Loop
+  plus the two swim clips — landing at ~736KB; full provenance in
+  `ATTRIBUTIONS.md`). Height measured for real (~1.83 at scale 1, close to
+  Capsule's ~1.8, no correction needed) — same discipline as the
+  Robot-scale/Princess-scale fixes, not guessed.
+  Required real architecture, not just a new catalog entry: `MoveAnimationState`
+  (`src/skins/avatarSkins.ts`) gained `swimIdle`/`swimActive` alongside the
+  existing idle/walk/run — additive only, every other skin's clip mapping
+  is untouched. `AvatarView.hasAnimation` (new) lets a caller check whether
+  the active skin actually has a given clip; `withSwimAnimationState`
+  (new, `src/sea/seaAnimation.ts`) uses that to route sea to the dedicated
+  swim states only when the active skin has them, otherwise falling back
+  to exactly today's shared walk/run behavior — Fox/Robot/Princess/Capsule
+  are completely unaffected while swimming, verified by a dedicated E2E
+  test alongside Mannequin's own. `moveInputToSeaAnimationState` itself is
+  unchanged (still just decides *when* sea shows motion; the new function
+  decides *which* clip). 7 new unit tests (`avatarSkins.test.ts`,
+  `avatarView.test.ts`, `seaAnimation.test.ts`), 3 new E2E tests
+  (`e2e/skins.spec.ts`: Mannequin's swimIdle/swimActive states, Fox's
+  unaffected walk state, both realms' existing per-skin listing/height
+  checks cover Mannequin automatically since they iterate `AVATAR_SKINS`).
+  Verified visually with real screenshots (idle floating pose and mid-swim
+  in Sea, plus Land for the shared walk/run clips) — the source mesh is a
+  plain color-blocked mannequin (orange body, purple joint accents, no
+  textures), rougher than Fox/Robot/Princess but functional and
+  correctly-scaled; a nicer-looking swim-capable model would be a future
+  swap, not a blocker on shipping the actual clips now.
+- `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
+  current hardcoded wreckage boxes, once reviewed.
 - `todo` Land↔sea portal — exact flavor (dive spot / underground passage /
-  beach) is a pending decision in `DECISIONS.md`.
+  beach) is a pending decision in `DECISIONS.md`; the generic transition
+  system (`src/world/portalTransition.ts`) and `main.ts`'s
+  `maybeTriggerPortal` already handle a third realm target, so wiring an
+  actual portal in is a `landSeaPortal.ts` module (same shape as
+  `landAirPortal.ts`) once the flavor is decided, not new plumbing.
 
 ## Later / unscoped
 

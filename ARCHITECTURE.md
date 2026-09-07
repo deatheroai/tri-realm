@@ -66,11 +66,15 @@ interface PlacedStructure {
 }
 ```
 
-`TerrainField`'s `kind` now has two real variants
-(`src/world/realmMap.ts`): `"land-heightfield"` and `"air-open-volume"`
-(air's is a nominal baseline only — flight has no ground collision to
-sample it for). `sampleTerrainHeight` is the one place that dispatches on
-`kind`; sea adds a third case there once it's scoped, same shape.
+`TerrainField`'s `kind` now has three real variants (`src/world/
+realmMap.ts`): `"land-heightfield"`, `"air-open-volume"` (a nominal
+baseline only — flight has no ground collision to sample it for), and
+`"sea-floor"` (`floorY`/`surfaceY` — the swimmable band's bounds — plus
+`wreckage`, real floating-content positions, same shape as air's
+`platforms`). `sampleTerrainHeight` is the one place that dispatches on
+`kind`, returning `floorY` for sea (the one surface a swimmer can rest
+on, land's closest equivalent) even though `stepSeaMovement` itself takes
+`floorY`/`surfaceY` directly rather than going through this.
 
 Because every realm's map is an instance of this one schema, the systems
 that operate on it are written **once** and reused by all three realms:
@@ -154,8 +158,21 @@ realm's map the avatar currently occupies:
   lift/momentum, not just "land's controller with gravity switched off."
   A dev-only realm switcher (`#dev-realm-panel`) makes this reviewable now
   without waiting on real land↔air portals.
-- **Sea module** *(built when sea realm is scoped)*: swim/buoyancy —
-  resistance and vertical drift distinct from both land and air.
+- **Sea module** (`src/sea/seaMovement.ts`, `BACKLOG.md` Phase 3):
+  swim/buoyancy — resistance and vertical drift distinct from both land
+  and air. Horizontal reuses land's `MoveInput` (`run` as a stronger
+  "kick") but accelerates more sluggishly and tops out lower than air's
+  flight — reads as water resistance, not air with smaller numbers.
+  Vertical reuses air's axis (`src/input/verticalInput.ts`) for active
+  dive/surface, but isn't purely input-driven: with no vertical input
+  held, passive buoyancy drifts the swimmer toward the surface — genuine
+  vertical drift neither land nor air has — which active input overrides
+  outright rather than adding to. Unlike air's free volume, position is
+  bounded between the sea floor and the water surface (the `TerrainField`
+  above), with vertical velocity zeroing out on hitting either bound
+  instead of banking a wasted push against it. A dev-only realm switcher
+  (`#dev-realm-panel`) makes this reviewable now without waiting on a
+  real land↔sea portal, same as air's own first pass.
 
 A realm transition (via portal) swaps the active movement module and
 teleports the avatar to the target map's spawn position — no continuous
@@ -210,21 +227,46 @@ to game logic.
   wanting "Fox" loaded at the same time would otherwise fight over the
   same instance — whichever set it last would silently steal the model
   out from under the other.
-- **Realm-agnostic by construction, proven by a second realm using it**:
-  `main.ts` holds two independent `AvatarView` instances — one per
-  realm's own avatar `Group` (land's from `scene.ts`, air's from
-  `src/air/airScene.ts`) — since both realms' scenes persist
+- **Realm-agnostic by construction, proven by a second (then third)
+  realm using it**: `main.ts` holds three independent `AvatarView`
+  instances — one per realm's own avatar `Group` (land's from
+  `scene.ts`, air's from `src/air/airScene.ts`, sea's from
+  `src/sea/seaScene.ts`) — since all three realms' scenes persist
   simultaneously (only one renders per frame, per the "no continuous
   blending" note above) and each therefore needs its own live visual.
-  The dev skin panel drives both together on every click, so the
+  The dev skin panel drives all three together on every click, so the
   player's chosen skin is one shared identity, not a separate choice per
   realm; each `AvatarView.setSkin` no-ops when already on that skin, so
-  this is safe regardless of which realm happens to be active. Air uses
+  this is safe regardless of which realm happens to be active. Air reuses
   the same `moveInputToAnimationState`/`faceDirection` calls land does,
-  against its own horizontal `MoveInput` — a real air-specific mapping
-  (e.g. accounting for vertical velocity, hover vs. glide vs. dive) is
-  future refinement, not required for the skin system itself to work
-  correctly in a second realm.
+  against its own horizontal `MoveInput`. Sea reuses `faceDirection` but
+  has its own `moveInputToSeaAnimationState` (`src/sea/seaAnimation.ts`)
+  for *state selection*: land/air's horizontal-only intent would score an
+  active dive/surface hold with zero horizontal input as "idle," which is
+  wrong for sea specifically — that's real player-driven swimming — so
+  sea's version also counts active vertical input (but not its own
+  passive buoyancy drift, which leaves `vertical` at exactly 0) as motion.
+  Both still resolve to the same shared `idle`/`walk`/`run` clip names; a
+  real air/sea-specific animation *clip* mapping (e.g. a distinct
+  swim-stroke) remains future refinement, genuinely gated on sourcing a
+  skin with one, not required for the skin system itself to work
+  correctly in a third realm (`BACKLOG.md`).
+- **Sea's one real realm-specific visual: vertical pitch.**
+  `AvatarView.setVerticalPitch(verticalVelocity, dt)` leans the model
+  into its actual vertical velocity — nose-down while diving, nose-up
+  while surfacing or passively drifting — smoothed the same
+  turn-speed-based-lerp way `faceDirection` eases yaw. Only sea's branch
+  in `main.ts` calls it (with `seaMovement.velocity.y`); land has no
+  vertical velocity and air's is `todo` (BACKLOG.md), so both stay
+  perfectly level as before. The angle-per-velocity mapping (clamped at
+  a tuned max velocity, so wildly fast dives don't over-rotate the model)
+  is `AvatarView`'s own constant, not something sea's movement code needs
+  to know about. **The sign was verified against a real side-on render,
+  not inferred**: an initial version had diving pitch the nose *up* —
+  caught by rendering the Fox from a genuine side camera angle (not the
+  game's own steep 3rd-person view, which makes pitch direction hard to
+  read by eye) before landing, same discipline as the Robot-scale and
+  Gold-metalness fixes below.
 
 ### In-app credits (`src/skins/attributions.ts`)
 
