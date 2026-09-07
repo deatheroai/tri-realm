@@ -320,6 +320,31 @@ surfaced.
   no-animation skin, never bobs an animated one, resets across a skin
   switch), 1 new E2E test (new `window.__getAvatarVisualLocalY` debug
   hook, same pattern as `__getAvatarWorldHeight`).
+- `todo` **Real flight/glide skin or animation clip for the Air realm.**
+  Air currently has no dedicated flying pose for any bundled skin — the
+  2026-09-07 fix (Phase 2, "Air-specific animation mapping") covers the
+  gap asset-free by always holding the `idle` clip while airborne and
+  leaning on `AvatarView.setVerticalPitch` for nose-up/nose-down tilt,
+  same stopgap sea used before its swim-stroke clips landed. This is the
+  follow-up "find the real asset" half, same shape as that Mannequin
+  search (`ATTRIBUTIONS.md` has its full provenance): look for a CC0/
+  CC-BY rigged model with actual flight/glide/hover clips (arms-out
+  glide, wing-flap, hover-idle — a bird, a superhero-style flyer, or a
+  flight/idle-loop clip added to an existing skin's rig) via the same
+  reachable sources already proven out this project (the
+  `gltf-universal-animation-library` GitHub mirror that supplied
+  Mannequin's swim clips, Khronos's sample repo, three.js's bundled
+  examples, GitHub-releases mirrors of Quaternius/Kenney packs —
+  itch.io/quaternius.com/sketchfab search itself are still blocked per
+  `DECISIONS.md`). If found, wire it in the same way Mannequin's swim
+  clips were: new `MoveAnimationState` variant(s) (e.g. `flyIdle`/
+  `flyActive`), `AvatarView.hasAnimation`-gated routing
+  (`src/air/airAnimation.ts`, mirroring `withSwimAnimationState`) so
+  every skin without the clip keeps today's idle-plus-pitch behavior
+  unchanged. Genuinely optional polish, not a blocker — today's fix
+  already resolves the reported "runs instead of floats" bug — so this
+  stays `todo` until a suitable asset actually turns up, same status
+  swim animation held before Mannequin was found.
 
 ## Phase 1b — Harden into the real architecture
 
