@@ -386,13 +386,15 @@ Only starts once Phase 1a has been reviewed and the direction holds.
   (`src/world/portalTransition.ts`, `src/world/landAirPortal.ts`); the
   generic transition system lives here in `src/world/`, exercised first
   against land↔air.
-- `blocked` (on the land↔sea portal flavor decision, `DECISIONS.md`) Land↔sea
-  portal implementation — the `Portal` schema, the generic transition
-  system, and now sea itself (Phase 3) all already exist; wiring an actual
-  transition just needs the portal's flavor decided. See the duplicate
-  `todo` under Phase 3 below (same item, tracked in both places since it
-  sits at the Phase 1b/Phase 3 boundary, same as the original Phase 2 entry
-  did for land↔air).
+- `todo` **(World)** Land↔sea portal implementation — flavor resolved
+  2026-09-07 (`DECISIONS.md`): a diving-house structure over a basement
+  pothole. The `Portal` schema, the generic transition system, and sea
+  itself (Phase 3) all already exist — `src/world/landSeaPortal.ts`, same
+  shape as `src/world/landAirPortal.ts`, plus the diving-house structure
+  itself (model/placement — need not be player-placeable, a fixed
+  landmark is enough). See the duplicate `todo` under Phase 3 below (same
+  item, tracked in both places since it sits at the Phase 1b/Phase 3
+  boundary, same as the original Phase 2 entry did for land↔air).
 
 ## Phase 2 — Air realm
 
@@ -633,12 +635,24 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   swap, not a blocker on shipping the actual clips now.
 - `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
   current hardcoded wreckage boxes, once reviewed.
-- `todo` Land↔sea portal — exact flavor (dive spot / underground passage /
-  beach) is a pending decision in `DECISIONS.md`; the generic transition
-  system (`src/world/portalTransition.ts`) and `main.ts`'s
-  `maybeTriggerPortal` already handle a third realm target, so wiring an
-  actual portal in is a `landSeaPortal.ts` module (same shape as
-  `landAirPortal.ts`) once the flavor is decided, not new plumbing.
+- `todo` **(World)** Land↔sea portal — flavor resolved 2026-09-07
+  (`DECISIONS.md`): a diving-house structure on land, with a basement
+  pothole as the actual transition point. The generic transition system
+  (`src/world/portalTransition.ts`) and `main.ts`'s `maybeTriggerPortal`
+  already handle a third realm target, so this is a `landSeaPortal.ts`
+  module (same shape as `landAirPortal.ts`) plus the diving-house
+  structure itself (model/placement — need not be player-placeable, a
+  fixed landmark is enough), not new plumbing.
+- `todo` **(Skins)** Dive-suit avatar skin for the diving-house portal
+  above — a new `avatarSkins.ts` catalog entry (same wiring as Fox/
+  Robot/Princess/Mannequin), plus the visual moment of swapping into it
+  as the avatar enters the diving house / descends the pothole. Exactly
+  how automatic the swap is (auto-equip on entry vs. keeping the
+  player's chosen skin visible underneath; whether it reverts back on
+  return to land) is left to whoever builds this — implementation
+  detail, not itself decision-worthy. Depends on the World-owned portal
+  item above existing first (or can stub against a placeholder trigger
+  if Skins' cycle runs first).
 
 ## Later / unscoped
 

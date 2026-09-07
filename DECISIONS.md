@@ -10,19 +10,8 @@ on these.
 
 ## Pending Decisions
 
-- **Exact form of the land↔sea portal** — e.g. a dive spot, underground
-  passage, or beach. Previously deferred until Phase 3 was actually
-  scoped — that happened this cycle (2026-09-05, `BACKLOG.md`: sea realm
-  scoping + swim/buoyancy controller), so there's now something concrete
-  to weigh flavors against (a bounded floor/surface swim volume, same as
-  land↔air's balloon was weighed against air's open-volume flight). This
-  session couldn't ask live (unattended scheduled run — `AskUserQuestion`
-  wasn't available in this environment either), so it's still sitting
-  here for the next time you check in, same bar as land↔air's portal
-  decision used. The world model only requires that a portal exist as a
-  named transition point, not which flavor it takes — not a blocker on
-  other Phase 3 work in the meantime (see the `todo`s logged alongside it
-  in `BACKLOG.md`).
+None outstanding — land↔sea portal flavor resolved 2026-09-07 (see
+Resolved).
 
 ## Needs Your Action (not decisions — steps only you can take)
 
@@ -247,3 +236,28 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
   Land↔sea's flavor stays a separate, still-pending decision (moved back
   to Pending above) — sea isn't scoped yet, so there's nothing concrete
   to weigh flavors against.
+
+- **2026-09-07 — Land↔sea portal flavor: a diving house, with a
+  dive-suit change, over a basement pothole.** Resolved directly in chat,
+  in response to the flavor question raised at the 2026-09-05 sea-scoping
+  cycle (previously Pending). Your direction: a small diving-house
+  structure on the land side the avatar can walk into; inside, the
+  avatar's visual changes into a dedicated dive suit; the actual
+  transition happens by descending through a pothole in the house's
+  basement, arriving in the sea realm. More elaborate than land↔air's
+  balloon/stairway (a bare launch point) — a real little scene with a
+  costume change, not just a marked spot on the ground.
+  **Build split, logged as concrete `BACKLOG.md` items for each track**:
+  World owns the diving-house structure (model/placement, likely a new
+  entry alongside `castleStructures.ts`'s Keep/Wall/Gate, though it need
+  not be a placeable player structure — a fixed landmark is enough) and
+  the basement pothole's actual portal-trigger wiring
+  (`src/world/landSeaPortal.ts`, same shape as `landAirPortal.ts`).
+  Skins owns the dive-suit avatar skin itself — a new `avatarSkins.ts`
+  catalog entry, wired into `AvatarView` the same way Fox/Robot/Princess/
+  Mannequin are — and the swap-into-it moment as the avatar enters the
+  house/descends the pothole. Left to whichever track actually builds
+  each half: exactly how automatic the suit swap is (auto-equip on entry
+  vs. still showing the player's chosen skin underneath, whether it
+  reverts on returning to land) — implementation detail, not itself
+  decision-worthy per `AUTONOMY.md`'s bar.
