@@ -19,6 +19,31 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
 
 ## Resolved
 
+- **2026-09-08 — Review feedback: Air/Sea animation gaps flagged; "Female"
+  skin turned out to already be merged mid-review.** You reviewed the
+  deployed app and reported three things in a persistent session: (1)
+  flying in Air still reads as "walking on land," no sense of floating —
+  confirmed as a real gap, logged as a `todo` under Phase 2 in
+  `BACKLOG.md` (Air never got the vertical-pitch/animation-state
+  treatment Sea already has). (2) the dive suit didn't auto-equip after
+  swimming through the diving-house portal into Sea — you confirmed you
+  went through the actual portal (not the `#dev-realm-panel` cheat
+  button, which is correctly excluded from auto-equip by design), so
+  this is logged as a `todo` bug under Phase 3 in `BACKLOG.md` for the
+  next cycle to reproduce and root-cause (starting with whether the live
+  Vercel deployment is actually current). (3) you recalled a second,
+  female-presenting build layered on top of Princess — an initial search
+  of `main` and every branch found nothing, so this was logged as a new
+  request; **correction moments later**: PR #1
+  (`claude/princess-animation-flexibility-p16jcj`, from a 2026-09-07
+  session where you'd asked whether Princess's frozen pose was fixable)
+  merged to `main` mid-conversation, adding exactly this — a new 6th
+  `female` skin (Mesh2Motion CC0 `female_8` + a matched animation rig,
+  since Princess's own source has no skeleton to animate). Your memory
+  was correct; it simply hadn't reached `main` yet when first checked.
+  The redundant new-skin request was removed from `BACKLOG.md` once this
+  came to light — no further action needed there.
+
 - **2026-09-07 — Daily-routine feedback channel fixed: fresh sessions
   stay fresh, feedback moves to a persistent session + this file.** You
   reported having to "revoke it from the email each time" after replying

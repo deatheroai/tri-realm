@@ -525,6 +525,37 @@ without a fresh check-in.
   3 new E2E tests (`e2e/land-air-portal.spec.ts`) cover both directions
   and the anti-bounce-back cooldown. Land↔sea's flavor is still a
   separate pending decision — sea isn't scoped yet.
+- `todo` **Air-specific animation/pitch parity with Sea.** Reported in a
+  review session on 2026-09-08: flying in Air still reads as "walking on
+  land" — there's no sense of floating/hovering. Root cause: `main.ts`'s
+  air branch (see the AvatarView-wiring item above) calls the same
+  horizontal-only `moveInputToAnimationState` land uses and never calls
+  anything like `setVerticalPitch` — so ascending/descending in place
+  shows the ground idle pose, and moving horizontally plays the walk/run
+  clip exactly as if grounded. This was actually named as "future
+  refinement" in that item's own writeup above, but never turned into
+  its own tracked line here, so no cycle has picked it up. Sea already
+  has the pattern to copy: a real per-realm animation-state mapping
+  (`moveInputToSeaAnimationState`) plus `AvatarView.setVerticalPitch`
+  leaning the model into vertical velocity — Air needs its own version
+  (e.g. a level/gliding pose at rest, nose tilting toward the direction
+  of vertical motion) rather than reusing land's wholesale.
+- `todo` **Verify: dive-suit auto-equip not triggering via the diving-house
+  portal.** Reported in a review session on 2026-09-08: swam through the
+  diving house on land into Sea and the dive suit did not auto-equip
+  (avatar still read as on-land). Per the code (`main.ts`'s
+  `maybeTriggerPortal`, BACKLOG.md's dive-suit item under Phase 3 below)
+  this should fire whenever `portal.kind === DIVING_HOUSE_PORTAL_KIND` and
+  the current skin isn't already `diveSuit` — and has E2E coverage
+  (`e2e/skins.spec.ts`) that's presumably still green, so this needs
+  reproduction rather than a blind fix: confirm on the actual live
+  Vercel deployment (not just local/test) that the diving-house portal's
+  trigger radius is genuinely being entered (not the nearby sea-side
+  arch, and not stopping just short of `PORTAL_TRIGGER_RADIUS`), and
+  check whether the deployed build is current — a stale/un-redeployed
+  Vercel build would show this exact symptom without any code being
+  wrong. If it reproduces on a confirmed-current deployment, this is a
+  real regression to root-cause and fix.
 
 ## Phase 3 — Sea realm
 
