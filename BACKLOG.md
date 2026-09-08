@@ -651,6 +651,35 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   textures), rougher than Fox/Robot/Princess but functional and
   correctly-scaled; a nicer-looking swim-capable model would be a future
   swap, not a blocker on shipping the actual clips now.
+- `done` **New "Female" avatar skin with real limb animation** — you noticed
+  Princess stands frozen next to Mannequin's real arm/leg movement and
+  asked if that's fixable. It isn't, not for Princess itself: its source
+  file genuinely has no skeleton at all (see `ATTRIBUTIONS.md`), so no
+  code change can animate it, and — same as the original Princess search —
+  no reachable princess/royal-themed *rigged* source turned up this time
+  either (Sketchfab, Quaternius's other repos, Kenney's character/fantasy
+  kits, all checked). Per your call, this shipped as a new 6th skin
+  (`female`) instead of touching Princess, so both are choosable and
+  Princess is untouched. Source: `Mesh2Motion/mesh2motion-app` (CC0) — the
+  `female_8` character mesh, which you picked after previewing it against
+  `female_9` and `female` (the plain/untextured base) side by side, plus
+  Mesh2Motion's shared "universal human" animation rig. The mesh and the
+  animation library ship as two separate CC0 files with matching bone
+  names but no baked-together clips (that's the point of a shared rig,
+  not something this project's asset-per-skin, self-contained-glb pattern
+  handles by default) — merged offline with a small `@gltf-transform/core`
+  script that matches each of 5 clips' channels to the mesh's own skeleton
+  by bone name and copies them over (all 990 channels matched, 0 dropped),
+  landing at ~907KB. Height and facing verified for real (~1.76 at scale 1
+  via `window.__getAvatarWorldHeight`, close to Capsule's ~1.8, no scale
+  correction; walks away from camera on forward input with no
+  `facingOffset` needed) — same discipline as the Robot-scale/Mannequin
+  fixes, not guessed. 1 new E2E test for the skin switch itself plus 1 for
+  its swim clips (mirroring Mannequin's); the existing per-skin
+  height-ratio, catalog, and bob-vs-animation checks all cover it
+  automatically since they iterate `AVATAR_SKINS`. Verified visually with
+  real screenshots (idle vs. mid-stride) — full suite passes (typecheck,
+  194 unit tests, build, 24 E2E tests in `skins.spec.ts` alone).
 - `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
   current hardcoded wreckage boxes, once reviewed.
 - `done` **(World)** Land↔sea portal — flavor resolved 2026-09-07

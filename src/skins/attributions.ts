@@ -52,4 +52,11 @@ export const ATTRIBUTIONS: readonly AttributionEntry[] = [
     creator: "oaktyler1996 (Sketchfab)",
     creatorUrl: "https://sketchfab.com/3d-models/apple-white-royal-pirate-365255d49d5e46e8a25b2bf921ef5b64",
   },
+  {
+    asset: 'Female model + rig ("female_8") and animation library',
+    license: "CC0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    creator: "Mesh2Motion",
+    creatorUrl: "https://github.com/Mesh2Motion/mesh2motion-app",
+  },
 ];

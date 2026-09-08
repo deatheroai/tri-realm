@@ -85,6 +85,34 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     },
   },
   {
+    id: "female",
+    label: "Female",
+    kind: "gltf",
+    modelUrl: "/assets/models/female.glb",
+    // At scale 1 the model measured ~1.72 world units tall (bboxMax.y from
+    // `gltf-transform inspect`, same reference points as Fox/Robot/Princess/
+    // Mannequin above) — already close to Capsule's ~1.8, no correction
+    // needed. The requested "does the Princess flex its arms/legs like
+    // Mannequin" fix: since princess.glb genuinely has no skeleton to
+    // animate (see ATTRIBUTIONS.md), and no reachable princess/royal-themed
+    // *rigged* source turned up, this is a separate new skin rather than a
+    // princess.glb replacement — Princess itself is untouched. Source mesh
+    // (Mesh2Motion's "female_8" character, CC0, no rig/animation of its own)
+    // + Mesh2Motion's shared "universal human" animation rig were merged
+    // into one glb offline (`@gltf-transform/core`, matching every bone by
+    // name — both ship the same skeleton, confirmed with 0 unmatched
+    // channels out of 990), same "trim to exactly the clips we use" spirit
+    // as Mannequin's own sourcing. Clip names below are the ones this merge
+    // produced, not the source library's original names.
+    animationClipNames: {
+      idle: "Idle_Loop",
+      walk: "Walk_Loop",
+      run: "Sprint_Loop",
+      swimIdle: "Swim_Idle_Loop",
+      swimActive: "Swim_Fwd_Loop",
+    },
+  },
+  {
     id: "diveSuit",
     label: "Dive Suit",
     kind: "procedural",

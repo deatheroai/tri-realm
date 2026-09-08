@@ -224,6 +224,38 @@ test("Princess (no animation clips) bobs while an animated skin (Fox) stays exac
   expect(Math.abs(second as number)).toBeLessThan(0.1);
 });
 
+// Female is a new skin (not a princess.glb replacement — see
+// ATTRIBUTIONS.md's `models/female.glb` entry) built by merging a separate
+// mesh + animation-library file offline; this guards that the merge
+// actually produced a working mixer/actions setup end to end, same pattern
+// as the Robot/Mannequin switch-back-and-forth tests above.
+test("switching to Female loads it with working animations, then switching back to Fox still works", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Female" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("female");
+
+  await page.locator("#dev-skin-panel button", { hasText: "Fox" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  expect(errors).toEqual([]);
+});
+
 // Compares texture *identity* (map.uuid), not .color: once a material's
 // real photographed texture loads (realBlockTextures.ts), .color resets to
 // white for every material except Gold, so .color alone can't reliably
@@ -531,6 +563,31 @@ test.describe("sea avatar swim animation", () => {
 
     // No input yet — floating idle should already be the swim-specific
     // idle clip, not the shared land "idle".
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarMoveState?.()))
+      .toBe("swimIdle");
+
+    await page.keyboard.down("KeyW");
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarMoveState?.()))
+      .toBe("swimActive");
+    await page.keyboard.up("KeyW");
+  });
+
+  test("switching to Female (also swim-capable, via the merged Mesh2Motion animation library) requests the dedicated swim clips too", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Sea" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("sea");
+
+    await page.locator("#dev-skin-panel button", { hasText: "Female" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getSeaAvatarSkinId?.()))
+      .toBe("female");
+
     await expect
       .poll(() => page.evaluate(() => window.__getSeaAvatarMoveState?.()))
       .toBe("swimIdle");
