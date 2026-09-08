@@ -31,6 +31,22 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-08 — Dev panels covered the game view on a real phone; fixed
+  with a collapse toggle.** You sent a screenshot from an actual phone:
+  the shared `#dev-panels` column (six avatar skins, four materials,
+  three structures, three realms — more buttons than existed when the
+  original dev-panel-overlap fix was written) had grown tall enough to
+  leave only a sliver of the avatar visible. Fixed directly in this
+  session (not deferred to a daily cycle) since it was a small, contained,
+  well-precedented change: a collapse-by-default toggle scoped to
+  `@media (pointer: coarse)`, mirroring the existing `#credits` toggle
+  exactly — a fine-pointer/desktop device (every existing E2E test
+  included) sees no change at all; only a real touch device starts
+  collapsed. Full suite verified (typecheck, 215 unit tests, build, 61
+  E2E tests, one new) and confirmed visually with real Pixel-5-viewport
+  screenshots, collapsed and expanded. See `BACKLOG.md`'s "Skins / visual
+  identity" section for the full writeup.
+
 - **2026-09-08 — Environment art pass designed and prioritized: land
   parkland, cloud platforms, sea shipwreck centerpiece.** You asked
   whether there's a plan to populate the three realms visually (garden/

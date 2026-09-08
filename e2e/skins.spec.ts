@@ -6,14 +6,19 @@ import { AVATAR_SKINS } from "../src/skins/avatarSkins";
  * commit: two `position: fixed` overlays (added independently by the World
  * and Skins tracks, in the same or different cycles) can merge cleanly as
  * text yet still collide visually. Generic on purpose — every child of
- * `#dev-panels` is checked, not specific panel ids, so a *future* panel
- * added to that shared column is covered automatically without editing
- * this test. See AUTONOMY.md's "UI layout convention" for the rule this
- * enforces (new panels join `#dev-panels`, they don't claim their own
- * fixed corner).
+ * `#dev-panels-content` is checked, not specific panel ids, so a *future*
+ * panel added to that shared column is covered automatically without
+ * editing this test. See AUTONOMY.md's "UI layout convention" for the rule
+ * this enforces (new panels join `#dev-panels-content`, they don't claim
+ * their own fixed corner). `#dev-panels-content` (not `#dev-panels`
+ * itself) is the actual stacked column since the 2026-09-08 collapse-on-
+ * mobile fix wrapped it in a toggle button + content div — this test
+ * always runs fine-pointer/desktop, where that collapse never triggers
+ * (`@media (pointer: coarse)`), so `#dev-panels-content` renders exactly
+ * as `#dev-panels` itself used to.
  */
 async function boundingBoxesOverlap(page: Page): Promise<Array<{ a: string; b: string }>> {
-  const selectors = ["#hud-controls", "#hud-position", "#hud-structures", "#dev-panels > *", "#credits"];
+  const selectors = ["#hud-controls", "#hud-position", "#hud-structures", "#dev-panels-content > *", "#credits"];
   const boxes: Array<{ label: string; box: { x: number; y: number; width: number; height: number } }> = [];
 
   for (const selector of selectors) {
@@ -45,7 +50,7 @@ test.describe("fixed overlay layout", () => {
 
   test("no two fixed HUD/panel elements overlap on a narrow viewport", async ({ page }) => {
     await page.goto("/");
-    const panelCount = await page.locator("#dev-panels > *").count();
+    const panelCount = await page.locator("#dev-panels-content > *").count();
     expect(panelCount).toBeGreaterThan(0); // sanity: the check actually covered something
 
     const overlaps = await boundingBoxesOverlap(page);

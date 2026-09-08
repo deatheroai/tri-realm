@@ -115,6 +115,46 @@
         gap: 8px;
         max-width: min(70vw, 320px);
       }
+      /*
+       * Collapse toggle — a fine-pointer (mouse) device never sees it:
+       * these panels have always just sat there with screen to spare on
+       * desktop, and every existing E2E test that clicks a dev-panel
+       * button runs under that same fine-pointer/desktop project, so
+       * none of that coverage sees a collapsed panel. Only a
+       * coarse-pointer (touch/phone) device shows the toggle and starts
+       * collapsed: reported 2026-09-08 — at today's full button count
+       * (six avatar skins, four materials, three structures, three
+       * realms) this column had grown tall enough to cover most of a
+       * narrow phone viewport's actual game view. Same expand-on-click
+       * idiom as `#credits-toggle` below.
+       */
+      #dev-panels-toggle {
+        display: none;
+        font: 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace;
+        color: #d9822b;
+        background: rgba(16, 21, 28, 0.75);
+        border: 1px solid rgba(217, 130, 43, 0.4);
+        border-radius: 6px;
+        padding: 4px 8px;
+        cursor: pointer;
+      }
+      #dev-panels-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      @media (pointer: coarse) {
+        #dev-panels-toggle {
+          display: block;
+        }
+        #dev-panels-content {
+          display: none;
+        }
+        #dev-panels-content.open {
+          display: flex;
+        }
+      }
       #dev-skin-panel,
       #dev-structure-panel,
       #dev-realm-panel {
@@ -228,9 +268,12 @@
     <div id="hud-position" data-x="0" data-z="0">x: 0.00  z: 0.00</div>
     <div id="hud-structures" data-count="0">Structures: 0</div>
     <div id="dev-panels">
-      <div id="dev-skin-panel">🔧 skins</div>
-      <div id="dev-structure-panel">🏰 structures</div>
-      <div id="dev-realm-panel">🌍 realm</div>
+      <button id="dev-panels-toggle" type="button" aria-expanded="false">🔧 dev</button>
+      <div id="dev-panels-content">
+        <div id="dev-skin-panel">🔧 skins</div>
+        <div id="dev-structure-panel">🏰 structures</div>
+        <div id="dev-realm-panel">🌍 realm</div>
+      </div>
     </div>
     <div id="credits">
       <button id="credits-toggle" type="button" aria-expanded="false">ⓘ Credits</button>

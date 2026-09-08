@@ -190,3 +190,30 @@ test("a real drag inside the joystick zone still moves, without placing", async 
   const z = Number(await positionHud.getAttribute("data-z"));
   expect(z).toBeLessThan(-0.3);
 });
+
+// Reported 2026-09-08: on a real phone, the dev-panels column (six avatar
+// skins, four materials, three structures, three realms — grown well past
+// what it was when the shared-column fix in skins.spec.ts's overlap test
+// was written) had grown tall enough to cover most of the visible game
+// view. Fixed with a collapse-by-default toggle scoped to `@media
+// (pointer: coarse)` (index.html) — this project (Pixel 5, real
+// `hasTouch`) is the one place in the suite that actually renders under
+// that media query, so this is the only file that can verify it for real
+// rather than by inspecting the stylesheet.
+test("dev panels stay collapsed by default on a touch device, expand on tap", async ({ page }) => {
+  await page.goto("/");
+  const toggle = page.locator("#dev-panels-toggle");
+  const content = page.locator("#dev-panels-content");
+
+  await expect(toggle).toBeVisible();
+  await expect(content).toBeHidden();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+  await toggle.tap();
+  await expect(content).toBeVisible();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+  await toggle.tap();
+  await expect(content).toBeHidden();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+});

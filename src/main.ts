@@ -473,6 +473,25 @@ if (creditsToggle && creditsPanel) {
   });
 }
 
+// Collapse toggle for the shared #dev-panels column (genuinely shared
+// between World and Skins, same as the column itself — see AUTONOMY.md's
+// "UI layout convention" section). Reported 2026-09-08: on a real phone
+// this column had grown tall enough to cover most of the game view.
+// Inert on a fine-pointer/desktop device (the toggle button stays
+// `display: none` there, per index.html's `@media (pointer: coarse)`
+// rule) — wiring it unconditionally here is harmless either way, exactly
+// the same "no-op where the CSS doesn't apply" approach the touch-zone's
+// own pointer-events toggle already uses. Same expand-on-click idiom as
+// the credits toggle just above.
+const devPanelsToggle = document.getElementById("dev-panels-toggle");
+const devPanelsContent = document.getElementById("dev-panels-content");
+if (devPanelsToggle && devPanelsContent) {
+  devPanelsToggle.addEventListener("click", () => {
+    const isOpen = devPanelsContent.classList.toggle("open");
+    devPanelsToggle.setAttribute("aria-expanded", String(isOpen));
+  });
+}
+
 // Dev-only structure-type switcher (not child-facing UI) — separate panel
 // from the skins one above (that's Skins-track-owned wiring); picks which
 // castle structure type (src/land/castleStructures.ts) new placements use.

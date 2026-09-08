@@ -194,6 +194,27 @@ surfaced.
   fixed here since Skins already owns "dev-panel wiring". Verified with
   real screenshots at both a narrow (390px) and desktop (1280px)
   viewport — no more overlap either way.
+- `done` **Dev panels now collapse by default on a real phone.** Reported
+  2026-09-08 with a screenshot: at today's full button count (six avatar
+  skins, four materials, three structures, three realms — the overlap fix
+  above never anticipated this many), the shared `#dev-panels` column had
+  grown tall enough on a narrow phone to cover most of the actual game
+  view, leaving only a sliver of the avatar visible. Fixed the same way
+  `#credits` already handles this (expand-on-click, collapsed by
+  default): `#dev-panels-toggle` (index.html) + a wrapping
+  `#dev-panels-content` div, scoped to `@media (pointer: coarse)` so a
+  fine-pointer/desktop device — including every existing E2E test that
+  clicks a dev-panel button, all of which run under the desktop Playwright
+  project — sees no change at all; only a real touch device starts
+  collapsed. `e2e/skins.spec.ts`'s generic overlap-regression check
+  updated to look at `#dev-panels-content`'s children (one level deeper
+  now) rather than `#dev-panels`' own, so a future new panel is still
+  covered automatically, matching its original intent. New E2E coverage
+  in `e2e/touch-controls.spec.ts` (the one file that actually runs under
+  a real coarse-pointer/touch device) confirms the collapse/expand/
+  re-collapse cycle for real, not just via the stylesheet. Full suite
+  verified (typecheck, 215 unit tests, build, 61 E2E tests); verified
+  visually with real Pixel-5-viewport screenshots, collapsed and expanded.
 - `done` Real (generated, not flat-color) textures for all four block
   materials: `src/skins/proceduralTextures.ts` builds a small
   sum-of-sine-waves shading pattern per material — thin horizontal
