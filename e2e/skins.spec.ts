@@ -90,6 +90,44 @@ test("every gltf avatar skin renders within a sane height range of the procedura
   }
 });
 
+// Regression guard for the "a skin can never brick the app" promise
+// documented throughout ARCHITECTURE.md/DECISIONS.md (AvatarView.buildVisual's
+// catch, src/skins/avatarView.ts): only ever verified via a mocked
+// GLTFLoader.loadAsync rejection in avatarView.test.ts, not against a real
+// network failure in a real browser. This exercises the actual path a
+// player would hit — e.g. a CDN hiccup or a missing asset file — by
+// aborting Fox's real glTF request before the very first load, and
+// confirms the app still comes up fully functional on the fallback
+// procedural capsule instead of hanging or throwing.
+test("a failed glTF load falls back to the procedural capsule instead of breaking the app", async ({ page }) => {
+  const uncaughtErrors: string[] = [];
+  page.on("pageerror", (err) => uncaughtErrors.push(err.message));
+
+  await page.route("**/assets/models/fox.glb", (route) => route.abort());
+  await page.goto("/");
+
+  // DEFAULT_AVATAR_SKIN_ID ("fox") failed to load — AvatarView.buildVisual's
+  // catch resolves to FALLBACK_AVATAR_SKIN_ID ("capsule") instead, exactly
+  // as it would for any other load failure.
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("capsule");
+
+  // The dev panel reflects the real resolved outcome too (setActiveButton
+  // follows AvatarView.skinId, not the id that was originally requested).
+  await expect(page.locator("#dev-skin-panel button", { hasText: "Capsule" })).toHaveClass(/active/);
+
+  // The avatar itself still renders at a sane height — a real, working
+  // fallback, not just an id string with nothing behind it.
+  const height = await page.evaluate(() => window.__getAvatarWorldHeight?.());
+  expect(height).toBeGreaterThan(0);
+
+  // No *uncaught* exception — AvatarView.buildVisual logs the failure via
+  // console.error (expected, not asserted against here) and recovers
+  // cleanly rather than letting it propagate.
+  expect(uncaughtErrors).toEqual([]);
+});
+
 test("the dev skin panel lists both avatar skins and block materials", async ({ page }) => {
   await page.goto("/");
 

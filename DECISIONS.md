@@ -15,7 +15,19 @@ Resolved).
 
 ## Needs Your Action (not decisions — steps only you can take)
 
-None outstanding — Vercel project imported 2026-08-26 (see Resolved).
+- **Confirm on the live deployment whether the dive-suit auto-equip bug
+  (`BACKLOG.md`, Phase 2) actually reproduces.** The deployment URL is
+  now known — `https://tri-realm.vercel.app` (found 2026-09-08 in the
+  GitHub repo's own `homepage` field, not previously checked) — but this
+  session's network policy blocks `tri-realm.vercel.app` outright, same
+  as kenney.nl/quaternius.com/etc., so no automated session can actually
+  drive the live app to check. Every automated angle (full local
+  build/test/E2E suite against current code) already passes clean, which
+  is consistent with — but doesn't prove — the "stale/un-redeployed
+  Vercel build" hypothesis the item itself raised. Needs a human with a
+  real browser at that URL: walk into the diving house from land and
+  confirm whether the dive suit actually auto-equips on the current
+  deployment.
 
 ## Resolved
 

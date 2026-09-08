@@ -358,6 +358,43 @@ surfaced.
   no-animation skin, never bobs an animated one, resets across a skin
   switch), 1 new E2E test (new `window.__getAvatarVisualLocalY` debug
   hook, same pattern as `__getAvatarWorldHeight`).
+- `done` **Real end-to-end regression test for the glTF load-failure
+  fallback.** Same "usual two `todo`s still genuinely blocked" situation
+  as the bob item above (see the 2026-09-08 note on both below) prompted
+  another look for a real gap — found one: "a skin can never brick the
+  app" (`AvatarView.buildVisual`'s catch, documented repeatedly across
+  `ARCHITECTURE.md`/`DECISIONS.md`) was only ever verified against a
+  *mocked* `GLTFLoader.loadAsync` rejection in `avatarView.test.ts`, never
+  against a real network failure in a real browser. Added an E2E test
+  (`e2e/skins.spec.ts`) that aborts Fox's actual `.glb` request via
+  `page.route` before the very first page load and confirms the app still
+  comes up fully functional on `FALLBACK_AVATAR_SKIN_ID` ("capsule") —
+  right skin id, dev panel correctly highlights Capsule as active, avatar
+  still renders at a sane height, and no *uncaught* exception reaches the
+  page (the expected `console.error` isn't asserted against, just not
+  allowed to escalate). 1 new E2E test, no code changes needed — the
+  fallback path already worked, this closes a real coverage gap in
+  verifying it against an actual browser/network failure rather than only
+  a mock.
+
+**2026-09-08 (this cycle) — both remaining `todo`s below re-checked, still
+genuinely not-solo-actionable; one real finding logged.** Investigated
+the dive-suit auto-equip item's own blocker (no known deployment URL) —
+found it: `deatheroai/tri-realm`'s GitHub repo metadata itself has a
+`homepage` field set to `https://tri-realm.vercel.app` (not previously
+checked; earlier sessions had only grepped repo *files* for a URL, never
+the repo's own GitHub settings). Confirmed this doesn't actually unblock
+the item, though: this session's network policy denies `tri-realm.vercel.app`
+outright (`CONNECT` → 403, confirmed via the proxy's own status endpoint
+as a policy denial, not a technical failure) — the same class of block as
+kenney.nl/quaternius.com/etc., not just "URL unknown." So a live-deployment
+check still needs an actual human with a real browser, not any automated
+session regardless of whether it knows the URL. Recorded here so future
+cycles don't re-spend time rediscovering the URL only to hit the same
+wall. Camera framing re-read against current code — the blast-radius
+reasoning (changing the shared `cameraOffset` in `main.ts` would move
+click-position assumptions baked into several of World's own E2E specs)
+still holds unchanged; not re-investigated further this cycle.
 
 ## Phase 1b — Harden into the real architecture
 
