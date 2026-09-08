@@ -44,16 +44,34 @@ export function createProceduralAvatarMesh(): THREE.Mesh {
  * The "diveSuit" procedural variant (`src/skins/avatarSkins.ts`) — same
  * capsule body/footprint as the default procedural mesh above (so it lines
  * up with `AVATAR_GROUND_OFFSET` and reads as roughly the same height as
- * every other skin) plus two small primitives distinctive enough to read
- * as "a diver" at a glance: a mask on the face and a tank on the back —
- * rough-primitives language, same as `portalMarker.ts`/`divingHouseMarker.ts`.
- * Local +Z is this mesh's authored "front" — verified against a real
- * render with the avatar walking toward the camera (same "render and
- * look, don't guess" discipline as the Robot-scale/Gold-metalness/
- * Fox-pitch-sign fixes elsewhere in this codebase), since `faceDirection`'s
- * rotation puts local +Z on the leading edge when moving in world -Z
- * (forward, see `src/input/keyboardInput.ts`) with the default
- * `facingOffset` of 0.
+ * every other skin) plus primitives distinctive enough to read as "a
+ * diver" at a glance — rough-primitives language, same as
+ * `portalMarker.ts`/`divingHouseMarker.ts`.
+ *
+ * **Fixed 2026-09-08, reported with a real screenshot**: the original
+ * version (just a front-facing mask + a back-facing tank) read as a
+ * plain, undecorated capsule from any angle other than dead-on front or
+ * back — confirmed by screenshotting it under the actual follow camera
+ * after turning the avatar to face the camera (mask side): the mask was
+ * essentially invisible, embedded too close to the body's own surface at
+ * that height/depth to render as a visible bump, and (being pale +
+ * `transparent`) easy to lose entirely against Sea's dim, cool-tinted
+ * fog. Fixed two ways: (1) the mask and tank both now protrude further
+ * and are less transparent/more saturated so they hold up under Sea's
+ * dim lighting — same "render and look, don't guess" discipline as the
+ * Robot-scale/Gold-metalness/Fox-pitch-sign fixes elsewhere in this
+ * codebase, verified by re-screenshotting from the front, back, and a
+ * true side-on angle (the worst case for two single-sided appendages);
+ * (2) a new waist belt (a torus wrapping the whole body) reads as
+ * equipment from *every* angle, including side-on, without depending on
+ * which way the avatar happens to be facing — the actual fix for the
+ * "front-facing view shows nothing" bug, not just a brighter version of
+ * the same angle-dependent problem.
+ *
+ * Local +Z is still this mesh's authored "front" (mask side) —
+ * `faceDirection`'s rotation puts local +Z on the leading edge when
+ * moving in world -Z (forward, see `src/input/keyboardInput.ts`) with
+ * the default `facingOffset` of 0.
  */
 export function createDiveSuitAvatarMesh(): THREE.Group {
   const group = new THREE.Group();
@@ -66,21 +84,47 @@ export function createDiveSuitAvatarMesh(): THREE.Group {
   body.name = "dive-suit-body";
 
   const mask = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 12, 8),
-    new THREE.MeshStandardMaterial({ color: 0xbfe8ef, transparent: true, opacity: 0.85 }), // pale "glass" mask
+    new THREE.SphereGeometry(0.24, 12, 8),
+    // Brighter/more opaque and a touch of emissive glow than the original
+    // pale-and-nearly-transparent version, so it doesn't wash out to
+    // nothing under Sea's dim cool-tinted fog once it's actually facing
+    // the camera.
+    new THREE.MeshStandardMaterial({
+      color: 0x8fd8e8,
+      emissive: 0x2a5560,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.92,
+    }),
   );
-  mask.position.set(0, 0.45, 0.28); // face height, front of the body
+  mask.position.set(0, 0.45, 0.34); // face height, pushed further out so it clearly protrudes past the body surface
   mask.scale.set(1, 0.9, 0.6);
   mask.name = "dive-suit-mask";
 
   const tank = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.14, 0.14, 0.9, 10),
-    new THREE.MeshStandardMaterial({ color: 0xe8b93f }), // bright tank, reads clearly as equipment against the dark suit
+    new THREE.CylinderGeometry(0.16, 0.16, 0.95, 10),
+    new THREE.MeshStandardMaterial({
+      color: 0xe8b93f, // bright tank, reads clearly as equipment against the dark suit
+      emissive: 0x6b4f10,
+      emissiveIntensity: 0.4,
+    }),
   );
-  tank.position.set(0, 0.05, -0.32); // strapped to the back
+  tank.position.set(0, 0.05, -0.38); // strapped to the back, pushed further out to clear the body surface
   tank.name = "dive-suit-tank";
 
-  group.add(body, mask, tank);
+  // Waist belt — the actual fix for "invisible from the side/front": a
+  // ring around the whole capsule reads as equipment from every angle,
+  // not just the one or two the mask/tank happen to face. Sits at the
+  // capsule's equator, wide enough to clearly stand proud of the body.
+  const belt = new THREE.Mesh(
+    new THREE.TorusGeometry(CAPSULE_RADIUS + 0.03, 0.06, 8, 16),
+    new THREE.MeshStandardMaterial({ color: 0xe8b93f, emissive: 0x6b4f10, emissiveIntensity: 0.4 }),
+  );
+  belt.rotation.x = Math.PI / 2; // lie flat, encircling the body horizontally
+  belt.position.set(0, -0.1, 0);
+  belt.name = "dive-suit-belt";
+
+  group.add(body, mask, tank, belt);
   return group;
 }
 

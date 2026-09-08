@@ -914,6 +914,34 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   Verified visually with real screenshots (idle and mid-walk) that the
   mesh's authored front (the mask) actually leads in the direction of
   travel rather than trailing backward.
+- `done` **Dive suit read as a plain capsule from common viewing angles —
+  fixed.** Reported 2026-09-08 with a real screenshot: after auto-equip,
+  the avatar looked completely undecorated, "turned into Capsule." The
+  auto-equip and skin-resolution logic itself was verified completely
+  correct (confirmed programmatically: `seaAvatarView.skinId` resolves to
+  `diveSuit`, and the built visual really is a `THREE.Group` with
+  `dive-suit-body`/`dive-suit-mask`/`dive-suit-tank` children, not a
+  silent fallback) — the actual bug was legibility, not logic. Root
+  cause, found by screenshotting from the real follow camera at several
+  headings (front, back, side) rather than guessing: the mask and tank
+  are each visible from only one narrow facing, and the mask specifically
+  sat close enough to the body's own surface, and was pale/transparent
+  enough, to read as invisible once it was actually facing the camera
+  (reproduced directly: turned the avatar to face camera, mask vanished
+  entirely). Fixed two ways in `createDiveSuitAvatarMesh`
+  (`src/skins/avatarView.ts`): (1) the mask and tank now protrude further
+  from the body and carry a touch of `emissive` plus higher opacity/
+  saturation, so they hold up under Sea's dim cool-tinted fog once they
+  do face the camera; (2) a new waist belt (a `TorusGeometry` ring around
+  the whole body) reads as equipment from *every* heading, including
+  dead-on front/back and side-on — the actual fix for "invisible from
+  some angle," since it doesn't depend on which way the avatar is facing
+  at all. Verified visually with real screenshots from idle, back
+  (walking away — tank visible), front (walking toward camera — belt
+  visible even though the mask still doesn't clear the body from dead-on),
+  and a side/strafe angle (mask, tank, and belt all visible at once — the
+  best-case angle). No test depended on the old geometry values; full
+  suite still green (typecheck, 215 unit tests, build, 61 E2E tests).
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark

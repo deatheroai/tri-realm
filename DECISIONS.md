@@ -31,6 +31,21 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
+  reported the avatar reading as an undecorated Capsule after switching
+  to the Dive Suit skin. Confirmed programmatically first (not assumed):
+  the auto-equip/skin-resolution logic is completely correct — the built
+  visual really is the distinct dive-suit mesh, not a silent fallback.
+  The actual bug was legibility: screenshotting the real follow camera
+  from several headings showed the mask and tank each only read from one
+  narrow facing, and the mask specifically vanished entirely once it was
+  actually facing the camera (too close to the body's surface, too pale/
+  transparent). Fixed by making the mask/tank protrude further and hold
+  up better under Sea's dim fog, plus adding a waist belt that reads as
+  equipment from every heading regardless of which way the avatar faces —
+  see `BACKLOG.md`'s "Skins / visual identity" section for the full
+  writeup and verification screenshots taken from idle/back/front/side.
+
 - **2026-09-08 — Dev panels covered the game view on a real phone; fixed
   with a collapse toggle.** You sent a screenshot from an actual phone:
   the shared `#dev-panels` column (six avatar skins, four materials,
