@@ -19,6 +19,31 @@ None outstanding — Vercel project imported 2026-08-26 (see Resolved).
 
 ## Resolved
 
+- **2026-09-08 — Environment art pass designed and prioritized: land
+  parkland, cloud platforms, sea shipwreck centerpiece.** You asked
+  whether there's a plan to populate the three realms visually (garden/
+  cloud/shipwreck themes) — there wasn't; every realm's dressing today is
+  still plain placeholder primitives (gray cylinders for land landmarks
+  and air platforms, brown boxes for sea wreckage). Designed together in
+  this session: **Land** gets a generic "parkland" dressing (trees,
+  flower-bed patches, a path, one small fountain/gazebo centerpiece) —
+  deliberately light-touch rather than a heavily-themed garden, since you
+  clarified this repo's purpose is to be cloned and built upon, so the
+  goal is a pleasant, easily-reskinned default rather than an opinionated
+  narrative. **Air** gets cloud-*shaped* floating platforms (the platform
+  mesh itself becomes the cloud, not just backdrop dressing) for the same
+  foundational-starter reasoning. **Sea** gets one dramatic centerpiece
+  shipwreck landmark alongside the existing smaller debris, rather than
+  re-skinning every wreckage box — this supersedes the old "Sea RealmMap
+  hardening" backlog item. All three implemented the same way
+  (`AIR_FLOATING_PLATFORM_POSITIONS`/`SEA_WRECKAGE_POSITIONS`'s existing
+  data-array pattern) so a fork can reskin a realm by swapping one
+  array/asset set. **Priority**: you asked for a full review of open
+  items first; agreed order (now in `BACKLOG.md`'s new "Current priority
+  order" note) is the Air pitch-parity fix, then the dive-suit bug, then
+  this three-realm art pass, then the existing castle-model/camera-framing
+  polish items, with "Later/unscoped" still parked behind all of it.
+
 - **2026-09-08 — Review feedback: Air/Sea animation gaps flagged; "Female"
   skin turned out to already be merged mid-review.** You reviewed the
   deployed app and reported three things in a persistent session: (1)

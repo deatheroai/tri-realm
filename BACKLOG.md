@@ -14,6 +14,23 @@ Phase 1b (schema, validation, generic save/load) only starts once the
 rough version has been reviewed, so direction gets checked before the
 "proper" architecture gets built under it.
 
+**Current priority order (set 2026-09-08, review session — supersedes
+plain top-to-bottom-per-phase ordering until this note is removed):**
+
+1. Air floating/pitch parity fix (`todo` under Phase 2 below).
+2. Dive-suit auto-equip bug (`todo` under Phase 3 below).
+3. Environment art pass — land parkland dressing (`todo` under Phase 1a),
+   cloud-shaped air platforms (`todo` under Phase 2), sea shipwreck
+   centerpiece (`todo` under Phase 3, supersedes the old sea-floating-docks
+   item). Treat these three as one pass, but each realm's piece can land
+   independently on its own track's next cycle.
+4. Real Quaternius castle-piece models (`todo` under "Skins / visual
+   identity").
+5. Camera framing revisit (`todo` under "Skins / visual identity").
+
+Everything under "Later / unscoped" stays parked behind all of the above
+with no target, as before.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single
@@ -74,6 +91,25 @@ system.
   behind it — raycasting now targets the ground plus every placed piece,
   not just the ground. 5 new E2E tests confirm both directions each time
   (tap-vs-drag, stack-vs-fall-through).
+- `todo` **(World) Basic parkland dressing — a foundational starter, not
+  a one-off theme.** Locked in during a 2026-09-08 design review: swap
+  the current plain gray-cylinder `landmark` meshes (`src/scene.ts`) for
+  a light, generic "parkland" set — scattered trees, a few flower-bed
+  color patches, a simple path connecting them, one small centerpiece
+  (a fountain or gazebo) near spawn. Deliberately generic/light-touch
+  rather than a heavily-opinionated theme (a "garden" was the original
+  ask, refined here): this repo's stated purpose is to be cloned and
+  built on top of, so the goal is "pleasant out of the box," not a
+  specific narrative that fights whatever theme a fork actually wants.
+  Implement the same way `AIR_FLOATING_PLATFORM_POSITIONS`/
+  `SEA_WRECKAGE_POSITIONS` already do: a plain data array (e.g.
+  `LAND_DECORATION_POSITIONS`, each entry carrying a decoration kind) that
+  `scene.ts` reads to place meshes — the actual foundational value here
+  is that a fork can reskin land entirely by swapping one array/asset
+  set, without touching terrain/collision code. Procedural-primitives
+  first (same discipline block materials used: generated pattern before
+  real photographed textures) — real assets can follow later if wanted.
+  Rolling-hill terrain and all movement/build mechanics stay untouched.
 
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
@@ -540,6 +576,20 @@ without a fresh check-in.
   leaning the model into vertical velocity — Air needs its own version
   (e.g. a level/gliding pose at rest, nose tilting toward the direction
   of vertical motion) rather than reusing land's wholesale.
+- `todo` **(World) Cloud-shaped floating platforms.** Locked in during a
+  2026-09-08 design review: replace the current plain gray-cylinder
+  platforms (`AIR_FLOATING_PLATFORM_POSITIONS`, `airScene.ts`) with
+  actual cloud-shaped meshes (a soft puffy cluster — several overlapping
+  spheres or a simple low-poly cloud blob — rather than a literal
+  geometric primitive). The platform *is* the cloud, not a separate
+  backdrop layer — chosen specifically so the flight mechanic and the
+  "cloudy sky" visual theme read as the same object, matching the same
+  foundational-starter reasoning as Land's parkland item above (a fork
+  reskins Air by swapping this one mesh/position set). Placement
+  data/collision radius stay as-is — this is a mesh swap, not a schema
+  change. Procedural-primitives-first, same as everywhere else in this
+  codebase; a real cloud skybox/atmosphere pass is a further layer, not
+  required for this item.
 - `todo` **Verify: dive-suit auto-equip not triggering via the diving-house
   portal.** Reported in a review session on 2026-09-08: swam through the
   diving house on land into Sea and the dive suit did not auto-equip
@@ -711,8 +761,9 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   automatically since they iterate `AVATAR_SKINS`. Verified visually with
   real screenshots (idle vs. mid-stride) — full suite passes (typecheck,
   194 unit tests, build, 24 E2E tests in `skins.spec.ts` alone).
-- `todo` Sea `RealmMap` hardening: real floating-docks content beyond the
-  current hardcoded wreckage boxes, once reviewed.
+- `todo` **Superseded, see the centerpiece-wreck item below.** Originally:
+  "Sea `RealmMap` hardening: real floating-docks content beyond the
+  current hardcoded wreckage boxes, once reviewed."
 - `done` **(World)** Land↔sea portal — flavor resolved 2026-09-07
   (`DECISIONS.md`): a diving-house structure on land, with a basement
   pothole as the actual transition point. Built as `landSeaPortal.ts`
@@ -770,6 +821,18 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   Verified visually with real screenshots (idle and mid-walk) that the
   mesh's authored front (the mask) actually leads in the direction of
   travel rather than trailing backward.
+- `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
+  2026-09-08 design review, supersedes the sea-floating-docks item above:
+  a single large, dramatic broken-ship hull + mast as a real landmark
+  (bigger and more distinct than the existing `SEA_WRECKAGE_POSITIONS`
+  debris boxes), rather than re-skinning every small piece individually.
+  Worth considering placement near the diving-house sea-side arrival
+  (`landSeaPortal.ts`'s `SEA_ARRIVAL_POSITION`, or nearby) so it ties
+  into that portal's own story, but not required — World's call once
+  actually laid out. Keep the existing smaller wreckage pieces around it
+  for scale/parallax; this adds one real centerpiece, it doesn't replace
+  the whole field. Same procedural-primitives-first approach as
+  everywhere else in this codebase for a first pass.
 
 ## Later / unscoped
 
