@@ -17,8 +17,10 @@ rough version has been reviewed, so direction gets checked before the
 **Current priority order (set 2026-09-08, review session — supersedes
 plain top-to-bottom-per-phase ordering until this note is removed):**
 
-1. Air floating/pitch parity fix (`todo` under Phase 2 below).
-2. Dive-suit auto-equip bug (`todo` under Phase 3 below).
+1. `done` Air floating/pitch parity fix (Phase 2 below, 2026-09-08).
+2. Dive-suit auto-equip bug (`todo` under Phase 2 below — still open,
+   couldn't complete the live-deployment reproduction step this cycle,
+   see the item's own 2026-09-08 investigation note).
 3. Environment art pass — land parkland dressing (`todo` under Phase 1a),
    cloud-shaped air platforms (`todo` under Phase 2), sea shipwreck
    centerpiece (`todo` under Phase 3, supersedes the old sea-floating-docks
@@ -561,21 +563,38 @@ without a fresh check-in.
   3 new E2E tests (`e2e/land-air-portal.spec.ts`) cover both directions
   and the anti-bounce-back cooldown. Land↔sea's flavor is still a
   separate pending decision — sea isn't scoped yet.
-- `todo` **Air-specific animation/pitch parity with Sea.** Reported in a
-  review session on 2026-09-08: flying in Air still reads as "walking on
-  land" — there's no sense of floating/hovering. Root cause: `main.ts`'s
-  air branch (see the AvatarView-wiring item above) calls the same
-  horizontal-only `moveInputToAnimationState` land uses and never calls
+- `done` **(World) Air-specific animation/pitch parity with Sea.** Reported
+  in a review session on 2026-09-08: flying in Air still read as "walking
+  on land" — there's no sense of floating/hovering. Root cause: `main.ts`'s
+  air branch (see the AvatarView-wiring item above) called the same
+  horizontal-only `moveInputToAnimationState` land uses and never called
   anything like `setVerticalPitch` — so ascending/descending in place
-  shows the ground idle pose, and moving horizontally plays the walk/run
-  clip exactly as if grounded. This was actually named as "future
-  refinement" in that item's own writeup above, but never turned into
-  its own tracked line here, so no cycle has picked it up. Sea already
-  has the pattern to copy: a real per-realm animation-state mapping
-  (`moveInputToSeaAnimationState`) plus `AvatarView.setVerticalPitch`
-  leaning the model into vertical velocity — Air needs its own version
-  (e.g. a level/gliding pose at rest, nose tilting toward the direction
-  of vertical motion) rather than reusing land's wholesale.
+  showed the ground idle pose, and moving horizontally played the walk/run
+  clip exactly as if grounded. Fixed by copying sea's own pattern rather
+  than inventing a new one: `src/air/airAnimation.ts`'s
+  `moveInputToAirAnimationState` treats an active vertical hold as real
+  flight even with zero horizontal input — simpler than sea's own
+  `moveInputToSeaAnimationState` since air has no passive-drift exception
+  to carve out (`stepAirMovement` never moves the avatar vertically except
+  from direct input, unlike sea's buoyancy). `AvatarView.setVerticalPitch`
+  (already generic, `src/skins/avatarView.ts` — no changes needed there
+  beyond its own doc comment) is now also called from air's branch with
+  `airMovement.velocity.y`: same sign convention as sea (already verified
+  against a real render) noses the model up while ascending, down while
+  descending, level at rest — reads correctly for air's "climb/dive"
+  framing without needing an inverted convention. Air's wider vertical
+  range (+/-4 m/s vs. sea's ~+/-2 m/s active) means it reaches max pitch
+  partway into full ascend/descend speed rather than only at the very
+  top — a deliberate non-issue, not tuned further, since it still reads
+  as "nose tilts into the climb/dive." 8 new unit tests
+  (`airAnimation.test.ts`); 3 new E2E tests (`e2e/air-flight.spec.ts`,
+  mirroring sea's own pitch/animation-state coverage in
+  `e2e/skins.spec.ts`, but landing here since this is squarely
+  World-owned `src/air/`/`e2e/air-*.spec.ts` territory, not Skins'):
+  vertical-only input is not idle, ascend/descend tilt in opposite
+  directions, and pitch eases back to level once vertical input is
+  released (air has no buoyancy to keep drifting it, unlike sea). Full
+  suite verified: typecheck, 223 unit tests, build, 59 E2E tests all pass.
 - `todo` **(World) Cloud-shaped floating platforms.** Locked in during a
   2026-09-08 design review: replace the current plain gray-cylinder
   platforms (`AIR_FLOATING_PLATFORM_POSITIONS`, `airScene.ts`) with
@@ -606,6 +625,22 @@ without a fresh check-in.
   Vercel build would show this exact symptom without any code being
   wrong. If it reproduces on a confirmed-current deployment, this is a
   real regression to root-cause and fix.
+  **Investigated 2026-09-08 (this cycle), still open — genuinely
+  couldn't finish the reproduction step**: ran the exact existing E2E
+  coverage (`e2e/skins.spec.ts`'s "land<->sea diving-house portal:
+  dive-suit costume change" suite, both tests) plus the full local build/
+  test/E2E suite fresh from `origin/main` — everything passes cleanly,
+  auto-equip and revert both fire correctly against the current code.
+  That's consistent with (not proof of) the "stale/un-redeployed Vercel
+  build" hypothesis the item itself raised, but I have no record of the
+  actual deployment URL anywhere in this repo (checked `README.md`,
+  `ARCHITECTURE.md`, grepped for `vercel.app`/`vercel.com` — nothing), and
+  this session has no way to interactively drive the live app the way a
+  human playtest would (a static fetch wouldn't exercise portal-trigger
+  movement). Genuinely can't complete "confirm on the actual live Vercel
+  deployment" from here — left `todo`, not `blocked`, since a persistent/
+  manual session with the deployment URL and a browser can pick this up
+  directly rather than needing a decision.
 
 ## Phase 3 — Sea realm
 

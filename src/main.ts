@@ -20,6 +20,7 @@ import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransitio
 import { createAirScene } from "./air/airScene";
 import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";
+import { moveInputToAirAnimationState } from "./air/airAnimation";
 import { createSeaScene } from "./sea/seaScene";
 import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y } from "./sea/seaRealmMap";
 import { stepSeaMovement, type SeaMovementState } from "./sea/seaMovement";
@@ -181,6 +182,8 @@ declare global {
     __getActiveRealm?: () => "land" | "air" | "sea";
     __getAirAltitude?: () => number;
     __getSeaDepth?: () => number;
+    __getAirAvatarPitch?: () => number;
+    __getAirAvatarMoveState?: () => MoveAnimationState;
     __getSeaAvatarPitch?: () => number;
     __getSeaAvatarMoveState?: () => MoveAnimationState;
     __getAvatarVisualLocalY?: () => number | undefined;
@@ -539,6 +542,14 @@ let airMovement: AirMovementState = {
 // vertical movement to show), so this is how E2E coverage verifies
 // ascend/descend actually changes altitude.
 window.__getAirAltitude = () => airMovement.position.y;
+// Test-only hook, mirrors __getSeaAvatarPitch — how E2E coverage verifies
+// setVerticalPitch tilts the rendered model while flying (Phase 2's
+// "Air-specific animation/pitch parity with Sea" fix).
+window.__getAirAvatarPitch = () => airAvatar.rotation.x;
+// Test-only hook, mirrors __getSeaAvatarMoveState — how E2E coverage
+// verifies moveInputToAirAnimationState treats vertical-only flight as
+// real motion instead of idle.
+window.__getAirAvatarMoveState = () => airAvatarView.moveState;
 
 // Sea has no saved state yet either (same "todo" as air) — always spawns
 // fresh at the sea scene's own starting position.
@@ -657,12 +668,23 @@ function animate(): void {
     airMovement = stepAirMovement(airMovement, moveInput, vertical, dt);
     airAvatar.position.set(airMovement.position.x, airMovement.position.y, airMovement.position.z);
 
-    // Same animation-state mapping land uses — a horizontal-only
-    // idle/walk/run intent, reused as-is for air's idle/glide/boost rather
-    // than inventing a separate air-specific mapping (e.g. accounting for
-    // vertical velocity) this cycle; a real refinement, not a blocker.
+    // Air-specific animation/pitch parity with sea (Phase 2 `todo`,
+    // BACKLOG.md): flying used to reuse land's purely-horizontal mapping
+    // and never leaned into vertical motion, so ascending/descending in
+    // place read as "walking on land" with no sense of floating.
+    // `moveInputToAirAnimationState` (src/air/airAnimation.ts) treats an
+    // active vertical hold as real flight even with zero horizontal
+    // input, same shape as sea's own fix but without sea's passive-drift
+    // exception (air never moves vertically except from direct input).
+    // `setVerticalPitch` (src/skins/avatarView.ts, already generic —
+    // sea's own use needed no changes) noses the model toward the
+    // direction of vertical motion — up while ascending, down while
+    // descending — settling level again at rest.
     airAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
-    airAvatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
+    airAvatarView.setVerticalPitch(airMovement.velocity.y, dt);
+    airAvatarView.setMoveState(
+      moveInputToAirAnimationState(moveInput.moveX, moveInput.moveZ, vertical, moveInput.run),
+    );
     airAvatarView.update(dt);
 
     targetPosition = airMovement.position;

@@ -17,13 +17,19 @@ export const AVATAR_GROUND_OFFSET = CAPSULE_LENGTH / 2 + CAPSULE_RADIUS;
 
 const ANIMATION_CROSSFADE_SECONDS = 0.2;
 
-// Sea's own use of pitch (dive nose-down, surface nose-up) — see
-// setVerticalPitch below. A vertical velocity at or beyond this magnitude
-// (m/s) maps to the full MAX_PITCH_ANGLE; land/air never call this method
-// at all (pure yaw via faceDirection is enough for them), so these numbers
-// are tuned against sea's own vertical range (src/sea/seaMovement.ts:
-// +/-2 m/s active dive/surface, +0.5 m/s idle buoyancy drift) without sea
-// needing to know anything about how AvatarView turns that into an angle.
+// Sea's and (as of the Phase 2 pitch-parity fix) air's use of pitch (dive/
+// descend nose-down, surface/ascend nose-up) — see setVerticalPitch below.
+// Land never calls this method at all (pure yaw via faceDirection is
+// enough for it — it has no meaningful vertical velocity). A vertical
+// velocity at or beyond this magnitude (m/s) maps to the full
+// MAX_PITCH_ANGLE; tuned against sea's own vertical range
+// (src/sea/seaMovement.ts: +/-2 m/s active dive/surface, +0.5 m/s idle
+// buoyancy drift). Air's own vertical range is wider (+/-4 m/s,
+// src/air/airMovement.ts) so it reaches the same max pitch partway into
+// full ascend/descend speed rather than only at the very top — still
+// reads as a sensible "nose tilts into the climb/dive" cue, not
+// distinctly wrong, so this shares the one constant rather than adding a
+// second knob neither realm's caller needs to reach in from outside.
 const MAX_PITCH_ANGLE = THREE.MathUtils.degToRad(30);
 const PITCH_VELOCITY_FOR_MAX_ANGLE = 2;
 
