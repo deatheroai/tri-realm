@@ -594,7 +594,7 @@ without a fresh check-in.
   vertical-only input is not idle, ascend/descend tilt in opposite
   directions, and pitch eases back to level once vertical input is
   released (air has no buoyancy to keep drifting it, unlike sea). Full
-  suite verified: typecheck, 223 unit tests, build, 59 E2E tests all pass.
+  suite verified: typecheck, 215 unit tests, build, 59 E2E tests all pass.
 - `todo` **(World) Cloud-shaped floating platforms.** Locked in during a
   2026-09-08 design review: replace the current plain gray-cylinder
   platforms (`AIR_FLOATING_PLATFORM_POSITIONS`, `airScene.ts`) with
