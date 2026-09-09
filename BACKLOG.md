@@ -1032,6 +1032,19 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   tank, which read as gear on their own. Re-verified visually across
   Fox, Female, and Princess — much cleaner, still clearly "wearing dive
   gear." Full suite re-verified green.
+  **Fourth follow-up same day**: asked directly why there was "a blue
+  box in front of each avatar" — the mask, honestly, was just a flat
+  cyan box floating in front of the face with no frame or strap, so
+  fair: it didn't read as a mask at all, just an unexplained rectangle.
+  Rebuilt it as three parts instead of one: a dark rubber skirt/frame
+  sized to sit flush against the face, a smaller lighter lens inset
+  within it (protruding a touch further, like glass sitting inside a
+  frame), and a thin strap around the head anchoring it — the strap is
+  dark, not the gold "equipment" color, since it's a functional part of
+  the mask itself rather than another bright accessory ring (the point
+  of the immediately-preceding "too many yellow rings" trim). Verified
+  visually across Fox, Female, and Princess — now clearly reads as
+  goggles worn on the face. Full suite re-verified green.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark

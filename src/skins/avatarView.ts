@@ -108,21 +108,44 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const waistY = box.min.y + height * 0.44;
   const footY = box.min.y + height * 0.03;
 
-  // Mask/visor — a flat-fronted box so it reads as a face plate (a dive
-  // mask's actual silhouette) rather than an ambiguous dot, pushed past
-  // the character's own front surface so it clearly protrudes.
-  const mask = new THREE.Mesh(
-    new THREE.BoxGeometry(headRadius * 1.6, height * 0.13, headRadius * 0.7),
+  // Mask — three parts instead of one flat box, so it reads as an actual
+  // mask worn on the face instead of a floating colored rectangle
+  // (reported directly: "why is there a blue box in front of each
+  // avatar"). A dark rubber skirt/frame sits flush against the face; a
+  // smaller, lighter lens is inset within it and protrudes slightly
+  // further forward (glass sitting inside the frame, not level with it);
+  // a thin strap wraps the head to visually anchor the frame in place.
+  // The strap is dark, not the gold "equipment" color the belt/tank use
+  // — it's a functional part of the mask itself, not another bright
+  // accessory ring (see the 2026-09-09 "too many yellow rings" trim
+  // above for why that distinction matters here).
+  const maskFrame = new THREE.Mesh(
+    new THREE.BoxGeometry(headRadius * 1.7, height * 0.16, headRadius * 0.5),
+    new THREE.MeshStandardMaterial({ color: 0x1c1c1c }), // dark rubber skirt
+  );
+  maskFrame.position.set(centerX, headY, box.max.z + headRadius * 0.2);
+  maskFrame.name = "dive-suit-mask-frame";
+
+  const maskLens = new THREE.Mesh(
+    new THREE.BoxGeometry(headRadius * 1.3, height * 0.11, headRadius * 0.25),
     new THREE.MeshStandardMaterial({
       color: 0x8fd8e8,
       emissive: 0x2a5560,
       emissiveIntensity: 0.5,
       transparent: true,
-      opacity: 0.94,
+      opacity: 0.9,
     }),
   );
-  mask.position.set(centerX, headY, box.max.z + headRadius * 0.3);
-  mask.name = "dive-suit-mask";
+  maskLens.position.set(centerX, headY, box.max.z + headRadius * 0.4); // inset in the frame, protrudes a touch further
+  maskLens.name = "dive-suit-mask-lens";
+
+  const maskStrap = new THREE.Mesh(
+    new THREE.TorusGeometry(headRadius * 0.95, 0.022, 6, 16),
+    new THREE.MeshStandardMaterial({ color: 0x1c1c1c }),
+  );
+  maskStrap.rotation.x = Math.PI / 2;
+  maskStrap.position.set(centerX, headY, centerZ);
+  maskStrap.name = "dive-suit-mask-strap";
 
   const tank = new THREE.Mesh(
     new THREE.CylinderGeometry(torsoRadius * 0.4, torsoRadius * 0.4, height * 0.4, 10),
@@ -153,7 +176,7 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
     return flipper;
   }
 
-  gear.add(mask, tank, belt, createFlipper(-1), createFlipper(1));
+  gear.add(maskFrame, maskLens, maskStrap, tank, belt, createFlipper(-1), createFlipper(1));
   return gear;
 }
 

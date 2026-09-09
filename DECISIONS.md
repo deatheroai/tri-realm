@@ -84,6 +84,13 @@ Resolved).
   real character doesn't need that anymore — cut to one (the weight
   belt) plus the mask and tank. Re-verified visually, full suite green.
 
+  **Fourth follow-up same day** — asked directly why there was "a blue
+  box in front of each avatar": fair, the mask was just a flat cyan box
+  with no frame or strap, so it didn't read as a mask at all. Rebuilt as
+  a dark frame + inset lens + a thin (dark, not gold) strap around the
+  head, so it reads as goggles worn on the face instead of a floating
+  rectangle. Re-verified visually, full suite green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):
