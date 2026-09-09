@@ -680,6 +680,25 @@ without a fresh check-in.
   unchanged. Verified visually with a real screenshot (Female flying,
   arms/legs in the swim-stroke pose instead of a running stride) — full
   suite green (typecheck, 215 unit tests, build, 64 E2E tests).
+- `done` **(World) Refined the above same day: swim clips read as "a fish,"
+  not the "balloon" feel actually wanted.** Reviewed live right after the
+  fix above shipped: the active `swimActive` stroke playing while flying
+  looked like swimming — deliberate, effortful paddling — when the ask was
+  something that drifts regardless of how it's being pushed, more like a
+  balloon than a fish. `withFloatAnimationState`
+  (`src/air/airAnimation.ts`, replacing air's direct reuse of sea's
+  `withSwimAnimationState`) always resolves to the calm `swimIdle` clip for
+  a skin with swim clips — moving or not, walking or running — rather than
+  distinguishing active vs. idle the way sea genuinely wants to. Sea itself
+  is completely untouched (`withSwimAnimationState`'s doc comment records
+  why the two stayed separate policies instead of one shared function).
+  Skins without swim clips are still unaffected either way. 3 new unit
+  tests (`airAnimation.test.ts`); the 2 swim-capable E2E tests in
+  `e2e/air-flight.spec.ts` updated to assert `swimIdle` while moving too
+  (was `swimActive`), plus a 300ms hold to prove it doesn't switch.
+  Verified visually with a real screenshot (Female flying: arms out,
+  relaxed, no active kicking) — full suite green (typecheck, 218 unit
+  tests, build, 64 E2E tests).
 - `todo` **(World) Cloud-shaped floating platforms.** Locked in during a
   2026-09-08 design review: replace the current plain gray-cylinder
   platforms (`AIR_FLOATING_PLATFORM_POSITIONS`, `airScene.ts`) with

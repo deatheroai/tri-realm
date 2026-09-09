@@ -20,7 +20,7 @@ import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransitio
 import { createAirScene } from "./air/airScene";
 import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";
-import { moveInputToAirAnimationState } from "./air/airAnimation";
+import { moveInputToAirAnimationState, withFloatAnimationState } from "./air/airAnimation";
 import { createSeaScene } from "./sea/seaScene";
 import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y } from "./sea/seaRealmMap";
 import { stepSeaMovement, type SeaMovementState } from "./sea/seaMovement";
@@ -707,17 +707,22 @@ function animate(): void {
     // pitch alone can't fix. No skin has a dedicated flying/glide clip to
     // reach for (same gap air's own doc comment already flagged), but
     // Mannequin/Female do have real swim-stroke clips (limbs moving
-    // through open space, not planted footsteps) that read far closer to
-    // "flying" than a ground gait does — so this reuses sea's own already-
-    // tested `withSwimAnimationState` exactly as-is (it's realm-agnostic:
-    // generic state + "does this skin have swim clips" in, routed state
-    // out) rather than duplicating that routing logic for air. Skins
-    // without swim clips (Fox/Robot/Princess/Capsule/Dive Suit) keep
-    // exactly today's walk/run behavior while flying, unchanged.
+    // through open space, not planted footsteps) — a first pass reused
+    // sea's own `withSwimAnimationState` outright to reach for those.
+    //
+    // Reviewed live and refined the same day: the active `swimActive`
+    // stroke it played while moving read as swimming — "like a fish" —
+    // when the actual ask was more like a balloon, drifting regardless of
+    // how it's being pushed. `withFloatAnimationState`
+    // (`src/air/airAnimation.ts`) is air's own version of that routing:
+    // always the calm `swimIdle` clip for a skin that has one, never the
+    // active stroke. Skins without swim clips (Fox/Robot/Princess/
+    // Capsule/Dive Suit) keep exactly today's walk/run behavior while
+    // flying, unchanged either way.
     airAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
     airAvatarView.setVerticalPitch(airMovement.velocity.y, dt);
     airAvatarView.setMoveState(
-      withSwimAnimationState(
+      withFloatAnimationState(
         moveInputToAirAnimationState(moveInput.moveX, moveInput.moveZ, vertical, moveInput.run),
         airAvatarView.hasAnimation("swimIdle"),
       ),

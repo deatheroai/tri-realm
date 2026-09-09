@@ -31,6 +31,16 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-09 — Swim clips in Air read as "a fish," not the "balloon" feel
+  wanted; refined same day.** You liked seeing an actual animation instead
+  of running, but the active swim-stroke clip playing while moving looked
+  like deliberate paddling, not drifting. Fixed directly in this session:
+  air now always uses the calm `swimIdle` clip for a swim-capable skin,
+  regardless of speed or direction — never the active stroke sea itself
+  still uses. Sea untouched. Verified visually (screenshot) and with 3 new
+  unit tests plus updated E2E coverage; full suite green. See `BACKLOG.md`
+  for the full writeup.
+
 - **2026-09-09 — Air still read as "running in the air" after the pitch fix;
   fixed by reusing sea's swim clips for flying.** You sent a live-deployment
   screenshot of the Female skin flying with a full running stride and no

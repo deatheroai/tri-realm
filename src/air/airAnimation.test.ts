@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { moveInputToAirAnimationState } from "./airAnimation";
+import { moveInputToAirAnimationState, withFloatAnimationState } from "./airAnimation";
 
 describe("moveInputToAirAnimationState", () => {
   it("is idle with no horizontal input and no vertical input", () => {
@@ -34,5 +34,24 @@ describe("moveInputToAirAnimationState", () => {
   it("treats diagonal horizontal input the same as the generic mapping's magnitude check", () => {
     expect(moveInputToAirAnimationState(0.005, 0.005, 0, false)).toBe("idle");
     expect(moveInputToAirAnimationState(0.1, 0.1, 0, false)).toBe("walk");
+  });
+});
+
+describe("withFloatAnimationState", () => {
+  it("passes the generic state through unchanged for a skin without swim clips", () => {
+    expect(withFloatAnimationState("idle", false)).toBe("idle");
+    expect(withFloatAnimationState("walk", false)).toBe("walk");
+    expect(withFloatAnimationState("run", false)).toBe("run");
+  });
+
+  it("always resolves to the calm swimIdle clip for a skin with swim clips, even while moving — the 'balloon, not fish' fix", () => {
+    expect(withFloatAnimationState("idle", true)).toBe("swimIdle");
+    expect(withFloatAnimationState("walk", true)).toBe("swimIdle");
+    expect(withFloatAnimationState("run", true)).toBe("swimIdle");
+  });
+
+  it("never resolves to swimActive, unlike sea's own withSwimAnimationState — that's the entire point of the distinct function", () => {
+    expect(withFloatAnimationState("walk", true)).not.toBe("swimActive");
+    expect(withFloatAnimationState("run", true)).not.toBe("swimActive");
   });
 });

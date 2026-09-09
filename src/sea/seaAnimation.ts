@@ -50,12 +50,15 @@ export function moveInputToSeaAnimationState(
  * clips would need this reworked, not a limitation worth solving
  * speculatively now.
  *
- * Genuinely realm-agnostic despite living in `sea/` (its original caller)
- * — pure state-in/state-out plus a boolean, nothing sea-specific — so
- * `main.ts`'s air branch reuses this directly too (see its own comment):
- * limbs paddling through open space reads far closer to "flying" than
- * air's walk/run ground gait does, for a skin that has swim clips to
- * paddle with.
+ * 2026-09-09: air briefly reused this function directly too, but that
+ * played the active `swimActive` stroke while flying — reviewed live and
+ * read as swimming, "like a fish," not the drifting-regardless-of-speed
+ * "balloon" feel actually wanted. Air now has its own
+ * `withFloatAnimationState` (`src/air/airAnimation.ts`) — same shape, but
+ * always resolves to the calm `swimIdle` clip rather than distinguishing
+ * active vs. idle. This function stays sea-only again; the two are
+ * intentionally different policies over the same clip pair, not one
+ * shared implementation.
  */
 export function withSwimAnimationState(
   genericState: MoveAnimationState,

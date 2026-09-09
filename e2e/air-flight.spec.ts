@@ -154,14 +154,15 @@ test.describe("air avatar vertical pitch and animation parity", () => {
 
 // Reported 2026-09-09 with a screenshot: even with the pitch/animation-state
 // parity above, flying still looked like "running in the air" — a full
-// ground-gait walk/run clip with no ground under it. Fixed in main.ts's air
-// branch by reusing sea's already-tested withSwimAnimationState (World's
-// own comment there explains why: it's realm-agnostic, and a skin with real
-// swim-stroke clips reads far closer to "flying" than a ground gait does).
-// Mirrors e2e/skins.spec.ts's "sea avatar swim animation" suite, exercised
-// through Air instead.
-test.describe("air avatar swim-clip reuse for flying", () => {
-  test("switching to Mannequin (swim-capable) requests the dedicated swim clips while flying in air, not the shared walk/run clips", async ({
+// ground-gait walk/run clip with no ground under it. A first pass reused
+// sea's withSwimAnimationState (active swimActive clip while moving), then
+// reviewed live and refined the same day: that read as swimming, "like a
+// fish," not the "balloon" feel actually wanted — something that drifts
+// regardless of how it's being pushed. withFloatAnimationState
+// (src/air/airAnimation.ts) always resolves to the calm swimIdle clip for a
+// swim-capable skin instead, moving or not.
+test.describe("air avatar float animation for flying (balloon, not fish)", () => {
+  test("switching to Mannequin (swim-capable) requests the calm swimIdle clip while flying in air, never the active swimActive stroke", async ({
     page,
   }) => {
     await page.goto("/");
@@ -181,14 +182,16 @@ test.describe("air avatar swim-clip reuse for flying", () => {
       .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
       .toBe("swimIdle");
 
+    // Moving too — unlike sea, air never switches to the active stroke.
     await page.keyboard.down("KeyW");
+    await page.waitForTimeout(300);
     await expect
       .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
-      .toBe("swimActive");
+      .toBe("swimIdle");
     await page.keyboard.up("KeyW");
   });
 
-  test("switching to Female (also swim-capable) requests the dedicated swim clips too", async ({ page }) => {
+  test("switching to Female (also swim-capable) stays on swimIdle too, moving or not", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Air" }).click();
     await expect
@@ -205,9 +208,10 @@ test.describe("air avatar swim-clip reuse for flying", () => {
       .toBe("swimIdle");
 
     await page.keyboard.down("KeyW");
+    await page.waitForTimeout(300);
     await expect
       .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
-      .toBe("swimActive");
+      .toBe("swimIdle");
     await page.keyboard.up("KeyW");
   });
 
