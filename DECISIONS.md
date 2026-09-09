@@ -91,6 +91,18 @@ Resolved).
   head, so it reads as goggles worn on the face instead of a floating
   rectangle. Re-verified visually, full suite green.
 
+  **Fifth follow-up same day** — "the mask should be on the face not a
+  box": still true after the rebuild above, since the frame/lens were
+  positioned forward of the character's own front surface. Re-centered
+  the frame flush on that surface (embedded half into it, like the
+  waist belt already is). One mistake made and caught by re-screenshot
+  rather than assumed fixed: also bumped the head-height fraction while
+  at it, which swallowed the lens inside the now-flush frame (invisible)
+  and put a stray ring near Fox's ears — reverted that part, fixed the
+  lens by anchoring it right at the frame's front face so its own front
+  half still pokes out past it. Re-verified visually across Fox, Female,
+  Princess. Full suite green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

@@ -1045,6 +1045,30 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   of the immediately-preceding "too many yellow rings" trim). Verified
   visually across Fox, Female, and Princess — now clearly reads as
   goggles worn on the face. Full suite re-verified green.
+  **Fifth follow-up same day**: "the mask should be on the face not a
+  box" — still true after the frame/lens/strap rebuild above, because
+  that rebuild pushed the frame and lens forward *past* the character's
+  own front surface (`box.max.z + headRadius * 0.2`/`* 0.4`), so despite
+  having a frame and a strap now it still read as a small box hovering
+  in front of the face rather than something worn on it. Re-centered the
+  frame directly on `box.max.z` (embedded roughly half into the face
+  surface, the same placement the waist belt already uses) so it sits
+  flush instead of floating clear of it — and bumped `headY`'s fraction
+  up from 0.75 to 0.8 while at it, aiming for closer to the actual face
+  height. That second part was a mistake caught by looking, not assumed
+  fixed: re-screenshotting showed the lens fully swallowed by the now-
+  flush opaque frame (embedded lens, invisible from outside) and, on
+  Fox specifically, the head-strap ring sitting up near the ears reading
+  as a stray ring floating above the head. Reverted `headY` back to 0.75
+  (it was never the problem) and fixed the actual lens bug — its front
+  face needs to clear the frame's own front face by a real margin, not
+  sit just inside it — by centering the lens right at the frame's front
+  face so the lens's own front half pokes out past it. Re-verified
+  visually across Fox, Female, and Princess again: frame sits flush on
+  the face, lens visible, no stray ring. Fox's placement is still an
+  approximation (a single height-fraction + front-z heuristic tuned for
+  bipeds doesn't map cleanly onto a quadruped's face) but no longer
+  visibly broken. Full suite re-verified green.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark
