@@ -17,19 +17,34 @@ Resolved).
 
 - **Confirm on the live deployment whether the dive-suit auto-equip bug
   (`BACKLOG.md`, Phase 2) actually reproduces.** The deployment URL is
-  now known — `https://tri-realm.vercel.app` (found 2026-09-08 in the
-  GitHub repo's own `homepage` field, not previously checked) — but this
-  session's network policy blocks `tri-realm.vercel.app` outright, same
-  as kenney.nl/quaternius.com/etc., so no automated session can actually
-  drive the live app to check. Every automated angle (full local
-  build/test/E2E suite against current code) already passes clean, which
-  is consistent with — but doesn't prove — the "stale/un-redeployed
-  Vercel build" hypothesis the item itself raised. Needs a human with a
-  real browser at that URL: walk into the diving house from land and
-  confirm whether the dive suit actually auto-equips on the current
-  deployment.
+  known — `https://tri-realm.vercel.app` — but this session's network
+  policy blocks it outright (re-confirmed 2026-09-09, same 403 policy
+  denial as every prior check), same as kenney.nl/quaternius.com/etc., so
+  no automated session can actually drive the live app to check. Every
+  automated angle (full local build/test/E2E suite against current code)
+  already passes clean, which is consistent with — but doesn't prove —
+  the "stale/un-redeployed Vercel build" hypothesis the item itself
+  raised. Needs a human with a real browser at that URL: walk into the
+  diving house from land and confirm whether the dive suit actually
+  auto-equips on the current deployment.
 
 ## Resolved
+
+- **2026-09-09 — Environment art pass shipped: land parkland, cloud-shaped
+  air platforms, sea shipwreck centerpiece.** Continuing per the current
+  priority order once the dive-suit reproduction step re-confirmed still
+  blocked (see Needs Your Action above): all three pieces designed in the
+  2026-09-08 review session landed in one cycle. Land's plain gray-
+  cylinder landmarks became trees/flower beds/a path/a fountain
+  centerpiece; Air's plain-cylinder platforms became actual cloud-shaped
+  meshes (the platform *is* the cloud); Sea gained one large, dramatic
+  broken-ship-hull-plus-mast landmark alongside its existing smaller
+  wreckage debris (untouched). All three follow the same "one data array
+  a fork can swap" pattern the existing platform/wreckage data already
+  established. Verified visually with real screenshots of all three
+  realms, plus new unit test coverage per piece; full suite green
+  (typecheck, 242 unit tests, build, 64 E2E tests). See `BACKLOG.md`'s
+  Phase 1a/2/3 sections for the individual writeups.
 
 - **2026-09-09 — Swim clips in Air read as "a fish," not the "balloon" feel
   wanted; refined same day, confirmed on the live deployment.** You liked

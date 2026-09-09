@@ -17,15 +17,18 @@ rough version has been reviewed, so direction gets checked before the
 **Current priority order (set 2026-09-08, review session — supersedes
 plain top-to-bottom-per-phase ordering until this note is removed):**
 
-1. `done` Air floating/pitch parity fix (Phase 2 below, 2026-09-08).
+1. `done` Air floating/pitch parity fix (Phase 2 below, 2026-09-08), plus a
+   2026-09-09 refinement (Air's animation-*feel* pass below).
 2. Dive-suit auto-equip bug (`todo` under Phase 2 below — still open,
-   couldn't complete the live-deployment reproduction step this cycle,
-   see the item's own 2026-09-08 investigation note).
-3. Environment art pass — land parkland dressing (`todo` under Phase 1a),
-   cloud-shaped air platforms (`todo` under Phase 2), sea shipwreck
-   centerpiece (`todo` under Phase 3, supersedes the old sea-floating-docks
-   item). Treat these three as one pass, but each realm's piece can land
-   independently on its own track's next cycle.
+   re-checked 2026-09-09: this session's network policy still blocks
+   `tri-realm.vercel.app` outright (403, same policy denial as before),
+   so the live-deployment reproduction step is still not solo-actionable
+   — needs a human with a real browser).
+3. `done` Environment art pass — land parkland dressing (Phase 1a), cloud-
+   shaped air platforms (Phase 2), sea shipwreck centerpiece (Phase 3,
+   supersedes the old sea-floating-docks item). All three landed
+   2026-09-09 in one cycle (see each phase section below for the
+   individual writeups).
 4. Real Quaternius castle-piece models (`todo` under "Skins / visual
    identity").
 5. Camera framing revisit (`todo` under "Skins / visual identity").
@@ -93,24 +96,37 @@ system.
   behind it — raycasting now targets the ground plus every placed piece,
   not just the ground. 5 new E2E tests confirm both directions each time
   (tap-vs-drag, stack-vs-fall-through).
-- `todo` **(World) Basic parkland dressing — a foundational starter, not
-  a one-off theme.** Locked in during a 2026-09-08 design review: swap
-  the current plain gray-cylinder `landmark` meshes (`src/scene.ts`) for
-  a light, generic "parkland" set — scattered trees, a few flower-bed
-  color patches, a simple path connecting them, one small centerpiece
-  (a fountain or gazebo) near spawn. Deliberately generic/light-touch
-  rather than a heavily-opinionated theme (a "garden" was the original
-  ask, refined here): this repo's stated purpose is to be cloned and
-  built on top of, so the goal is "pleasant out of the box," not a
-  specific narrative that fights whatever theme a fork actually wants.
-  Implement the same way `AIR_FLOATING_PLATFORM_POSITIONS`/
-  `SEA_WRECKAGE_POSITIONS` already do: a plain data array (e.g.
-  `LAND_DECORATION_POSITIONS`, each entry carrying a decoration kind) that
-  `scene.ts` reads to place meshes — the actual foundational value here
-  is that a fork can reskin land entirely by swapping one array/asset
-  set, without touching terrain/collision code. Procedural-primitives
-  first (same discipline block materials used: generated pattern before
-  real photographed textures) — real assets can follow later if wanted.
+- `done` **(World) Basic parkland dressing — a foundational starter, not
+  a one-off theme.** Locked in during a 2026-09-08 design review, built
+  2026-09-09: swapped the old plain gray-cylinder `landmark` meshes
+  (`src/scene.ts`) for a light, generic "parkland" set — scattered trees,
+  a few flower-bed color patches, a simple stepping-stone path connecting
+  spawn to a fountain centerpiece. Deliberately generic/light-touch rather
+  than a heavily-opinionated theme, per the design review's own framing —
+  a fork can reskin land entirely by swapping one data array/mesh set,
+  without touching terrain/collision code (both untouched by this item).
+  Implemented exactly the way `AIR_FLOATING_PLATFORM_POSITIONS`/
+  `SEA_WRECKAGE_POSITIONS` already do: `src/land/landDecorations.ts`
+  holds `LAND_DECORATION_POSITIONS` (a plain array, each entry carrying an
+  `x`/`z`/`kind`) and a `createLandDecorationMesh(kind)` factory —
+  `scene.ts` just loops over the array and positions each group via
+  `terrainHeightAt` alone (every group's local origin sits at ground
+  level, same convention `world/portalMarker.ts` already uses). The
+  original six landmark coordinates were kept as-is for the "tree"
+  entries (already tuned for follow-camera parallax spread); a fountain
+  (basin + rim torus + spout + a small emissive "water" sphere) plus four
+  stepping-stone path entries were added near spawn, and three flower-bed
+  patches (a soil disk + a small fixed, non-random 5-bloom layout) fill
+  the middle ground. Procedural primitives throughout — same discipline
+  block materials used (generated pattern before real photographed
+  textures) — real assets can follow later if wanted, not required here.
+  10 new unit tests (`landDecorations.test.ts`: data shape, path-stones-
+  between-spawn-and-fountain, deterministic bloom layout, per-kind mesh
+  shape); `scene.test.ts` updated (the old generic "landmark" name check
+  replaced with a per-kind check, plus a new position-mapping test).
+  Verified visually with a real screenshot (trees, flower beds, the
+  fountain, and the diving house all visible together near spawn) — full
+  suite green (typecheck, 242 unit tests, build, 64 E2E tests).
   Rolling-hill terrain and all movement/build mechanics stay untouched.
 
 Phase 1a complete. Stop here and get your read on direction before
@@ -700,20 +716,25 @@ without a fresh check-in.
   relaxed, no active kicking) — full suite green (typecheck, 218 unit
   tests, build, 64 E2E tests). **Review checkpoint: confirmed on the live
   deployment — "Like balloons than fish."**
-- `todo` **(World) Cloud-shaped floating platforms.** Locked in during a
-  2026-09-08 design review: replace the current plain gray-cylinder
-  platforms (`AIR_FLOATING_PLATFORM_POSITIONS`, `airScene.ts`) with
-  actual cloud-shaped meshes (a soft puffy cluster — several overlapping
-  spheres or a simple low-poly cloud blob — rather than a literal
-  geometric primitive). The platform *is* the cloud, not a separate
-  backdrop layer — chosen specifically so the flight mechanic and the
-  "cloudy sky" visual theme read as the same object, matching the same
-  foundational-starter reasoning as Land's parkland item above (a fork
-  reskins Air by swapping this one mesh/position set). Placement
-  data/collision radius stay as-is — this is a mesh swap, not a schema
-  change. Procedural-primitives-first, same as everywhere else in this
-  codebase; a real cloud skybox/atmosphere pass is a further layer, not
-  required for this item.
+- `done` **(World) Cloud-shaped floating platforms.** Locked in during a
+  2026-09-08 design review, built 2026-09-09: replaced the plain gray-
+  cylinder platform mesh with an actual cloud-shaped one
+  (`src/air/cloudMeshes.ts`'s `createCloudPlatformMesh` — a soft puffy
+  cluster of six overlapping, vertically-flattened spheres in a fixed,
+  non-random layout, rather than a single sphere or a literal geometric
+  primitive). The platform *is* the cloud, not a separate backdrop layer —
+  `airScene.ts` swaps the mesh builder only; placement data
+  (`AIR_FLOATING_PLATFORM_POSITIONS`) and every position are completely
+  unchanged, confirming this really was a mesh swap, not a schema change.
+  Top-level group renamed from the old generic `"landmark"` to
+  `"cloud-platform"` for self-description, matching land's per-kind
+  naming — `airScene.test.ts` updated accordingly. 5 new unit tests
+  (`cloudMeshes.test.ts`: puff count/shape, deterministic layout,
+  vertical flattening, fresh-instance-per-call). Verified visually with a
+  real screenshot (a cloud cluster clearly visible near a flying Fox) —
+  full suite green (typecheck, 242 unit tests, build, 64 E2E tests). A
+  real cloud skybox/atmosphere pass stays a further layer, not required
+  here.
 - `todo` **Verify: dive-suit auto-equip not triggering via the diving-house
   portal.** Reported in a review session on 2026-09-08: swam through the
   diving house on land into Sea and the dive suit did not auto-equip
@@ -989,18 +1010,32 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   and a side/strafe angle (mask, tank, and belt all visible at once — the
   best-case angle). No test depended on the old geometry values; full
   suite still green (typecheck, 215 unit tests, build, 61 E2E tests).
-- `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
-  2026-09-08 design review, supersedes the sea-floating-docks item above:
-  a single large, dramatic broken-ship hull + mast as a real landmark
-  (bigger and more distinct than the existing `SEA_WRECKAGE_POSITIONS`
-  debris boxes), rather than re-skinning every small piece individually.
-  Worth considering placement near the diving-house sea-side arrival
-  (`landSeaPortal.ts`'s `SEA_ARRIVAL_POSITION`, or nearby) so it ties
-  into that portal's own story, but not required — World's call once
-  actually laid out. Keep the existing smaller wreckage pieces around it
-  for scale/parallax; this adds one real centerpiece, it doesn't replace
-  the whole field. Same procedural-primitives-first approach as
-  everywhere else in this codebase for a first pass.
+- `done` **(World) Centerpiece shipwreck landmark.** Locked in during a
+  2026-09-08 design review, built 2026-09-09, supersedes the old sea-
+  floating-docks item: a single large, dramatic broken-ship hull + mast
+  (`src/sea/shipwreckMesh.ts`) — two hull segments (a larger main section,
+  a smaller stern section) tilted in different directions with a real gap
+  between them, so it reads as broken rather than one solid ship, plus a
+  mast leaning off the main hull (snapped, not upright) with a crossbar
+  yard. Bigger and more distinct than the existing `SEA_WRECKAGE_POSITIONS`
+  debris boxes, which stay completely untouched around it for scale/
+  parallax — this adds one centerpiece, it doesn't replace the field
+  (verified directly: a test asserts the debris count is unchanged).
+  Placed near the diving-house sea-side arrival as suggested (a new
+  `SEA_SHIPWRECK_POSITION` constant in `seaRealmMap.ts`, resting on
+  `SEA_FLOOR_Y`, clear of the portal's own trigger radius) — deliberately
+  *not* part of `RealmMap.terrain.wreckage` (that field models the
+  scattered debris field the schema itself describes; this is a single
+  fixed landmark, same "outside the schema, shared constant" treatment
+  the portal markers already get). 6 new unit tests
+  (`shipwreckMesh.test.ts`: two distinctly-tilted hull segments with a
+  real gap, a leaning mast) plus 3 more in `seaRealmMap.test.ts` (rests on
+  the floor, clear of the portal, not a duplicate of the smaller debris);
+  `seaScene.test.ts` updated to confirm both the new landmark and the
+  unchanged debris count. Verified visually with a real screenshot (the
+  full broken-hull-plus-mast silhouette clearly visible) — full suite
+  green (typecheck, 242 unit tests, build, 64 E2E tests). Same procedural-
+  primitives-first approach as everywhere else in this codebase.
 
 ## Later / unscoped
 

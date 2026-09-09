@@ -5,6 +5,7 @@ import { LAND_PORTAL_POSITION } from "./world/landAirPortal";
 import { LAND_PORTAL_POSITION as LAND_SEA_PORTAL_POSITION } from "./world/landSeaPortal";
 import { createPortalMarkerMesh } from "./world/portalMarker";
 import { createDivingHouseMesh } from "./world/divingHouseMarker";
+import { LAND_DECORATION_POSITIONS, createLandDecorationMesh } from "./land/landDecorations";
 import { AVATAR_GROUND_OFFSET, createProceduralAvatarMesh } from "./skins/avatarView";
 
 const GROUND_SIZE = LAND_MAP_SIZE;
@@ -63,20 +64,18 @@ export function createScene(): THREE.Scene {
   ground.name = "ground";
   scene.add(ground);
 
-  const landmarkPositions: Array<[number, number]> = [
-    [4, -6],
-    [-5, -4],
-    [6, 4],
-    [-6, 5],
-    [2, 10],
-    [-8, -10],
-  ];
-  const landmarkMaterial = new THREE.MeshStandardMaterial({ color: 0x5b7a99 });
-  for (const [x, z] of landmarkPositions) {
-    const landmark = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.5, 8), landmarkMaterial);
-    landmark.position.set(x, terrainHeightAt(x, z) + 0.75, z);
-    landmark.name = "landmark";
-    scene.add(landmark);
+  // Parkland dressing (`BACKLOG.md`, 2026-09-08 design review) — replaces
+  // the old plain gray-cylinder landmarks with trees/flower beds/a path/a
+  // fountain centerpiece, driven entirely by `LAND_DECORATION_POSITIONS`
+  // (`src/land/landDecorations.ts`) so a fork can reskin land by swapping
+  // that one array/mesh set, same pattern air's/sea's own data arrays
+  // already established. Each decoration group's local origin is ground
+  // level (see that file's own comment), so positioning here needs only
+  // `terrainHeightAt`, no per-kind offset.
+  for (const { x, z, kind } of LAND_DECORATION_POSITIONS) {
+    const decoration = createLandDecorationMesh(kind);
+    decoration.position.set(x, terrainHeightAt(x, z), z);
+    scene.add(decoration);
   }
 
   const avatarRoot = new THREE.Group();

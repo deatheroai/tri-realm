@@ -23,14 +23,17 @@ describe("createAirScene", () => {
     expect(avatar?.position.y).toBeGreaterThan(0);
   });
 
-  it("places one platform per AIR_FLOATING_PLATFORM_POSITIONS entry, at that entry's position", () => {
+  it("places one cloud platform per AIR_FLOATING_PLATFORM_POSITIONS entry, at that entry's position", () => {
+    // Was a plain "landmark"-named cylinder before the cloud-shaped
+    // platform item (BACKLOG.md, 2026-09-08 design review) —
+    // src/air/cloudMeshes.ts now names the group "cloud-platform".
     const scene = createAirScene();
 
-    const landmarks = scene.children.filter((child) => child.name === "landmark");
+    const platforms = scene.children.filter((child) => child.name === "cloud-platform");
 
-    expect(landmarks).toHaveLength(AIR_FLOATING_PLATFORM_POSITIONS.length);
-    const landmarkPositions = landmarks.map((l) => ({ x: l.position.x, y: l.position.y, z: l.position.z }));
-    expect(landmarkPositions).toEqual(AIR_FLOATING_PLATFORM_POSITIONS);
+    expect(platforms).toHaveLength(AIR_FLOATING_PLATFORM_POSITIONS.length);
+    const platformPositions = platforms.map((p) => ({ x: p.position.x, y: p.position.y, z: p.position.z }));
+    expect(platformPositions).toEqual(AIR_FLOATING_PLATFORM_POSITIONS);
   });
 
   it("includes at least one light so the scene isn't pitch black", () => {

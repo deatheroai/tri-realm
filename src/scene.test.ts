@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { createScene } from "./scene";
 import { terrainHeightAt } from "./land/terrain";
+import { LAND_DECORATION_POSITIONS } from "./land/landDecorations";
 
 describe("createScene", () => {
   it("includes a ground plane and a player avatar group with a default visual", () => {
@@ -42,12 +43,33 @@ describe("createScene", () => {
     expect(max - min).toBeGreaterThan(1);
   });
 
-  it("includes scattered landmarks so the follow-camera has visual parallax", () => {
+  it("includes parkland dressing (trees/flower beds/path/fountain) so the follow-camera has visual parallax", () => {
+    // Replaced the old plain-cylinder "landmark" meshes (BACKLOG.md,
+    // 2026-09-08 design review) — one decoration group per
+    // LAND_DECORATION_POSITIONS entry, named by its own kind
+    // (src/land/landDecorations.ts) rather than a single generic name.
     const scene = createScene();
 
-    const landmarks = scene.children.filter((child) => child.name === "landmark");
+    const decorationKinds = new Set(LAND_DECORATION_POSITIONS.map((d) => d.kind));
+    for (const kind of decorationKinds) {
+      const matches = scene.children.filter((child) => child.name === kind);
+      expect(matches.length).toBeGreaterThan(0);
+    }
+  });
 
-    expect(landmarks.length).toBeGreaterThan(0);
+  it("places one decoration group per LAND_DECORATION_POSITIONS entry, at that entry's terrain-matched position", () => {
+    const scene = createScene();
+
+    const decorations = scene.children.filter((child) =>
+      LAND_DECORATION_POSITIONS.some((d) => d.kind === child.name),
+    );
+
+    expect(decorations).toHaveLength(LAND_DECORATION_POSITIONS.length);
+    for (const { x, z } of LAND_DECORATION_POSITIONS) {
+      const match = decorations.find((d) => d.position.x === x && d.position.z === z);
+      expect(match).toBeDefined();
+      expect(match!.position.y).toBeCloseTo(terrainHeightAt(x, z), 5);
+    }
   });
 
   it("includes at least one light so the scene isn't pitch black", () => {

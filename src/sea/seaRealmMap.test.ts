@@ -5,8 +5,10 @@ import {
   SEA_FLOOR_Y,
   SEA_SURFACE_Y,
   SEA_WRECKAGE_POSITIONS,
+  SEA_SHIPWRECK_POSITION,
 } from "./seaRealmMap";
-import { SEA_LAND_PORTAL_ID } from "../world/landSeaPortal";
+import { SEA_LAND_PORTAL_ID, SEA_PORTAL_POSITION } from "../world/landSeaPortal";
+import { PORTAL_TRIGGER_RADIUS } from "../world/portalTransition";
 
 describe("createSeaRealmMap", () => {
   it("returns a sea RealmMap with the expected shape", () => {
@@ -54,5 +56,24 @@ describe("createSeaRealmMap", () => {
 
     expect(a).not.toBe(b);
     expect(a.structures).not.toBe(b.structures);
+  });
+});
+
+describe("SEA_SHIPWRECK_POSITION", () => {
+  it("rests on the sea floor, within the swimmable band", () => {
+    expect(SEA_SHIPWRECK_POSITION.y).toBe(SEA_FLOOR_Y);
+  });
+
+  it("sits clear of the diving-house portal's own trigger radius, so the two meshes don't overlap", () => {
+    const dx = SEA_SHIPWRECK_POSITION.x - SEA_PORTAL_POSITION.x;
+    const dz = SEA_SHIPWRECK_POSITION.z - SEA_PORTAL_POSITION.z;
+    expect(Math.hypot(dx, dz)).toBeGreaterThan(PORTAL_TRIGGER_RADIUS);
+  });
+
+  it("is not one of the smaller SEA_WRECKAGE_POSITIONS debris pieces — a distinct, additional landmark", () => {
+    const isDuplicate = SEA_WRECKAGE_POSITIONS.some(
+      (w) => w.x === SEA_SHIPWRECK_POSITION.x && w.y === SEA_SHIPWRECK_POSITION.y && w.z === SEA_SHIPWRECK_POSITION.z,
+    );
+    expect(isDuplicate).toBe(false);
   });
 });

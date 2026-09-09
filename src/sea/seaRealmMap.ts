@@ -42,6 +42,23 @@ export const SEA_WRECKAGE_POSITIONS: Vec3[] = [
 ];
 
 /**
+ * The centerpiece shipwreck landmark (`BACKLOG.md`, 2026-09-08 design
+ * review, supersedes the old "sea-floating-docks" item) — one large,
+ * dramatic broken-ship hull + mast (`shipwreckMesh.ts`), resting on the
+ * sea floor, distinct from the smaller `SEA_WRECKAGE_POSITIONS` debris
+ * above (which stay untouched around it for scale/parallax). Not part of
+ * `RealmMap.terrain.wreckage` — that field models the *scattered debris
+ * field* the schema's own comments describe, while this is a single fixed
+ * landmark, same "outside the schema, shared constant" treatment
+ * `landAirPortal.ts`/`landSeaPortal.ts`'s marker positions already get.
+ * Placed off to the side of the diving-house portal's straight approach
+ * (`world/landSeaPortal.ts`'s `SEA_ARRIVAL_POSITION`, `{x:0, y:-4,
+ * z:-15}`) so arriving from land finds it nearby without the two meshes
+ * overlapping, resting directly on `SEA_FLOOR_Y`.
+ */
+export const SEA_SHIPWRECK_POSITION: Vec3 = { x: 8, y: SEA_FLOOR_Y, z: -17 };
+
+/**
  * The hardcoded Phase 3 sea map — this realm's equivalent of
  * `createAirRealmMap`'s first pass: real `RealmMap` shape, no structures
  * yet (building isn't in sea's Phase 3 scope), and real floating-wreckage

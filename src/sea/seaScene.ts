@@ -1,8 +1,15 @@
 import * as THREE from "three";
 import { createProceduralAvatarMesh } from "../skins/avatarView";
-import { SEA_FLOOR_Y, SEA_SURFACE_Y, SEA_AVATAR_SPAWN_Y, SEA_WRECKAGE_POSITIONS } from "./seaRealmMap";
+import {
+  SEA_FLOOR_Y,
+  SEA_SURFACE_Y,
+  SEA_AVATAR_SPAWN_Y,
+  SEA_WRECKAGE_POSITIONS,
+  SEA_SHIPWRECK_POSITION,
+} from "./seaRealmMap";
 import { SEA_PORTAL_POSITION } from "../world/landSeaPortal";
 import { createSeaPortalArchMesh } from "../world/divingHouseMarker";
+import { createShipwreckMesh } from "./shipwreckMesh";
 
 const DEEP_WATER_COLOR = 0x0c3550;
 const FLOOR_COLOR = 0xb8a97a; // sandy sea floor
@@ -73,6 +80,13 @@ export function createSeaScene(): THREE.Scene {
   avatarRoot.add(createProceduralAvatarMesh());
   avatarRoot.position.set(0, SEA_AVATAR_SPAWN_Y, 0);
   scene.add(avatarRoot);
+
+  // Centerpiece shipwreck landmark (`BACKLOG.md`, 2026-09-08 design
+  // review) — one large, dramatic broken-ship hull + mast, distinct from
+  // (and additional to) the smaller wreckage debris above.
+  const shipwreck = createShipwreckMesh();
+  shipwreck.position.set(SEA_SHIPWRECK_POSITION.x, SEA_SHIPWRECK_POSITION.y, SEA_SHIPWRECK_POSITION.z);
+  scene.add(shipwreck);
 
   // The land<->sea portal's sea-side end — purely visual here, the real
   // trigger is proximity to SEA_PORTAL_POSITION, checked in main.ts

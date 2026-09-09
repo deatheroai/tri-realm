@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { createSeaScene } from "./seaScene";
-import { SEA_WRECKAGE_POSITIONS, SEA_AVATAR_SPAWN_Y, SEA_FLOOR_Y, SEA_SURFACE_Y } from "./seaRealmMap";
+import {
+  SEA_WRECKAGE_POSITIONS,
+  SEA_AVATAR_SPAWN_Y,
+  SEA_FLOOR_Y,
+  SEA_SURFACE_Y,
+  SEA_SHIPWRECK_POSITION,
+} from "./seaRealmMap";
 
 describe("createSeaScene", () => {
   it("includes a player avatar group with a default visual, a sea floor, and a water surface", () => {
@@ -50,5 +56,20 @@ describe("createSeaScene", () => {
     const lights = scene.children.filter((child) => child instanceof THREE.Light);
 
     expect(lights.length).toBeGreaterThan(0);
+  });
+
+  it("includes the centerpiece shipwreck at SEA_SHIPWRECK_POSITION, additional to the smaller wreckage debris", () => {
+    const scene = createSeaScene();
+
+    const shipwreck = scene.getObjectByName("shipwreck");
+    expect(shipwreck).toBeInstanceOf(THREE.Group);
+    expect(shipwreck?.position.x).toBe(SEA_SHIPWRECK_POSITION.x);
+    expect(shipwreck?.position.y).toBe(SEA_SHIPWRECK_POSITION.y);
+    expect(shipwreck?.position.z).toBe(SEA_SHIPWRECK_POSITION.z);
+
+    // Still exactly the same smaller-debris count as before — this adds
+    // one landmark, it doesn't replace the existing field.
+    const landmarks = scene.children.filter((child) => child.name === "landmark");
+    expect(landmarks).toHaveLength(SEA_WRECKAGE_POSITIONS.length);
   });
 });

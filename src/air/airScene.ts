@@ -3,6 +3,7 @@ import { AIR_PORTAL_POSITION } from "../world/landAirPortal";
 import { createPortalMarkerMesh } from "../world/portalMarker";
 import { createProceduralAvatarMesh } from "../skins/avatarView";
 import { AIR_FLOATING_PLATFORM_POSITIONS } from "./airRealmMap";
+import { createCloudPlatformMesh } from "./cloudMeshes";
 
 const SKY_COLOR = 0x8fc7e8;
 
@@ -34,11 +35,13 @@ export function createAirScene(): THREE.Scene {
   sun.position.set(8, 15, 5);
   scene.add(ambient, sun);
 
-  const platformMaterial = new THREE.MeshStandardMaterial({ color: 0xe4d9c4 });
+  // Cloud-shaped platforms (`BACKLOG.md`, 2026-09-08 design review) — the
+  // platform mesh itself is a puffy cloud cluster (`cloudMeshes.ts`)
+  // instead of a plain cylinder, so flight and the "cloudy sky" theme read
+  // as the same object. Placement data is unchanged.
   for (const position of AIR_FLOATING_PLATFORM_POSITIONS) {
-    const platform = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 0.6, 10), platformMaterial);
+    const platform = createCloudPlatformMesh();
     platform.position.set(position.x, position.y, position.z);
-    platform.name = "landmark";
     scene.add(platform);
   }
 
