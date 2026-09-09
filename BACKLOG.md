@@ -698,7 +698,8 @@ without a fresh check-in.
   (was `swimActive`), plus a 300ms hold to prove it doesn't switch.
   Verified visually with a real screenshot (Female flying: arms out,
   relaxed, no active kicking) — full suite green (typecheck, 218 unit
-  tests, build, 64 E2E tests).
+  tests, build, 64 E2E tests). **Review checkpoint: confirmed on the live
+  deployment — "Like balloons than fish."**
 - `todo` **(World) Cloud-shaped floating platforms.** Locked in during a
   2026-09-08 design review: replace the current plain gray-cylinder
   platforms (`AIR_FLOATING_PLATFORM_POSITIONS`, `airScene.ts`) with
