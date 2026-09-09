@@ -103,6 +103,18 @@ Resolved).
   half still pokes out past it. Re-verified visually across Fox, Female,
   Princess. Full suite green.
 
+  **Sixth follow-up same day** — asked for an actual redesign instead of
+  another position nudge: right call. Every fix so far moved the same
+  hard-edged box; the box shape itself was the problem — a flat-faced
+  rectangle reads as a sign held to the face, not something worn on it.
+  Rebuilt the frame and lens as scaled spheres (smooth, rounded, no hard
+  corners) sized narrower than the full head (real mask/goggle skirts
+  span eyes + nose, not ear to ear), kept the same flush-at-the-surface
+  placement logic that was already correct. Verified visually across
+  Fox, Female, and Princess plus a zoomed crop. Full suite green (one
+  E2E timeout during verification confirmed as a parallel-load flake,
+  not a regression — passed clean alone and in a full re-run).
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

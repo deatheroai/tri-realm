@@ -108,35 +108,33 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const waistY = box.min.y + height * 0.44;
   const footY = box.min.y + height * 0.03;
 
-  // Mask — three parts instead of one flat box, so it reads as an actual
-  // mask worn on the face instead of a floating colored rectangle
-  // (reported directly: "why is there a blue box in front of each
-  // avatar"). A dark rubber skirt/frame; a smaller, lighter lens inset
-  // within it; a thin strap wrapping the head to anchor it. The strap is
+  // Mask — redesigned from a flat box to a rounded, lens-shaped pair
+  // (dark rim + inset tinted lens) plus a strap, since a hard-edged box
+  // kept reading as "a sign held up to the face" no matter how it was
+  // positioned (reported repeatedly — a floating box, then a flush box
+  // that still looked out of place). Real dive-mask/goggle skirts are
+  // rounded, not rectangular, and noticeably narrower than the whole
+  // head (they span eyes + nose, not ear to ear) — both of those were
+  // true problems with the box version, not just its position. Built
+  // from scaled spheres (smooth, rounded silhouette in every direction,
+  // unlike a box's flat faces and hard corners) rather than a box or a
+  // capsule, so there's no separate rotation to get right. The strap is
   // dark, not the gold "equipment" color the belt/tank use — it's a
   // functional part of the mask itself, not another bright accessory
   // ring (see the 2026-09-09 "too many yellow rings" trim above for why
-  // that distinction matters here).
-  //
-  // **Positioning, fixed same day again**: the first version of this
-  // pushed the frame/lens forward *past* the character's own front
-  // surface (`box.max.z + headRadius * 0.2` / `* 0.4`) — reported
-  // directly ("the mask should be on the face not a box"), and looking
-  // again, that offset really did read as a small box hovering in the
-  // air in front of the face rather than something worn on it. Centered
-  // on `box.max.z` instead (embedded roughly half into the face surface,
-  // same "sits at the surface, not proud of it" placement the waist belt
-  // already uses below) so the visible half sits flush against the face
-  // instead of floating clear of it.
-  const maskFrame = new THREE.Mesh(
-    new THREE.BoxGeometry(headRadius * 1.7, height * 0.16, headRadius * 0.5),
-    new THREE.MeshStandardMaterial({ color: 0x1c1c1c }), // dark rubber skirt
-  );
+  // that distinction matters here). Embedded roughly half into the face
+  // surface at `box.max.z` (same placement the waist belt uses below) so
+  // it sits flush rather than floating clear of it — the fix for "should
+  // be on the face, not a box" that a shape change alone doesn't cover.
+  const rimGeometry = new THREE.SphereGeometry(headRadius * 0.62, 12, 8);
+  const maskFrame = new THREE.Mesh(rimGeometry, new THREE.MeshStandardMaterial({ color: 0x1c1c1c }));
+  maskFrame.scale.set(1, 0.62, 0.5); // wide, short, shallow — a lens-shaped skirt, not a ball or a box
   maskFrame.position.set(centerX, headY, box.max.z);
   maskFrame.name = "dive-suit-mask-frame";
 
+  const lensGeometry = new THREE.SphereGeometry(headRadius * 0.46, 12, 8);
   const maskLens = new THREE.Mesh(
-    new THREE.BoxGeometry(headRadius * 1.3, height * 0.11, headRadius * 0.2),
+    lensGeometry,
     new THREE.MeshStandardMaterial({
       color: 0x8fd8e8,
       emissive: 0x2a5560,
@@ -145,13 +143,13 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
       opacity: 0.9,
     }),
   );
-  // The frame's own front face sits at box.max.z + headRadius*0.25 (half
-  // its depth); the lens is centered right there so it's anchored inside
-  // the frame but its own front half still pokes out past it — visible
-  // "glass in a socket," not swallowed whole by the opaque frame around
-  // it (that's what a smaller in-front-of-that offset did: fully
-  // enclosed within the frame's opaque volume, invisible from outside).
-  maskLens.position.set(centerX, headY, box.max.z + headRadius * 0.28);
+  maskLens.scale.set(1, 0.58, 0.5);
+  // The frame's own front face sits at box.max.z + (0.62*0.5)*headRadius
+  // = box.max.z + 0.31*headRadius; the lens is centered right there so
+  // it's anchored inside the frame but its own front half still pokes
+  // out past it — visible "glass in a socket," not swallowed whole by
+  // the opaque frame around it.
+  maskLens.position.set(centerX, headY, box.max.z + headRadius * 0.31);
   maskLens.name = "dive-suit-mask-lens";
 
   const maskStrap = new THREE.Mesh(

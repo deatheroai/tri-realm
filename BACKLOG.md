@@ -1069,6 +1069,29 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   approximation (a single height-fraction + front-z heuristic tuned for
   bipeds doesn't map cleanly onto a quadruped's face) but no longer
   visibly broken. Full suite re-verified green.
+  **Sixth follow-up same day — asked for an actual redesign, not another
+  position nudge**: right call. Every fix up to this point moved the
+  same hard-edged box around; the box shape itself was the problem — a
+  flat-faced rectangle just doesn't read as something worn on a face no
+  matter where it sits, it reads as a sign held up to one. Rebuilt the
+  frame and lens as scaled spheres (`SphereGeometry` + non-uniform
+  `.scale`) instead of boxes: smooth, rounded in every direction, no
+  hard corners, and deliberately narrower than the full head width (real
+  dive-mask/goggle skirts span eyes + nose, not ear to ear — the old box
+  spanned nearly the whole head, which was also part of why it read as
+  a plate rather than eyewear). Kept the same "frame embedded flush at
+  the face surface, lens anchored right at the frame's own front face so
+  it still pokes out and stays visible" placement logic from the
+  previous two rounds (that part was already right; it was the shape
+  riding on top of it that was wrong) and the same dark, non-gold strap.
+  Verified visually across Fox, Female, and Princess, plus a zoomed
+  crop — now reads as rounded goggles sitting close to the face on every
+  skin checked, not a floating or flush box. One real E2E failure hit
+  during verification and confirmed (not assumed) to be a flake, not a
+  regression: `skins.spec.ts`'s diving-house revert test timed out once
+  under 2-worker parallel load, then passed clean both run alone and in
+  a full re-run of the file. Full suite green: typecheck, 215 unit
+  tests, build, 27 skins.spec.ts E2E tests.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark
