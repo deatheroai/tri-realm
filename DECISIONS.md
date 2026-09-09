@@ -46,6 +46,22 @@ Resolved).
   visually with real screenshots at two distances; full suite green
   (typecheck, 250 unit tests, build, 64 E2E tests).
 
+- **2026-09-09 — Trees now sway in a gentle wind.** Follow-up to the
+  canopy-shape fix above: you asked for some sway once the shape itself
+  looked right. New `treeSwayAngle(elapsedSeconds, phaseSeed)`
+  (`src/land/landDecorations.ts`), a pure function (two summed sines: a
+  slow main sway plus a smaller, faster flutter — same discipline
+  `terrain.ts`'s `terrainHeightAt` and `skins/avatarSkins.ts`'s
+  `bobOffset` already use) applied to each `"tree"` group's `rotation.z`
+  every frame in `main.ts` while in the land realm — the whole tree leans
+  from its base (already ground-level local origin), no separate bend
+  geometry needed. Phase seeded from each tree's own position, so a row
+  of trees reads as wind moving across the field, not one puppet. Small
+  amplitude (~2°). Verified visually (screenshots ~1s apart showing the
+  lean shift) and by confirming rendered pixels actually differ frame to
+  frame; full suite green (typecheck, 254 unit tests, build, 64 E2E
+  tests).
+
 - **2026-09-09 — Real Quaternius castle-piece models, the long-blocked
   item, unblocked by you directly asking for it.** Pulled the "Medieval
   Village MegaKit" pack for real and inspected every candidate model's

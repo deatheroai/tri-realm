@@ -143,6 +143,23 @@ system.
   visually with real screenshots at two distances; full suite green
   (typecheck, 250 unit tests, build, 64 E2E tests).
 
+  **2026-09-09 follow-up #2 — trees now sway in a gentle wind.** You
+  asked for some sway to feel like natural wind once the canopy shape
+  itself looked right. New `treeSwayAngle(elapsedSeconds, phaseSeed)`
+  (`src/land/landDecorations.ts`) — a pure function summing a slow main
+  sway and a faster, smaller flutter (same "combine a couple of sines"
+  discipline `terrainHeightAt` already uses), same shape as `skins/
+  avatarSkins.ts`'s `bobOffset`. `main.ts` caches every `"tree"` group
+  once at startup and, each frame while in the land realm, sets its
+  `rotation.z` from this function — the whole group leans from its base
+  (every tree's local origin is ground level already), no separate bend
+  needed. `phaseSeed` comes from each tree's own `(x, z)`, so different
+  trees sway out of phase with each other rather than in lockstep like
+  one puppet. Small amplitude (~2°) — a gentle lean, not cartoonish.
+  Verified visually (real screenshots ~1s apart showing the lean shift)
+  and by confirming rendered pixels genuinely differ frame-to-frame; full
+  suite green (typecheck, 254 unit tests, build, 64 E2E tests).
+
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
 

@@ -122,6 +122,32 @@ function createTree(): THREE.Group {
   return group;
 }
 
+const WIND_SWAY_AMPLITUDE = 0.035; // radians (~2°) — a gentle lean, not cartoonish
+const WIND_SWAY_PERIOD = 3.4; // seconds per full back-and-forth cycle of the main sway
+
+/**
+ * Small back-and-forth lean (radians), meant for a tree group's own
+ * `rotation.z` — every tree's local origin sits at ground level (see
+ * `createTree`), so rotating the whole group pivots naturally at the
+ * base, like a flexible trunk, with no separate bend needed. Two summed
+ * sine waves (a slow main sway plus a faster, smaller flutter), same
+ * "combine a couple of sines instead of one flat metronome" discipline
+ * `land/terrain.ts`'s `terrainHeightAt` already uses for organic-looking
+ * motion from a small deterministic formula. `phaseSeed` — typically a
+ * tree's own position, e.g. `x * 1.7 + z * 0.9` — offsets each tree out
+ * of phase with the others, so a row of trees reads as wind moving across
+ * the field rather than every tree swaying in lockstep like one puppet.
+ * Pure and deterministic given (elapsedSeconds, phaseSeed), same
+ * discipline as `skins/avatarSkins.ts`'s `bobOffset` — directly
+ * unit-testable without a mixer or a real clock.
+ */
+export function treeSwayAngle(elapsedSeconds: number, phaseSeed: number): number {
+  const cycle = (Math.PI * 2) / WIND_SWAY_PERIOD;
+  const mainSway = Math.sin(elapsedSeconds * cycle + phaseSeed);
+  const flutter = Math.sin(elapsedSeconds * cycle * 2.8 + phaseSeed * 1.3) * 0.25;
+  return WIND_SWAY_AMPLITUDE * (mainSway + flutter);
+}
+
 function createFlowerBed(): THREE.Group {
   const group = new THREE.Group();
   group.name = "flowerBed";

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { LAND_DECORATION_POSITIONS, createLandDecorationMesh, type LandDecorationKind } from "./landDecorations";
+import {
+  LAND_DECORATION_POSITIONS,
+  createLandDecorationMesh,
+  treeSwayAngle,
+  type LandDecorationKind,
+} from "./landDecorations";
 
 describe("LAND_DECORATION_POSITIONS", () => {
   it("has at least one entry of every decoration kind", () => {
@@ -68,5 +73,34 @@ describe("createLandDecorationMesh", () => {
 
     expect(bloomsA.length).toBeGreaterThan(0);
     expect(bloomsA).toEqual(bloomsB);
+  });
+});
+
+describe("treeSwayAngle", () => {
+  it("is a deterministic, pure function of (elapsedSeconds, phaseSeed)", () => {
+    expect(treeSwayAngle(4.2, 1.5)).toBe(treeSwayAngle(4.2, 1.5));
+  });
+
+  it("stays a gentle lean, not a cartoonish whip — well under a quarter turn", () => {
+    for (let t = 0; t < 20; t += 0.37) {
+      expect(Math.abs(treeSwayAngle(t, 0))).toBeLessThan(0.1);
+    }
+  });
+
+  it("settles to no lean at all with zero elapsed time and zero phase", () => {
+    expect(treeSwayAngle(0, 0)).toBe(0);
+  });
+
+  it("puts different phase seeds out of step with each other, not swaying in lockstep", () => {
+    // Two seeds far enough apart that they can't land on the same angle by
+    // coincidence at every sampled instant — real wind rippling across a
+    // row of trees, not one puppet moving them all identically.
+    const anglesA: number[] = [];
+    const anglesB: number[] = [];
+    for (let t = 0; t < 6; t += 0.5) {
+      anglesA.push(treeSwayAngle(t, 0));
+      anglesB.push(treeSwayAngle(t, Math.PI / 2));
+    }
+    expect(anglesA).not.toEqual(anglesB);
   });
 });

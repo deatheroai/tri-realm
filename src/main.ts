@@ -8,6 +8,7 @@ import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { createLandRealmMap, landTerrainPlacementRule, LAND_MAP_ID } from "./land/landRealmMap";
 import { createCastlePieceMesh, castlePieceGroundOffset } from "./land/placement";
+import { treeSwayAngle } from "./land/landDecorations";
 import {
   CASTLE_STRUCTURE_TYPES,
   DEFAULT_CASTLE_STRUCTURE_TYPE_ID,
@@ -70,6 +71,11 @@ if (!groundOrUndefined) {
   throw new Error("Missing ground in scene");
 }
 const ground = groundOrUndefined;
+
+// Cached once at startup, not re-queried per frame — every "tree" group in
+// the scene (src/land/landDecorations.ts), so animate() below can lean
+// each one via treeSwayAngle without a scene.children.filter every frame.
+const trees = scene.children.filter((child) => child.name === "tree");
 
 // Air realm (BACKLOG.md Phase 2) — its own scene/avatar/movement, reached
 // either via the dev realm panel below or, now that both ends are scoped,
@@ -649,12 +655,18 @@ const cameraOffset = { x: 0, y: 4.5, z: 7.5 };
 
 const hud = document.getElementById("hud-position");
 const clock = new THREE.Clock();
+// Accumulated (not clock.getElapsedTime(), which free-runs from page load
+// regardless of dt clamping) the same way AvatarView tracks its own
+// bobElapsed — so a dropped/backgrounded frame can't jump the wind sway
+// forward any more than dt's own clamp already allows movement to jump.
+let windElapsed = 0;
 
 function animate(): void {
   requestAnimationFrame(animate);
 
   // Clamp dt so a dropped/backgrounded frame can't cause a huge physics jump.
   const dt = Math.min(clock.getDelta(), 0.1);
+  windElapsed += dt;
 
   const moveInput = combineMoveInputs(
     input.getMoveInput(),
@@ -679,6 +691,14 @@ function animate(): void {
     avatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
     avatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
     avatarView.update(dt);
+
+    // Wind sway: each tree leans on its own rotation.z via treeSwayAngle
+    // (src/land/landDecorations.ts) — a pure function of elapsed time and
+    // a phase seeded from the tree's own position, so different trees
+    // sway out of phase with each other instead of like one puppet.
+    for (const tree of trees) {
+      tree.rotation.z = treeSwayAngle(windElapsed, tree.position.x * 1.7 + tree.position.z * 0.9);
+    }
 
     targetPosition = movement.position;
     cameraLookAtY = movement.position.y + 1;
