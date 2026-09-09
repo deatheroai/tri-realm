@@ -60,15 +60,6 @@ describe("AVATAR_SKINS catalog", () => {
     const diveSuit = AVATAR_SKINS.find((s) => s.id === DIVE_SUIT_AVATAR_SKIN_ID);
     expect(diveSuit).toBeDefined();
     expect(diveSuit?.kind).toBe("procedural");
-    expect(diveSuit?.proceduralVariant).toBe("diveSuit");
-  });
-
-  it("only the dive-suit skin declares a proceduralVariant — every other procedural skin (capsule, the fallback) renders the default capsule look", () => {
-    for (const skin of AVATAR_SKINS) {
-      if (skin.kind === "procedural" && skin.id !== DIVE_SUIT_AVATAR_SKIN_ID) {
-        expect(skin.proceduralVariant).toBeUndefined();
-      }
-    }
   });
 });
 

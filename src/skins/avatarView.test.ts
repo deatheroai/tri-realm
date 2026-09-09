@@ -32,7 +32,7 @@ describe("AvatarView", () => {
     expect(root.children[0]).toBeInstanceOf(THREE.Mesh);
   });
 
-  it("sets a distinct diver-shaped group (not the plain capsule) as the visual for the dive-suit skin", async () => {
+  it("sets a distinct diver-geared group (not the plain capsule alone) as the visual for the dive-suit skin, dressing the capsule when nothing else was worn yet", async () => {
     const root = new THREE.Group();
     const view = new AvatarView(root);
 
@@ -40,14 +40,16 @@ describe("AvatarView", () => {
 
     expect(view.skinId).toBe("diveSuit");
     expect(root.children).toHaveLength(1);
-    // A Group of primitives (body + mask + tank), not a single Mesh like
-    // the plain capsule — see createDiveSuitAvatarMesh.
+    // A wrapper Group of [character, gear] (see createDiveGearOverlay), not
+    // a single Mesh like the plain capsule alone — no skin was worn before
+    // this call, so the character it dresses is the default-fallback
+    // capsule.
     const visual = root.children[0];
     expect(visual).toBeInstanceOf(THREE.Group);
     expect(visual.children.length).toBeGreaterThan(1);
   });
 
-  it("keeps the dive-suit visual's rendered height close to the plain capsule's — same body dimensions, just extra small accessories", async () => {
+  it("keeps the dive-suit visual's rendered height close to the plain capsule's when dressing the capsule — same body dimensions, just extra small accessories", async () => {
     const capsuleRoot = new THREE.Group();
     await new AvatarView(capsuleRoot).setSkin("capsule");
     const capsuleHeight =
@@ -60,6 +62,48 @@ describe("AvatarView", () => {
 
     expect(diveSuitHeight).toBeGreaterThan(capsuleHeight * 0.9);
     expect(diveSuitHeight).toBeLessThan(capsuleHeight * 1.3);
+  });
+
+  it("dresses whichever real skin was worn last instead of replacing it — the actual gltf model stays in the tree, gear added on top", async () => {
+    const fakeModel = new THREE.Group();
+    fakeModel.add(new THREE.Mesh(new THREE.BoxGeometry()));
+    const fakeClip = new THREE.AnimationClip("Walk", 1, []);
+    vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue({
+      scene: fakeModel,
+      animations: [fakeClip],
+      scenes: [fakeModel],
+      cameras: [],
+      asset: {},
+    } as never);
+
+    const root = new THREE.Group();
+    const view = new AvatarView(root);
+    await view.setSkin("fox"); // a real character worn first, not the fallback capsule
+
+    await view.setSkin("diveSuit");
+
+    expect(view.skinId).toBe("diveSuit");
+    const wrapper = root.children[0];
+    expect(wrapper).toBeInstanceOf(THREE.Group);
+    // The clone of the loaded gltf scene is still present as a child of the
+    // wrapper — the dive suit decorated Fox rather than swapping it out for
+    // an unrelated procedural body.
+    const worn = wrapper.children.find((child) => child.children.some((c) => c instanceof THREE.Mesh));
+    expect(worn).toBeDefined();
+    // A gear overlay group sits alongside it.
+    const gear = wrapper.children.find((child) => child.name === "dive-gear-overlay");
+    expect(gear).toBeDefined();
+    expect(gear!.children.length).toBeGreaterThan(1);
+    // Fox's own clip is still wired up — equipping the dive suit is purely
+    // a visual decoration, not a fresh (unanimated) build.
+    expect(view.hasAnimation("walk")).toBe(true);
+
+    // Reverting to the real skin afterward drops the gear and goes back to
+    // a plain clone of the model, same as if the dive suit had never been
+    // equipped.
+    await view.setSkin("fox");
+    expect(view.skinId).toBe("fox");
+    expect(root.children[0]).not.toBe(wrapper);
   });
 
   it("loads a gltf skin and wires up its animation clips", async () => {

@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/addons/utils/SkeletonUtils.js";
 import {
   AVATAR_SKINS,
+  DIVE_SUIT_AVATAR_SKIN_ID,
   FALLBACK_AVATAR_SKIN_ID,
   bobOffset,
   type AvatarSkin,
@@ -41,65 +42,67 @@ export function createProceduralAvatarMesh(): THREE.Mesh {
 }
 
 /**
- * The "diveSuit" procedural variant (`src/skins/avatarSkins.ts`) — same
- * capsule body/footprint as the default procedural mesh above (so it lines
- * up with `AVATAR_GROUND_OFFSET` and reads as roughly the same height as
- * every other skin) plus primitives distinctive enough to read as "a
- * diver" at a glance — rough-primitives language, same as
- * `portalMarker.ts`/`divingHouseMarker.ts`.
+ * The dive-suit "costume" (`src/skins/avatarSkins.ts`'s `diveSuit` entry)
+ * — mask/head-strap, chest strap, waist belt, tank, and flippers, laid out
+ * proportionally to whatever character is *actually being worn
+ * underneath* (its own bounding box), so the dive suit reads as gear on
+ * top of the current character (Fox/Robot/Princess/Mannequin/Female/
+ * Capsule alike) instead of replacing it with an unrelated generic body —
+ * see `AvatarView.buildVisual`'s `DIVE_SUIT_AVATAR_SKIN_ID` branch for how
+ * the underlying character is chosen and kept.
  *
- * **Fixed 2026-09-08, reported with a real screenshot**: the original
- * version (just a front-facing mask + a back-facing tank) read as a
- * plain, undecorated capsule from any angle other than dead-on front or
- * back. That first fix (bigger/brighter mask+tank, plus a waist belt)
- * turned out to still be insufficient — **reported again 2026-09-09 with
- * another real screenshot**, taken from the actual follow camera: even
- * with that fix in, the whole thing still read as "a plain capsule with
- * a small dot and a rubber band," not recognizably a diver. Confirmed by
- * reproducing the exact same view locally (Playwright against a real dev
- * server, not guessed) before touching anything. Root cause this time:
- * one small sphere and one thin ring just aren't enough silhouette to
- * beat a big plain capsule, no matter how bright — the fix needed more
- * *shape*, not just brighter color on the same two tiny appendages.
- * Rebuilt with: (1) a bigger, boxy mask/visor plus a head strap ring
- * (the same "ring reads from every angle" trick as the belt, now framing
- * the head too, so the head silhouette itself changes, not just its
- * front face); (2) a second, higher chest-strap ring in addition to the
- * waist belt, reading as a harness even head-on where the tank itself is
- * hidden behind the body; (3) a wide flipper plate at the feet — divers'
- * most recognizable silhouette cue, and (being flat and centered) reads
- * from every heading same as the belt/straps. Verified by re-
- * screenshotting the real follow camera from idle, facing-camera, and
- * side-on angles — same "render and look, don't guess" discipline as the
- * Robot-scale/Gold-metalness/Fox-pitch-sign fixes elsewhere in this
- * codebase.
- *
- * Local +Z is still this mesh's authored "front" (mask side) —
- * `faceDirection`'s rotation puts local +Z on the leading edge when
- * moving in world -Z (forward, see `src/input/keyboardInput.ts`) with
- * the default `facingOffset` of 0.
+ * **History**: originally its own procedural body (a plain capsule with
+ * a couple of accessories) — reported twice with real screenshots
+ * (2026-09-08, then again 2026-09-09) as reading like an undecorated
+ * capsule no matter how bright/big the accessories got, since one small
+ * sphere and a thin ring just aren't enough silhouette to beat a full
+ * body's worth of plain color. **Rebuilt 2026-09-09, same day, after you
+ * asked directly for it to be "a skin on a character"**: instead of
+ * inventing its own body, this now decorates whichever real skin was
+ * active before the dive suit was equipped (tracked as `AvatarView`'s
+ * `underlyingSkinId`) — Female stays recognizably Female, Fox stays
+ * recognizably Fox, just wearing gear, and Capsule (the default when no
+ * real character was active yet) gets exactly the previous look. `box` is
+ * that character's own local bounding box (`THREE.Box3`, computed before
+ * this overlay is attached), so every measurement below is a *fraction*
+ * of that character's actual height/width rather than a hardcoded number
+ * tuned to the capsule alone — the same gear this function builds now
+ * scales to fit Robot, Fox, or anything else without a per-skin special
+ * case. Assumes local +Z is that character's own authored "front" (every
+ * current skin's `facingOffset` is 0, i.e. already aligned with the
+ * engine's forward convention — see `AvatarSkin.facingOffset`), same
+ * assumption `faceDirection` already relies on elsewhere.
  */
-export function createDiveSuitAvatarMesh(): THREE.Group {
-  const group = new THREE.Group();
-  group.name = "dive-suit-avatar";
+function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
+  const gear = new THREE.Group();
+  gear.name = "dive-gear-overlay";
 
-  // Shared "bright equipment" look for every non-suit, non-mask part
-  // (straps, tank, fins) — one consistent gold reads as "gear" at a
-  // glance no matter which primitive it's attached to.
+  // Shared "bright equipment" look for every non-mask part (straps, tank,
+  // flippers) — one consistent gold reads as "gear" at a glance no matter
+  // which primitive it's attached to.
   const gearMaterial = () =>
     new THREE.MeshStandardMaterial({ color: 0xe8b93f, emissive: 0x6b4f10, emissiveIntensity: 0.4 });
 
-  const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(CAPSULE_RADIUS, CAPSULE_LENGTH, 4, 8),
-    new THREE.MeshStandardMaterial({ color: 0x1b2a35 }), // dark neoprene wetsuit
-  );
-  body.name = "dive-suit-body";
+  // Floors guard against a degenerate/empty box (e.g. a not-yet-loaded
+  // model) producing zero- or negative-sized geometry.
+  const height = Math.max(box.max.y - box.min.y, 0.4);
+  const width = Math.max(box.max.x - box.min.x, 0.3);
+  const centerX = (box.max.x + box.min.x) / 2;
+  const centerZ = (box.max.z + box.min.z) / 2;
+  const torsoRadius = width / 2 + 0.04; // stands proud of the actual body surface
+  const headRadius = torsoRadius * 0.68; // heads read narrower than chests/waists
 
-  // Mask/visor — a flat-fronted box instead of a sphere so it reads as a
-  // face plate (a dive mask's actual silhouette) rather than an ambiguous
-  // dot, sized to clearly dominate the head rather than sit lost on it.
+  const headY = box.min.y + height * 0.75;
+  const chestY = box.min.y + height * 0.61;
+  const tankY = box.min.y + height * 0.53;
+  const waistY = box.min.y + height * 0.44;
+  const footY = box.min.y + height * 0.03;
+
+  // Mask/visor — a flat-fronted box so it reads as a face plate (a dive
+  // mask's actual silhouette) rather than an ambiguous dot, pushed past
+  // the character's own front surface so it clearly protrudes.
   const mask = new THREE.Mesh(
-    new THREE.BoxGeometry(0.36, 0.24, 0.14),
+    new THREE.BoxGeometry(headRadius * 1.6, height * 0.13, headRadius * 0.7),
     new THREE.MeshStandardMaterial({
       color: 0x8fd8e8,
       emissive: 0x2a5560,
@@ -108,62 +111,56 @@ export function createDiveSuitAvatarMesh(): THREE.Group {
       opacity: 0.94,
     }),
   );
-  mask.position.set(0, 0.45, 0.34); // face height, pushed out so it clearly protrudes past the body surface
+  mask.position.set(centerX, headY, box.max.z + headRadius * 0.3);
   mask.name = "dive-suit-mask";
 
-  // Head strap — same "ring reads from every angle" trick as the waist
-  // belt below, but around the head: changes the head's silhouette from
-  // every heading, not just the one the mask happens to be facing.
-  const headStrap = new THREE.Mesh(new THREE.TorusGeometry(CAPSULE_RADIUS + 0.02, 0.04, 8, 16), gearMaterial());
+  // Head strap — a ring reads as equipment from every angle, not just the
+  // one the mask happens to face; frames the head so its silhouette
+  // changes from every heading.
+  const headStrap = new THREE.Mesh(new THREE.TorusGeometry(headRadius, 0.035, 8, 16), gearMaterial());
   headStrap.rotation.x = Math.PI / 2;
-  headStrap.position.set(0, 0.45, 0);
+  headStrap.position.set(centerX, headY, centerZ);
   headStrap.name = "dive-suit-head-strap";
 
   const tank = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.16, 0.95, 10),
-    gearMaterial(), // bright tank, reads clearly as equipment against the dark suit
+    new THREE.CylinderGeometry(torsoRadius * 0.4, torsoRadius * 0.4, height * 0.4, 10),
+    gearMaterial(), // bright tank, reads clearly as equipment against the character underneath
   );
-  tank.position.set(0, 0.05, -0.38); // strapped to the back, pushed further out to clear the body surface
+  tank.position.set(centerX, tankY, box.min.z - torsoRadius * 0.25); // strapped to the back
   tank.name = "dive-suit-tank";
 
-  // Waist belt — a ring around the whole capsule reads as equipment from
-  // every angle, not just the one or two the mask/tank happen to face.
-  // Sits at the capsule's equator, wide enough to clearly stand proud of
-  // the body.
-  const belt = new THREE.Mesh(new THREE.TorusGeometry(CAPSULE_RADIUS + 0.03, 0.06, 8, 16), gearMaterial());
+  // Waist belt — a ring around the whole body reads as equipment from
+  // every angle, including dead-on front/back and side-on.
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(torsoRadius, 0.05, 8, 16), gearMaterial());
   belt.rotation.x = Math.PI / 2;
-  belt.position.set(0, -0.1, 0);
+  belt.position.set(centerX, waistY, centerZ);
   belt.name = "dive-suit-belt";
 
   // Chest strap — a second, higher ring reading as a harness crossing the
-  // front of the body even from a head-on view, where the tank itself is
-  // hidden behind the torso and the waist belt alone reads as "just a
-  // belt" rather than full gear.
-  const chestStrap = new THREE.Mesh(new THREE.TorusGeometry(CAPSULE_RADIUS + 0.02, 0.035, 8, 16), gearMaterial());
+  // front of the body even head-on, where the tank itself is hidden
+  // behind the torso and the waist belt alone would just read as a belt.
+  const chestStrap = new THREE.Mesh(new THREE.TorusGeometry(torsoRadius * 0.95, 0.03, 8, 16), gearMaterial());
   chestStrap.rotation.x = Math.PI / 2;
-  chestStrap.position.set(0, 0.2, 0);
+  chestStrap.position.set(centerX, chestY, centerZ);
   chestStrap.name = "dive-suit-chest-strap";
 
   // Flippers — two actual paddle-shaped blades at the feet, not just a
   // flat plate (a plate reads as a skirt/base, not swim fins). Each is a
-  // flattened, elongated sphere (a paddle silhouette, wider at the tip
-  // than the ankle) splayed outward and forward past the body's own
-  // silhouette, so they're unmistakably fin-shaped from front, side, and
-  // back alike rather than a sliver only visible peeking out from below.
-  const finGeometry = new THREE.SphereGeometry(0.16, 10, 6);
+  // flattened, elongated sphere (a paddle silhouette) splayed outward and
+  // forward past the character's own front, unmistakably fin-shaped from
+  // front, side, and back alike.
+  const finGeometry = new THREE.SphereGeometry(Math.max(width * 0.22, 0.12), 10, 6);
   function createFlipper(xSign: 1 | -1): THREE.Mesh {
     const flipper = new THREE.Mesh(finGeometry, gearMaterial());
     flipper.scale.set(0.9, 0.3, 2.4); // flattened + elongated into a paddle blade
-    flipper.position.set(xSign * 0.22, -0.86, 0.32); // at foot height, splayed to the side and forward
+    flipper.position.set(centerX + xSign * width * 0.28, footY, box.max.z + width * 0.15);
     flipper.rotation.y = xSign * 0.3; // toes-out splay, distinct from a single centered plate
     flipper.name = xSign === -1 ? "dive-suit-flipper-left" : "dive-suit-flipper-right";
     return flipper;
   }
-  const flipperLeft = createFlipper(-1);
-  const flipperRight = createFlipper(1);
 
-  group.add(body, mask, headStrap, tank, belt, chestStrap, flipperLeft, flipperRight);
-  return group;
+  gear.add(mask, headStrap, tank, belt, chestStrap, createFlipper(-1), createFlipper(1));
+  return gear;
 }
 
 const gltfLoader = new GLTFLoader();
@@ -196,6 +193,10 @@ export class AvatarView {
   private actions: Partial<Record<MoveAnimationState, THREE.AnimationAction>> = {};
   private currentState: MoveAnimationState = "idle";
   private currentSkinId = "";
+  // The last real (non-dive-suit) skin worn — what the dive suit's gear
+  // overlay decorates, and what setSkin(DIVE_SUIT_AVATAR_SKIN_ID) rebuilds
+  // from instead of inventing its own body. Never itself the dive suit.
+  private underlyingSkinId = "";
   private facingOffset = 0;
   private visual: THREE.Object3D | null = null;
   // Continuous, never reset on setSkin — a skin swapped in mid-oscillation
@@ -219,6 +220,13 @@ export class AvatarView {
     const skin = AVATAR_SKINS.find((s) => s.id === skinId);
     if (!skin) return;
 
+    // Remember which real character was worn before this swap — if it's
+    // the dive suit being equipped next, buildVisual needs this to know
+    // whose body to decorate rather than inventing its own.
+    if (this.currentSkinId && this.currentSkinId !== DIVE_SUIT_AVATAR_SKIN_ID) {
+      this.underlyingSkinId = this.currentSkinId;
+    }
+
     const built = await this.buildVisual(skin);
 
     // Swap only once the new visual is fully ready, so there's never a
@@ -240,9 +248,45 @@ export class AvatarView {
     actions: Partial<Record<MoveAnimationState, THREE.AnimationAction>>;
     resolvedSkinId: string;
   }> {
+    if (skin.id === DIVE_SUIT_AVATAR_SKIN_ID) {
+      // Dress whoever was actually worn last (Fox/Female/Robot/…), not a
+      // separate invented body — falls back to the default procedural
+      // capsule if the dive suit is somehow the very first skin ever set
+      // (see createDiveGearOverlay's own comment for the full history).
+      const baseSkin =
+        AVATAR_SKINS.find((s) => s.id === this.underlyingSkinId) ??
+        AVATAR_SKINS.find((s) => s.id === FALLBACK_AVATAR_SKIN_ID)!;
+      const base = await this.buildVisual(baseSkin);
+
+      const wrapper = new THREE.Group();
+      wrapper.name = "dive-suit-wearer";
+      wrapper.add(base.visual);
+      // A fresh, not-yet-scene-attached clone never had a real frame
+      // update its skeleton's bone matrices — Box3.expandByObject only
+      // updates each node's own matrixWorld as it's visited, in whatever
+      // order `children` happens to hold them, so a SkinnedMesh visited
+      // before its own (sibling, not descendant) bone hierarchy computes
+      // its skinned bounding box from still-default (identity) bone
+      // matrices — a tiny, wrong box (confirmed directly: measured ~0.07
+      // world units tall for Fox instead of its real ~2.24, see
+      // window.__getAvatarWorldHeight). Forcing a full recursive update
+      // first (bones included, regardless of traversal order) fixes that —
+      // same "render/measure, don't assume a fresh object is already
+      // measurable" discipline as the SkeletonUtils-clone/Robot-scale
+      // lessons elsewhere in this file. Only after that is the box the
+      // character's real local bounding box (already reflecting its
+      // per-skin `scale`, applied above) — exactly what
+      // createDiveGearOverlay needs to fit gear to this specific
+      // character rather than the capsule alone.
+      base.visual.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(base.visual);
+      wrapper.add(createDiveGearOverlay(box));
+
+      return { visual: wrapper, mixer: base.mixer, actions: base.actions, resolvedSkinId: DIVE_SUIT_AVATAR_SKIN_ID };
+    }
+
     if (skin.kind === "procedural") {
-      const visual =
-        skin.proceduralVariant === "diveSuit" ? createDiveSuitAvatarMesh() : createProceduralAvatarMesh();
+      const visual = createProceduralAvatarMesh();
       return { visual, mixer: null, actions: {}, resolvedSkinId: skin.id };
     }
 

@@ -19,13 +19,6 @@ export interface AvatarSkin {
   facingOffset?: number;
   /** Maps our three movement states to this model's actual animation clip names. */
   animationClipNames?: Partial<Record<MoveAnimationState, string>>;
-  /**
-   * Only meaningful when kind is "procedural" — selects a distinct
-   * primitives-built shape (`src/skins/avatarView.ts`) instead of the
-   * default plain capsule. Absent means the default capsule look — what
-   * both "capsule" and `FALLBACK_AVATAR_SKIN_ID` render as.
-   */
-  proceduralVariant?: "diveSuit";
 }
 
 export const AVATAR_SKINS: readonly AvatarSkin[] = [
@@ -116,16 +109,21 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     id: "diveSuit",
     label: "Dive Suit",
     kind: "procedural",
-    proceduralVariant: "diveSuit",
     // The land<->sea diving-house portal's "costume change" moment
     // (DECISIONS.md, 2026-09-07) — main.ts auto-equips this on crossing
     // into sea via that specific portal and reverts to whatever was worn
     // before on crossing back, without touching a manually-chosen skin
     // otherwise. Also just a normal selectable entry from the dev skin
-    // panel like every other skin. Built from primitives, no external
-    // asset dependency (same as Capsule) — the sea realm's costume change
-    // shouldn't be gated on the same blocked-source constraints the gltf
-    // skins hit (DECISIONS.md, 2026-08-30).
+    // panel like every other skin. `kind: "procedural"` here means "not
+    // loaded from a glTF file," same as Capsule — the sea realm's costume
+    // change shouldn't be gated on the same blocked-source constraints the
+    // gltf skins hit (DECISIONS.md, 2026-08-30). It's still not a fixed
+    // procedural body, though: as of 2026-09-09 (see
+    // `AvatarView.buildVisual`/`createDiveGearOverlay`, `src/skins/
+    // avatarView.ts`), equipping it dresses whichever real skin was worn
+    // last in dive gear rather than replacing it — Fox stays Fox, Female
+    // stays Female, only Capsule (the fallback when nothing else was worn
+    // yet) renders as before.
   },
   { id: "capsule", label: "Capsule", kind: "procedural" },
 ];

@@ -57,6 +57,26 @@ Resolved).
   Replaced with two real paddle-shaped flipper blades splayed outward
   from the feet. Re-verified visually and full suite re-verified green.
 
+  **Second follow-up same day — you clarified the actual ask: "a skin on
+  a character," not its own separate body.** You couldn't tell from a
+  screenshot whether Female, Princess, or Fox was underneath, because the
+  dive suit was always the same generic body regardless of who equipped
+  it — right call, and a different problem than the previous two rounds
+  (both of which only polished that one generic body). Reworked the
+  mechanism: the dive suit now dresses whichever real skin was actually
+  worn last (tracked as `AvatarView`'s `underlyingSkinId`) instead of
+  replacing it, with gear scaled to *that character's own* measured
+  bounding box rather than hardcoded capsule dimensions — Fox stays Fox,
+  Female stays Female, wearing gear sized to fit. Found and fixed a real
+  bug along the way: measuring a bounding box on a freshly built,
+  not-yet-scene-attached skinned model came back ~30x too small (a
+  three.js gotcha — `Box3` can visit a `SkinnedMesh` before its own bone
+  hierarchy has a fresh world matrix); fixed with an explicit full
+  matrix-world update before measuring. Verified visually across Fox,
+  Female, Princess, and Capsule — each stays clearly recognizable now.
+  Full suite green. See `BACKLOG.md`'s "Skins / visual identity" section
+  for the full writeup.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

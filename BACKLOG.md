@@ -981,6 +981,46 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   Re-verified visually (idle, side, zoomed front/back) — now
   unmistakably fin-shaped, not a sliver. Full suite re-verified green
   (typecheck, 215 unit tests, build, all 27 skins.spec.ts E2E tests).
+  **Second follow-up same day — reframed from scratch**: you clarified
+  what you actually wanted was for the dive suit to be "a skin on a
+  character," not its own separate body at all — you couldn't tell from
+  a screenshot whether Female, Princess, or Fox was the one wearing it,
+  because every one of them was being replaced by the same generic
+  capsule-derived diver underneath the gear. Fair point, and a different
+  ask than the previous two rounds (which only ever polished that generic
+  body's own legibility). Reworked the whole mechanism instead of the
+  geometry again: `AvatarView` now tracks `underlyingSkinId` (the last
+  *real* skin worn) and, when the dive suit is equipped, rebuilds that
+  real skin's own visual (Fox/Female/Princess/Robot/Mannequin/Capsule,
+  whichever was active) and layers `createDiveGearOverlay` on top of it,
+  instead of building a fixed, separate body — mask/head-strap/chest-
+  strap/belt/tank/flippers now scale to *that character's own* bounding
+  box (fractions of its measured height/width) rather than the capsule's
+  hardcoded dimensions, so gear fits Fox, Female, Robot, or anything else
+  without a per-skin special case, and each character stays visibly
+  itself underneath. `createDiveSuitAvatarMesh` is gone; `avatarSkins.ts`
+  dropped the now-unused `proceduralVariant` field (the id check in
+  `buildVisual` decides this now, not a catalog flag). On reverting
+  (crossing back out through the diving house, or picking a skin from the
+  dev panel), the wearer's own real skin renders exactly as it would
+  have without ever equipping the suit. Hit one real bug rebuilding this:
+  measuring a fresh, not-yet-scene-attached glTF clone's bounding box via
+  `THREE.Box3().setFromObject` came back ~30x too small for a skinned
+  model (confirmed directly — Fox measured ~0.07 world units instead of
+  its real ~2.24) because `Box3.expandByObject` only updates each node's
+  own `matrixWorld` as it visits it, in whatever order `children` holds
+  them, so a `SkinnedMesh` visited before its own bone hierarchy computes
+  its skinned box from bones still at their default identity transform;
+  fixed by forcing `updateMatrixWorld(true)` (full recursive update, not
+  just the visited node) before measuring. Verified visually with real
+  screenshots across Fox, Female, Princess, and Capsule (each now clearly
+  recognizable, wearing gear sized to its own body) plus a new unit test
+  (`avatarView.test.ts`) asserting the actual gltf model — not a
+  substitute — stays in the tree with its animation clips intact while
+  the dive suit is equipped. Full suite green: typecheck, 215 unit tests,
+  build, 61 E2E tests (including both diving-house auto-equip/revert
+  tests, unchanged since this is purely how the dive suit *builds* its
+  visual, not the trigger/revert flow around it).
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark
