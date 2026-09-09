@@ -31,6 +31,21 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-09 — Air still read as "running in the air" after the pitch fix;
+  fixed by reusing sea's swim clips for flying.** You sent a live-deployment
+  screenshot of the Female skin flying with a full running stride and no
+  ground in view — the earlier pitch-parity fix (2026-09-08) only handled
+  orientation, not the fact that the walk/run clip is a grounded gait that
+  looks wrong the moment there's visibly nothing to run on. Fixed directly
+  in this session (implementation-detail level, not a fresh decision):
+  `main.ts`'s air branch now reuses sea's already-tested, already-generic
+  `withSwimAnimationState` to route a skin with real swim-stroke clips
+  (Mannequin, Female) to those clips while flying instead of walk/run —
+  limbs paddling through open space reads much closer to "flying" than a
+  ground gait. Skins without swim clips are unaffected. Verified visually
+  with a real screenshot (sent to you) and 3 new E2E tests; full suite
+  green. See `BACKLOG.md`'s Phase 2 section for the full writeup.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

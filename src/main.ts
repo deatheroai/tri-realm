@@ -699,10 +699,28 @@ function animate(): void {
     // sea's own use needed no changes) noses the model toward the
     // direction of vertical motion — up while ascending, down while
     // descending — settling level again at rest.
+    //
+    // Reported 2026-09-09 with a screenshot: even with pitch, flying still
+    // looked like "running in the air" — the walk/run clip is a grounded
+    // gait (a full leg stride implies feet pushing off a floor), so it
+    // reads as wrong the moment there's visibly no ground under it, which
+    // pitch alone can't fix. No skin has a dedicated flying/glide clip to
+    // reach for (same gap air's own doc comment already flagged), but
+    // Mannequin/Female do have real swim-stroke clips (limbs moving
+    // through open space, not planted footsteps) that read far closer to
+    // "flying" than a ground gait does — so this reuses sea's own already-
+    // tested `withSwimAnimationState` exactly as-is (it's realm-agnostic:
+    // generic state + "does this skin have swim clips" in, routed state
+    // out) rather than duplicating that routing logic for air. Skins
+    // without swim clips (Fox/Robot/Princess/Capsule/Dive Suit) keep
+    // exactly today's walk/run behavior while flying, unchanged.
     airAvatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
     airAvatarView.setVerticalPitch(airMovement.velocity.y, dt);
     airAvatarView.setMoveState(
-      moveInputToAirAnimationState(moveInput.moveX, moveInput.moveZ, vertical, moveInput.run),
+      withSwimAnimationState(
+        moveInputToAirAnimationState(moveInput.moveX, moveInput.moveZ, vertical, moveInput.run),
+        airAvatarView.hasAnimation("swimIdle"),
+      ),
     );
     airAvatarView.update(dt);
 

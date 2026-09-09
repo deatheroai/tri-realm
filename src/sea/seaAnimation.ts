@@ -37,18 +37,25 @@ export function moveInputToSeaAnimationState(
 }
 
 /**
- * Routes `moveInputToSeaAnimationState`'s generic idle/walk/run result to
- * the dedicated `swimIdle`/`swimActive` states when the active skin
- * actually has them (`AvatarView.hasAnimation`, checked by the caller in
- * `main.ts` against its own `swimIdle` clip as the stand-in for "this skin
- * supports swimming") — every other skin keeps exactly today's walk/run
- * behavior in the sea realm, unchanged. Deliberately collapses run vs.
- * walk into one "active" state once a skin does have swim clips: the
- * bundled `mannequin` skin's source library only has a single swim-stroke
- * clip (`Swim_Fwd_Loop`, no separate sprint variant) to map either speed
- * onto, so there's no real run/walk distinction to preserve here — a
- * future skin with two distinct swim clips would need this reworked, not
- * a limitation worth solving speculatively now.
+ * Routes a generic idle/walk/run result to the dedicated `swimIdle`/
+ * `swimActive` states when the active skin actually has them
+ * (`AvatarView.hasAnimation`, checked by the caller against its own
+ * `swimIdle` clip as the stand-in for "this skin supports swimming") —
+ * every other skin keeps exactly today's walk/run behavior, unchanged.
+ * Deliberately collapses run vs. walk into one "active" state once a skin
+ * does have swim clips: the bundled `mannequin`/`female` skins' source
+ * library only has a single swim-stroke clip (`Swim_Fwd_Loop`, no separate
+ * sprint variant) to map either speed onto, so there's no real run/walk
+ * distinction to preserve here — a future skin with two distinct swim
+ * clips would need this reworked, not a limitation worth solving
+ * speculatively now.
+ *
+ * Genuinely realm-agnostic despite living in `sea/` (its original caller)
+ * — pure state-in/state-out plus a boolean, nothing sea-specific — so
+ * `main.ts`'s air branch reuses this directly too (see its own comment):
+ * limbs paddling through open space reads far closer to "flying" than
+ * air's walk/run ground gait does, for a skin that has swim clips to
+ * paddle with.
  */
 export function withSwimAnimationState(
   genericState: MoveAnimationState,

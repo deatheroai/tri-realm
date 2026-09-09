@@ -151,3 +151,82 @@ test.describe("air avatar vertical pitch and animation parity", () => {
     expect(settledPitch!).toBeCloseTo(0, 1);
   });
 });
+
+// Reported 2026-09-09 with a screenshot: even with the pitch/animation-state
+// parity above, flying still looked like "running in the air" — a full
+// ground-gait walk/run clip with no ground under it. Fixed in main.ts's air
+// branch by reusing sea's already-tested withSwimAnimationState (World's
+// own comment there explains why: it's realm-agnostic, and a skin with real
+// swim-stroke clips reads far closer to "flying" than a ground gait does).
+// Mirrors e2e/skins.spec.ts's "sea avatar swim animation" suite, exercised
+// through Air instead.
+test.describe("air avatar swim-clip reuse for flying", () => {
+  test("switching to Mannequin (swim-capable) requests the dedicated swim clips while flying in air, not the shared walk/run clips", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(async () => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("air");
+
+    await page.locator("#dev-skin-panel button", { hasText: "Mannequin" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()))
+      .toBe("mannequin");
+
+    // No input yet — idle should already be the swim-specific idle clip,
+    // not the shared land/air "idle".
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
+      .toBe("swimIdle");
+
+    await page.keyboard.down("KeyW");
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
+      .toBe("swimActive");
+    await page.keyboard.up("KeyW");
+  });
+
+  test("switching to Female (also swim-capable) requests the dedicated swim clips too", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(async () => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("air");
+
+    await page.locator("#dev-skin-panel button", { hasText: "Female" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()))
+      .toBe("female");
+
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
+      .toBe("swimIdle");
+
+    await page.keyboard.down("KeyW");
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
+      .toBe("swimActive");
+    await page.keyboard.up("KeyW");
+  });
+
+  test("Fox (no swim clips) keeps using the shared walk state while flying, unaffected by Mannequin/Female's swim clips existing", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Air" }).click();
+    await expect
+      .poll(async () => page.evaluate(() => window.__getActiveRealm?.()))
+      .toBe("air");
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarSkinId?.()))
+      .toBe("fox"); // Fox is still the default on first load
+
+    await page.keyboard.down("KeyW");
+    await expect
+      .poll(() => page.evaluate(() => window.__getAirAvatarMoveState?.()))
+      .toBe("walk");
+    await page.keyboard.up("KeyW");
+  });
+});

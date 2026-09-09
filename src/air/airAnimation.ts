@@ -19,8 +19,13 @@ import type { MoveAnimationState } from "../skins/avatarSkins";
  *
  * Still resolves to the same shared `idle`/`walk`/`run` clip names every
  * bundled skin already has — no skin has a distinct "flying" clip to map
- * a fourth state onto, so (like sea before its own swim clips landed)
- * this only fixes *when* air shows motion, not *which* clip plays for it.
+ * a fourth state onto, so this function's own job stays purely *when* air
+ * shows motion, not *which* clip plays for it. See `main.ts`'s air branch
+ * for the "which clip" half: it now further routes this result through
+ * sea's `withSwimAnimationState` for a skin with real swim-stroke clips
+ * (limbs moving through open space reads closer to flying than air's
+ * walk/run ground gait does) — reported 2026-09-09 as still looking like
+ * "running in the air" even with pitch alone.
  */
 export function moveInputToAirAnimationState(
   moveX: number,

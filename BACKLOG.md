@@ -653,6 +653,33 @@ without a fresh check-in.
   directions, and pitch eases back to level once vertical input is
   released (air has no buoyancy to keep drifting it, unlike sea). Full
   suite verified: typecheck, 215 unit tests, build, 59 E2E tests all pass.
+- `done` **(World) Air still "running in the air" after the pitch-parity fix
+  above — fixed by reusing sea's swim clips.** Reported 2026-09-09 with a
+  live-deployment screenshot: flying with the Female skin still looked like
+  a full running stride with nothing under it, even with pitch. Root cause:
+  the pitch-parity fix (item above) only addressed orientation — horizontal
+  flight still played the shared walk/run clip, a grounded gait that reads
+  as wrong the instant there's no visible ground under it. No skin has a
+  dedicated flying/glide clip, but `mannequin`/`female` do have real
+  swim-stroke clips (`Swim_Idle_Loop`/`Swim_Fwd_Loop`, from the sea
+  swim-animation item under Phase 3) — limbs moving through open space
+  reads far closer to "flying" than a ground gait does. `main.ts`'s air
+  branch now routes `moveInputToAirAnimationState`'s result through sea's
+  own `withSwimAnimationState` (`src/sea/seaAnimation.ts`) exactly as
+  written — that function was already realm-agnostic (pure state-in/
+  state-out plus a "does this skin have swim clips" boolean), so this
+  reuses it directly rather than duplicating the routing logic for air;
+  its doc comment updated to note the cross-realm reuse. Skins without
+  swim clips (Fox/Robot/Princess/Capsule/Dive Suit) keep exactly today's
+  walk/run behavior while flying, unchanged — verified directly with a
+  dedicated E2E test. 3 new E2E tests (`e2e/air-flight.spec.ts`, mirroring
+  `e2e/skins.spec.ts`'s "sea avatar swim animation" suite): Mannequin and
+  Female both request `swimIdle`/`swimActive` while flying, Fox stays on
+  `walk`. No unit-test changes needed — `withSwimAnimationState` itself was
+  already fully covered by `seaAnimation.test.ts`, and this reuses it
+  unchanged. Verified visually with a real screenshot (Female flying,
+  arms/legs in the swim-stroke pose instead of a running stride) — full
+  suite green (typecheck, 215 unit tests, build, 64 E2E tests).
 - `todo` **(World) Cloud-shaped floating platforms.** Locked in during a
   2026-09-08 design review: replace the current plain gray-cylinder
   platforms (`AIR_FLOATING_PLATFORM_POSITIONS`, `airScene.ts`) with
