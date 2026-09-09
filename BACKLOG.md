@@ -371,6 +371,28 @@ surfaced.
   wide blast radius across files I don't own, for a "worth a look, not
   blocking" polish item. Left alone rather than force it through solo;
   flagging the real reason instead of silently skipping it again.
+  **Partial de-risking 2026-09-09**: re-read the blast-radius reasoning
+  above against current code — still holds, unchanged (a shallower
+  elevation moves the on-screen horizon, and a fixed vertical screen
+  *fraction* can't tell ground from sky once that moves, which is exactly
+  what several of those tests assume). Didn't force the actual elevation
+  change through solo again this cycle either, but did shrink the blast
+  radius by the two tests actually in this track's own ownership: the two
+  remaining `viewport.height * 0.75`-style ground clicks in my own
+  `e2e/skins.spec.ts` (block-material switching) now use
+  `window.__projectToScreen` against fixed *world* coordinates instead —
+  the same camera-angle-agnostic pattern `castle-placement.spec.ts`
+  already proved out for its own tests, now covering one more file.
+  Doesn't touch `cameraOffset` itself or change any rendered behavior
+  (verified: full suite unchanged, 64 E2E tests still green). World's own
+  `castle-placement.spec.ts`/`land-save-load.spec.ts`/
+  `touch-controls.spec.ts` still carry the same fixed-fraction clicks —
+  out of this track's file ownership to migrate proactively without a
+  concrete reason (the precedent for touching a World-owned spec file has
+  so far only been reactive, fixing a test this track's own change broke
+  — see the Quaternius castle-piece item above). Once those are migrated
+  too (or a future cycle judges the remaining risk acceptable), the
+  elevation change itself becomes a much smaller, more contained edit.
 - `done` **In-app credits screen** — with the other Skins items this
   cycle blocked (princess figure, castle-piece models) on external
   access or World's file ownership, picked up something `public/assets/

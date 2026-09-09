@@ -309,25 +309,27 @@ test("switching to Female loads it with working animations, then switching back 
 test("switching block material changes the visual of newly-placed pieces", async ({ page }) => {
   await page.goto("/");
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const groundY = viewport.height * 0.75;
-  // Widely separated screen X positions, not a small pixel delta — see
+  // Click at deliberately far-apart *world* ground points (via the app's
+  // own world-to-screen projection, same reasoning/pattern as
   // e2e/castle-placement.spec.ts's "defaults to the Keep structure type"
-  // test for why a modest offset isn't reliably enough (a click this near
-  // the camera covers less world distance per pixel than it looks, so a
-  // too-close second click can overlap the first and get silently
-  // rejected by validatePlacement, leaving __getLastPlaced* pointing at
-  // the same, first piece).
-  const leftX = viewport.width * 0.2;
-  const rightX = viewport.width * 0.8;
+  // test) rather than guessed screen-fraction offsets — this both avoids
+  // the near-camera-pixel-density trap that test's own comment documents,
+  // and, unlike a screen fraction, keeps working regardless of the
+  // camera's own elevation/framing (`BACKLOG.md`'s still-open "camera
+  // framing" item), which a fixed vertical fraction assumes.
+  const projectToScreen = (x: number, z: number) =>
+    page.evaluate((p) => window.__projectToScreen?.(p.x, 0, p.z), { x, z });
 
-  await page.mouse.click(leftX, groundY);
+  const leftPoint = await projectToScreen(-8, 4);
+  if (!leftPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(leftPoint.x, leftPoint.y);
   const sandstoneMapUuid = await page.evaluate(() => window.__getLastPlacedMapUuid?.());
   expect(sandstoneMapUuid).toBeTruthy();
 
   await page.locator("#dev-skin-panel button", { hasText: "Slate" }).click();
-  await page.mouse.click(rightX, groundY);
+  const rightPoint = await projectToScreen(8, 4);
+  if (!rightPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(rightPoint.x, rightPoint.y);
   const slateMapUuid = await page.evaluate(() => window.__getLastPlacedMapUuid?.());
 
   expect(slateMapUuid).not.toBe(sandstoneMapUuid);
@@ -347,20 +349,22 @@ test("a block's real photographed texture loads in and takes over from the gener
   });
 
   await page.goto("/");
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const groundY = viewport.height * 0.75;
-  // Widely separated, same reasoning as the test above.
-  const leftX = viewport.width * 0.2;
-  const rightX = viewport.width * 0.8;
+  // World-coordinate clicks, same reasoning as the material-switch test
+  // above (camera-framing-agnostic, not just near-camera-pixel-density-safe).
+  const projectToScreen = (x: number, z: number) =>
+    page.evaluate((p) => window.__projectToScreen?.(p.x, 0, p.z), { x, z });
 
-  await page.mouse.click(leftX, groundY); // Sandstone is the default material
+  const leftPoint = await projectToScreen(-8, 4);
+  if (!leftPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(leftPoint.x, leftPoint.y); // Sandstone is the default material
   await expect
     .poll(() => page.evaluate(() => window.__getLastPlacedColor?.()), { timeout: 5000 })
     .toBe(0xffffff);
 
   await page.locator("#dev-skin-panel button", { hasText: "Gold" }).click();
-  await page.mouse.click(rightX, groundY);
+  const rightPoint = await projectToScreen(8, 4);
+  if (!rightPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(rightPoint.x, rightPoint.y);
   await expect
     .poll(() => page.evaluate(() => window.__getLastPlacedColor?.()), { timeout: 5000 })
     .toBe(0xd4af37);
