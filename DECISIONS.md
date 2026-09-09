@@ -51,6 +51,12 @@ Resolved).
   215 unit tests, build, 61 E2E tests). See `BACKLOG.md`'s "Skins /
   visual identity" section for the full writeup.
 
+  **Follow-up same day** — you specifically asked for flippers, still
+  reading as a capsule: right call, the "flipper plate" in that fix was
+  a flat box only peeking out as a thin sliver, not an actual fin shape.
+  Replaced with two real paddle-shaped flipper blades splayed outward
+  from the feet. Re-verified visually and full suite re-verified green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

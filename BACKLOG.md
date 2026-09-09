@@ -972,6 +972,15 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   (typecheck, 215 unit tests, build, 61 E2E tests including both
   diving-house auto-equip/revert tests) — no test depended on the
   specific geometry, only on skin ids and mesh child existence.
+  **Follow-up same day**: you asked specifically for flippers, still
+  reading as a capsule — right call, the (3) "flipper plate" above was a
+  flat box that only peeked out as a thin sliver, not an actual fin
+  shape. Replaced it with two real paddle-shaped blades (`dive-suit-
+  flipper-left`/`-right`: a flattened, elongated sphere each, splayed
+  outward and forward past the body) instead of one centered plate.
+  Re-verified visually (idle, side, zoomed front/back) — now
+  unmistakably fin-shaped, not a sliver. Full suite re-verified green
+  (typecheck, 215 unit tests, build, all 27 skins.spec.ts E2E tests).
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark

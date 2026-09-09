@@ -144,15 +144,25 @@ export function createDiveSuitAvatarMesh(): THREE.Group {
   chestStrap.position.set(0, 0.2, 0);
   chestStrap.name = "dive-suit-chest-strap";
 
-  // Fins — a wide, flat plate at the feet. Divers' single most
-  // recognizable silhouette cue, and (being flat, centered, and wider
-  // than the body) reads from every heading the same way the belt does,
-  // not just front/back.
-  const fins = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.07, 0.3), gearMaterial());
-  fins.position.set(0, -0.82, 0.03);
-  fins.name = "dive-suit-fins";
+  // Flippers — two actual paddle-shaped blades at the feet, not just a
+  // flat plate (a plate reads as a skirt/base, not swim fins). Each is a
+  // flattened, elongated sphere (a paddle silhouette, wider at the tip
+  // than the ankle) splayed outward and forward past the body's own
+  // silhouette, so they're unmistakably fin-shaped from front, side, and
+  // back alike rather than a sliver only visible peeking out from below.
+  const finGeometry = new THREE.SphereGeometry(0.16, 10, 6);
+  function createFlipper(xSign: 1 | -1): THREE.Mesh {
+    const flipper = new THREE.Mesh(finGeometry, gearMaterial());
+    flipper.scale.set(0.9, 0.3, 2.4); // flattened + elongated into a paddle blade
+    flipper.position.set(xSign * 0.22, -0.86, 0.32); // at foot height, splayed to the side and forward
+    flipper.rotation.y = xSign * 0.3; // toes-out splay, distinct from a single centered plate
+    flipper.name = xSign === -1 ? "dive-suit-flipper-left" : "dive-suit-flipper-right";
+    return flipper;
+  }
+  const flipperLeft = createFlipper(-1);
+  const flipperRight = createFlipper(1);
 
-  group.add(body, mask, headStrap, tank, belt, chestStrap, fins);
+  group.add(body, mask, headStrap, tank, belt, chestStrap, flipperLeft, flipperRight);
   return group;
 }
 
