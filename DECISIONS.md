@@ -31,6 +31,43 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-09 — Land parkland dressing built (first of the 2026-09-08
+  environment-art-pass trio); a real E2E flake surfaced and fixed along
+  the way.** Replaced the plain gray-cylinder `landmark` meshes in
+  `src/scene.ts` with the parkland set designed in the 2026-09-08 entry
+  below: 6 trees (trunk + cone foliage), 2 flower-bed patches (a small
+  deterministic color palette so they're not identical), one path strip,
+  and a small two-part fountain centerpiece near spawn — all procedural
+  primitives, no real textures/models yet. New `src/world/
+  landDecorations.ts` holds the data-driven `LAND_DECORATION_POSITIONS`
+  array (each entry carrying an `x`/`z`/`kind`) and
+  `createLandDecorationMesh`, the same array-driven pattern
+  `AIR_FLOATING_PLATFORM_POSITIONS`/`SEA_WRECKAGE_POSITIONS` already use
+  — a fork can reskin land entirely by editing that one module, without
+  touching terrain, collision, or placement code. Kept local rather than
+  folded into `RealmMap.terrain` (that migration was Phase 2 hardening
+  specific to air/sea; land's `land-heightfield` terrain kind is
+  untouched, matching this item's own stated scope).
+
+  A richer first draft (more flower-beds/path segments, a 3-part
+  fountain, a transparent water material) made `e2e/castle-placement.
+  spec.ts`'s third test fail intermittently — not a placement bug: more
+  draw calls (transparency especially) measurably shift the follow-
+  camera's real-time settle curve, occasionally landing two of that
+  test's clicks close enough in world space to trip `validatePlacement`'s
+  footprint-overlap check. Root-caused by instrumenting the running app
+  directly (confirmed with a temporary debug raycast hook, removed before
+  landing), then fixed two ways: trimmed the decoration set's draw/
+  material count, and — the more durable half — widened that test's click
+  positions so it no longer depends on exactly how fast the camera
+  settles. See `BACKLOG.md`'s own 2026-09-09 investigation note on this
+  item for the full writeup. Full suite verified: typecheck clean, 222
+  unit tests (7 new), build clean, all 61 E2E specs passing, and the
+  previously-flaky test confirmed stable at 45/45 across repeated
+  `--repeat-each` runs. Air's cloud platforms and sea's shipwreck
+  centerpiece are still `todo`. **Review checkpoint: pending your look at
+  the deployed app.**
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

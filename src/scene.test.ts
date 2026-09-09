@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { createScene } from "./scene";
 import { terrainHeightAt } from "./land/terrain";
+import { LAND_DECORATION_POSITIONS } from "./world/landDecorations";
 
 describe("createScene", () => {
   it("includes a ground plane and a player avatar group with a default visual", () => {
@@ -42,12 +43,38 @@ describe("createScene", () => {
     expect(max - min).toBeGreaterThan(1);
   });
 
-  it("includes scattered landmarks so the follow-camera has visual parallax", () => {
+  it("includes parkland decorations (trees, flower-beds, path, fountain) so the follow-camera has visual parallax", () => {
     const scene = createScene();
 
-    const landmarks = scene.children.filter((child) => child.name === "landmark");
+    const trees = scene.children.filter((child) => child.name === "tree");
+    const flowerbeds = scene.children.filter((child) => child.name === "flowerbed");
+    const paths = scene.children.filter((child) => child.name === "path");
+    const fountains = scene.children.filter((child) => child.name === "fountain");
 
-    expect(landmarks.length).toBeGreaterThan(0);
+    expect(trees.length).toBeGreaterThan(0);
+    expect(flowerbeds.length).toBeGreaterThan(0);
+    expect(paths.length).toBeGreaterThan(0);
+    expect(fountains).toHaveLength(1);
+    // Every entry in the data array actually landed a mesh in the scene —
+    // the array is the single source of truth a fork would edit.
+    expect(trees.length + flowerbeds.length + paths.length + fountains.length).toBe(
+      LAND_DECORATION_POSITIONS.length,
+    );
+  });
+
+  it("places each decoration on the terrain surface at its data-array position", () => {
+    const scene = createScene();
+
+    for (const decoration of LAND_DECORATION_POSITIONS) {
+      const expectedY = terrainHeightAt(decoration.x, decoration.z);
+      const match = scene.children.find(
+        (child) =>
+          Math.abs(child.position.x - decoration.x) < 1e-6 &&
+          Math.abs(child.position.z - decoration.z) < 1e-6 &&
+          Math.abs(child.position.y - expectedY) < 1e-6,
+      );
+      expect(match, `no mesh found for decoration at (${decoration.x}, ${decoration.z})`).toBeTruthy();
+    }
   });
 
   it("includes at least one light so the scene isn't pitch black", () => {

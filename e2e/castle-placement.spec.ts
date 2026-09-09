@@ -66,9 +66,17 @@ test("defaults to the Keep structure type, and switching type changes new placem
   // footprint is being placed — a click this near the camera covers less
   // world distance per pixel than it looks, so a modest offset that's
   // safe for one type's footprint isn't necessarily safe for a wider one.
-  const leftX = viewport.width * 0.2;
+  // Pushed to near the screen edges (was 0.2/0.8): with more scene
+  // dressing on-screen now (parkland decorations, `world/landDecorations.ts`)
+  // the follow-camera's frame-to-frame settle time shifts slightly, which
+  // was occasionally enough at 0.2/0.8 for the Keep footprint (placed at
+  // centerX) to still reach the Wall click's world position and get
+  // rejected by `validatePlacement`'s overlap check — flaky, not a real
+  // placement bug. 0.05/0.95 keeps every click's world footprint well
+  // clear of the others regardless of that settle-time jitter.
+  const leftX = viewport.width * 0.05;
   const centerX = viewport.width * 0.5;
-  const rightX = viewport.width * 0.8;
+  const rightX = viewport.width * 0.95;
 
   await page.mouse.click(centerX, groundY);
   expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-keep");

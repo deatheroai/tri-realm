@@ -5,6 +5,7 @@ import { LAND_PORTAL_POSITION } from "./world/landAirPortal";
 import { LAND_PORTAL_POSITION as LAND_SEA_PORTAL_POSITION } from "./world/landSeaPortal";
 import { createPortalMarkerMesh } from "./world/portalMarker";
 import { createDivingHouseMesh } from "./world/divingHouseMarker";
+import { LAND_DECORATION_POSITIONS, createLandDecorationMesh } from "./world/landDecorations";
 import { AVATAR_GROUND_OFFSET, createProceduralAvatarMesh } from "./skins/avatarView";
 
 const GROUND_SIZE = LAND_MAP_SIZE;
@@ -37,8 +38,12 @@ function buildGroundGeometry(): THREE.PlaneGeometry {
  * Builds the land scene: varied terrain, a player-controlled avatar, and
  * basic lighting. `GROUND_SIZE` matches the `RealmMap`'s own `bounds`
  * (`land/landRealmMap.ts`) so the rendered ground and the map data can't
- * drift apart. Landmarks stay local hardcoded dressing — they're cosmetic
- * scene parallax, not `PlacedStructure`s, so they're outside the schema.
+ * drift apart. Parkland decorations (trees/flower-beds/path/fountain,
+ * `world/landDecorations.ts`) stay local hardcoded dressing — they're
+ * cosmetic scene parallax, not `PlacedStructure`s, so they're outside the
+ * schema, and the click/tap-to-place raycast in `main.ts` targets the
+ * ground plus placed pieces explicitly, so they're never a placement
+ * target either.
  *
  * The avatar is a Group ("avatar") holding whichever skin is currently
  * active — starts with the default procedural capsule as its one child;
@@ -63,20 +68,15 @@ export function createScene(): THREE.Scene {
   ground.name = "ground";
   scene.add(ground);
 
-  const landmarkPositions: Array<[number, number]> = [
-    [4, -6],
-    [-5, -4],
-    [6, 4],
-    [-6, 5],
-    [2, 10],
-    [-8, -10],
-  ];
-  const landmarkMaterial = new THREE.MeshStandardMaterial({ color: 0x5b7a99 });
-  for (const [x, z] of landmarkPositions) {
-    const landmark = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.5, 8), landmarkMaterial);
-    landmark.position.set(x, terrainHeightAt(x, z) + 0.75, z);
-    landmark.name = "landmark";
-    scene.add(landmark);
+  // Basic parkland dressing (BACKLOG.md Phase 1a, 2026-09-08): trees,
+  // flower-bed patches, a short path, and a small fountain centerpiece,
+  // driven entirely by LAND_DECORATION_POSITIONS (src/world/
+  // landDecorations.ts) — a fork can reskin land entirely by swapping
+  // that one array/module, without touching terrain/collision code here.
+  for (const decoration of LAND_DECORATION_POSITIONS) {
+    const mesh = createLandDecorationMesh(decoration);
+    mesh.position.set(decoration.x, terrainHeightAt(decoration.x, decoration.z), decoration.z);
+    scene.add(mesh);
   }
 
   const avatarRoot = new THREE.Group();

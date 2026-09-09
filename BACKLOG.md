@@ -21,11 +21,12 @@ plain top-to-bottom-per-phase ordering until this note is removed):**
 2. Dive-suit auto-equip bug (`todo` under Phase 2 below — still open,
    couldn't complete the live-deployment reproduction step this cycle,
    see the item's own 2026-09-08 investigation note).
-3. Environment art pass — land parkland dressing (`todo` under Phase 1a),
-   cloud-shaped air platforms (`todo` under Phase 2), sea shipwreck
-   centerpiece (`todo` under Phase 3, supersedes the old sea-floating-docks
-   item). Treat these three as one pass, but each realm's piece can land
-   independently on its own track's next cycle.
+3. Environment art pass — land parkland dressing (`done` under Phase 1a,
+   2026-09-09), cloud-shaped air platforms (`todo` under Phase 2), sea
+   shipwreck centerpiece (`todo` under Phase 3, supersedes the old
+   sea-floating-docks item). Treat these three as one pass, but each
+   realm's piece can land independently on its own track's next cycle —
+   land's piece is in, air/sea still to come.
 4. Real Quaternius castle-piece models (`todo` under "Skins / visual
    identity").
 5. Camera framing revisit (`todo` under "Skins / visual identity").
@@ -93,25 +94,67 @@ system.
   behind it — raycasting now targets the ground plus every placed piece,
   not just the ground. 5 new E2E tests confirm both directions each time
   (tap-vs-drag, stack-vs-fall-through).
-- `todo` **(World) Basic parkland dressing — a foundational starter, not
-  a one-off theme.** Locked in during a 2026-09-08 design review: swap
-  the current plain gray-cylinder `landmark` meshes (`src/scene.ts`) for
-  a light, generic "parkland" set — scattered trees, a few flower-bed
-  color patches, a simple path connecting them, one small centerpiece
-  (a fountain or gazebo) near spawn. Deliberately generic/light-touch
-  rather than a heavily-opinionated theme (a "garden" was the original
-  ask, refined here): this repo's stated purpose is to be cloned and
-  built on top of, so the goal is "pleasant out of the box," not a
-  specific narrative that fights whatever theme a fork actually wants.
-  Implement the same way `AIR_FLOATING_PLATFORM_POSITIONS`/
-  `SEA_WRECKAGE_POSITIONS` already do: a plain data array (e.g.
-  `LAND_DECORATION_POSITIONS`, each entry carrying a decoration kind) that
-  `scene.ts` reads to place meshes — the actual foundational value here
-  is that a fork can reskin land entirely by swapping one array/asset
-  set, without touching terrain/collision code. Procedural-primitives
-  first (same discipline block materials used: generated pattern before
-  real photographed textures) — real assets can follow later if wanted.
-  Rolling-hill terrain and all movement/build mechanics stay untouched.
+- `done` **(World) Basic parkland dressing — a foundational starter, not
+  a one-off theme.** Locked in during a 2026-09-08 design review, built
+  2026-09-09: swapped the plain gray-cylinder `landmark` meshes
+  (`src/scene.ts`) for a light, generic "parkland" set — 6 scattered
+  trees (trunk + cone foliage), 2 flower-bed color patches, one path
+  strip, and a small two-part (basin + water) fountain centerpiece near
+  spawn. Deliberately generic/light-touch rather than a heavily-
+  opinionated theme (a "garden" was the original ask, refined here):
+  this repo's stated purpose is to be cloned and built on top of, so the
+  goal is "pleasant out of the box," not a specific narrative that
+  fights whatever theme a fork actually wants. Implemented the same way
+  `AIR_FLOATING_PLATFORM_POSITIONS`/`SEA_WRECKAGE_POSITIONS` already do:
+  a plain data array, `LAND_DECORATION_POSITIONS` (new
+  `src/world/landDecorations.ts`), each entry carrying a decoration kind
+  (`tree` / `flowerbed` / `path` / `fountain`), that `scene.ts` reads and
+  places via `createLandDecorationMesh` — a fork can reskin land entirely
+  by swapping that one array/module, without touching terrain/collision
+  code. Kept local to `landDecorations.ts` rather than folded into
+  `RealmMap.terrain` (that migration was explicit Phase 2 hardening for
+  air/sea, out of scope here — land's `land-heightfield` terrain kind is
+  untouched). Procedural primitives only (no transparency, kept low-poly,
+  kept to a modest total mesh/material count — see the item's own
+  2026-09-09 investigation note below for why), same discipline block
+  materials already use (generated pattern before real photographed
+  textures) — real assets can follow later if wanted. Rolling-hill
+  terrain and all movement/build mechanics stay untouched; the
+  click/tap-to-place raycast in `main.ts` already targeted the ground
+  plus placed pieces explicitly, so decorations were never a placement
+  target either way. 7 new unit tests (`landDecorations.test.ts` +
+  updated `scene.test.ts`), all 61 existing E2E specs still pass,
+  including one hardened to stay reliable now that there's more on
+  screen (see investigation note). **Review checkpoint: pending your
+  look at the deployed app.**
+
+  **2026-09-09 investigation note — a real flake this item's own first
+  draft introduced, root-caused before landing.** A richer first draft
+  (3 flower-beds, a 3-segment path, a 3-part fountain with a spout, the
+  water disc `transparent: true`) made `e2e/castle-placement.spec.ts`'s
+  third test fail intermittently (~10-50% of runs depending on exact
+  content, confirmed reproducible with `--repeat-each`, never on
+  unmodified `main`). Root cause, confirmed by instrumenting the running
+  app directly (a temporary `window.__debugRaycast`/`__debugCameraPos`,
+  removed before landing): the extra draw calls — the transparent water
+  material especially, transparency is markedly more expensive to
+  render than an opaque material of the same shape — shift the follow-
+  camera's real-time settle curve (`smoothingFactor`/`lerpVec3`,
+  `main.ts`) by enough that the test's first two clicks (`centerX` then
+  `rightX`, at 0.5/0.8 of screen width) occasionally resolve to nearby
+  enough world positions that `validatePlacement`'s footprint-overlap
+  check silently rejects the second one — not a placement bug, a timing-
+  sensitive test. Fixed two ways together: (1) trimmed the decoration
+  set's total draw/material count (dropped the fountain's spout and the
+  transparent water material, merged the path to one strip, cut one
+  flower-bed) since a heavier scene will always shift frame timing some;
+  (2) widened `castle-placement.spec.ts`'s click positions from 0.2/0.8
+  to 0.05/0.95 of screen width (comment left in place explaining why),
+  which independently made the test pass 45/45 across repeated local
+  runs regardless of scene weight — the more durable fix, since it
+  removes the test's reliance on exactly how fast the camera settles.
+  Verified with the final decoration set at `--repeat-each=15` (45/45)
+  and the full 61-spec E2E suite (61/61), each run at least twice.
 
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
