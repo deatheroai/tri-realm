@@ -30,6 +30,22 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-09 — Trees looked "blockish" (a bare cone); made more
+  organic.** You reviewed the deployed parkland dressing and asked for
+  more realistic trees. Root of the "blockish" read: a single sharp
+  low-poly cone is unmistakably a traffic cone, not foliage. Fixed in
+  `createTree` (`src/land/landDecorations.ts`) by replacing that one cone
+  with `CANOPY_LAYOUT` — a small fixed cluster of 4 overlapping,
+  low-detail `IcosahedronGeometry` blobs (faceted, not smooth, so it's
+  still a procedural primitive, same discipline as the rest of the file)
+  forming an irregular multi-lobe canopy silhouette, with a second,
+  lighter foliage tone on two of the four blobs for depth. Trunk also got
+  a wider root-flare taper. Every tree still uses the identical fixed
+  layout (same "no `Math.random`" discipline `BLOOM_LAYOUT` already
+  established), so the scene stays screenshot/test-reproducible. Verified
+  visually with real screenshots at two distances; full suite green
+  (typecheck, 250 unit tests, build, 64 E2E tests).
+
 - **2026-09-09 — Real Quaternius castle-piece models, the long-blocked
   item, unblocked by you directly asking for it.** Pulled the "Medieval
   Village MegaKit" pack for real and inspected every candidate model's

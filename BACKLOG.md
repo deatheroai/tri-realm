@@ -129,6 +129,20 @@ system.
   suite green (typecheck, 242 unit tests, build, 64 E2E tests).
   Rolling-hill terrain and all movement/build mechanics stay untouched.
 
+  **2026-09-09 follow-up — trees looked "blockish" (a bare cone), made
+  more organic.** You reviewed the deployed dressing and asked for more
+  realistic trees. `createTree` (`src/land/landDecorations.ts`) swapped
+  the single `ConeGeometry` foliage for `CANOPY_LAYOUT`, a small fixed
+  (not random, same discipline as `BLOOM_LAYOUT`) cluster of 4 overlapping
+  low-detail `IcosahedronGeometry` blobs — faceted rather than smooth, so
+  it still reads as a procedural primitive, but the irregular multi-lobe
+  silhouette (plus a second, lighter foliage tone on two of the four
+  blobs) breaks the single-sharp-point "traffic cone" look. Trunk got a
+  wider root-flare taper too. Every tree still uses the identical fixed
+  cluster, so the scene stays screenshot/test-reproducible. Verified
+  visually with real screenshots at two distances; full suite green
+  (typecheck, 250 unit tests, build, 64 E2E tests).
+
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
 
