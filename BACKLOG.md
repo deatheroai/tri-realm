@@ -942,6 +942,36 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   and a side/strafe angle (mask, tank, and belt all visible at once — the
   best-case angle). No test depended on the old geometry values; full
   suite still green (typecheck, 215 unit tests, build, 61 E2E tests).
+- `done` **Dive suit still read as basically a plain capsule after the
+  above fix — fixed again, this time with more silhouette, not just
+  brighter color.** Reported 2026-09-09 with another real screenshot
+  (Female skin, swum through the diving house): the avatar showed as a
+  dark capsule with one small pale-blue dot and one thin gold ring —
+  recognizably *not* a diver. Reproduced first, not guessed: same
+  Playwright-against-a-real-dev-server screenshot from the actual follow
+  camera, idle/facing-camera/side, matched the report exactly. This
+  wasn't the same legibility bug as the 2026-09-08 fix above (that one's
+  mask/tank/belt were all present and rendering, just from the wrong
+  angle/too faint) — this time the pieces were all visible and bright
+  already, there just weren't enough of them to read as a diver instead
+  of a decorated capsule; a bigger mask and a slightly bigger belt were
+  never going to fix a shape problem. Rebuilt `createDiveSuitAvatarMesh`
+  (`src/skins/avatarView.ts`) with more silhouette-changing pieces
+  instead: (1) the mask became a flat-fronted box (an actual face-plate
+  shape, not an ambiguous sphere) plus a new head-strap ring — the belt's
+  own "reads from every angle" trick, now applied to the head too, so the
+  head's silhouette changes from every heading, not just its front face;
+  (2) a second, higher chest-strap ring in addition to the waist belt, so
+  a head-on view (where the tank itself is hidden behind the torso) still
+  reads as a harness, not just a belt; (3) a wide flipper plate at the
+  feet — divers' single most recognizable silhouette cue, and flat/
+  centered so it reads the same from every heading like the belt does.
+  Verified visually with real screenshots (idle, facing-camera, side, and
+  a zoomed-in crop of front and back) — clearly reads as a diver in gear
+  from every angle checked, not a plain capsule. Full suite green
+  (typecheck, 215 unit tests, build, 61 E2E tests including both
+  diving-house auto-equip/revert tests) — no test depended on the
+  specific geometry, only on skin ids and mesh child existence.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark

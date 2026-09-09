@@ -31,6 +31,26 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-09 — Dive suit still looked basically like a plain capsule
+  after the 2026-09-08 fix below; fixed again with more silhouette.** You
+  sent another real screenshot (Female skin, swum through the diving
+  house) showing a dark capsule with one small dot and one thin ring —
+  still not recognizably a diver. Reproduced first against a real local
+  dev server before touching anything, and it matched exactly. Different
+  root cause than the 08-09 fix: that one's mask/tank/belt were all
+  rendering correctly, just from the wrong angle or too faint — this
+  time everything was already visible and bright, there just wasn't
+  enough shape to beat a plain capsule silhouette. Rebuilt
+  `createDiveSuitAvatarMesh` (`src/skins/avatarView.ts`) with a boxy
+  mask/visor plus a head-strap ring (the belt's own every-angle trick,
+  now on the head too), a second chest-strap ring so a head-on view
+  still reads as a harness even with the tank hidden behind the torso,
+  and a wide flipper plate at the feet. Verified visually (idle, facing-
+  camera, side, plus zoomed front/back crops) — now clearly reads as a
+  diver in gear from every angle checked. Full suite green (typecheck,
+  215 unit tests, build, 61 E2E tests). See `BACKLOG.md`'s "Skins /
+  visual identity" section for the full writeup.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

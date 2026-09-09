@@ -51,22 +51,28 @@ export function createProceduralAvatarMesh(): THREE.Mesh {
  * **Fixed 2026-09-08, reported with a real screenshot**: the original
  * version (just a front-facing mask + a back-facing tank) read as a
  * plain, undecorated capsule from any angle other than dead-on front or
- * back — confirmed by screenshotting it under the actual follow camera
- * after turning the avatar to face the camera (mask side): the mask was
- * essentially invisible, embedded too close to the body's own surface at
- * that height/depth to render as a visible bump, and (being pale +
- * `transparent`) easy to lose entirely against Sea's dim, cool-tinted
- * fog. Fixed two ways: (1) the mask and tank both now protrude further
- * and are less transparent/more saturated so they hold up under Sea's
- * dim lighting — same "render and look, don't guess" discipline as the
+ * back. That first fix (bigger/brighter mask+tank, plus a waist belt)
+ * turned out to still be insufficient — **reported again 2026-09-09 with
+ * another real screenshot**, taken from the actual follow camera: even
+ * with that fix in, the whole thing still read as "a plain capsule with
+ * a small dot and a rubber band," not recognizably a diver. Confirmed by
+ * reproducing the exact same view locally (Playwright against a real dev
+ * server, not guessed) before touching anything. Root cause this time:
+ * one small sphere and one thin ring just aren't enough silhouette to
+ * beat a big plain capsule, no matter how bright — the fix needed more
+ * *shape*, not just brighter color on the same two tiny appendages.
+ * Rebuilt with: (1) a bigger, boxy mask/visor plus a head strap ring
+ * (the same "ring reads from every angle" trick as the belt, now framing
+ * the head too, so the head silhouette itself changes, not just its
+ * front face); (2) a second, higher chest-strap ring in addition to the
+ * waist belt, reading as a harness even head-on where the tank itself is
+ * hidden behind the body; (3) a wide flipper plate at the feet — divers'
+ * most recognizable silhouette cue, and (being flat and centered) reads
+ * from every heading same as the belt/straps. Verified by re-
+ * screenshotting the real follow camera from idle, facing-camera, and
+ * side-on angles — same "render and look, don't guess" discipline as the
  * Robot-scale/Gold-metalness/Fox-pitch-sign fixes elsewhere in this
- * codebase, verified by re-screenshotting from the front, back, and a
- * true side-on angle (the worst case for two single-sided appendages);
- * (2) a new waist belt (a torus wrapping the whole body) reads as
- * equipment from *every* angle, including side-on, without depending on
- * which way the avatar happens to be facing — the actual fix for the
- * "front-facing view shows nothing" bug, not just a brighter version of
- * the same angle-dependent problem.
+ * codebase.
  *
  * Local +Z is still this mesh's authored "front" (mask side) —
  * `faceDirection`'s rotation puts local +Z on the leading edge when
@@ -77,54 +83,76 @@ export function createDiveSuitAvatarMesh(): THREE.Group {
   const group = new THREE.Group();
   group.name = "dive-suit-avatar";
 
+  // Shared "bright equipment" look for every non-suit, non-mask part
+  // (straps, tank, fins) — one consistent gold reads as "gear" at a
+  // glance no matter which primitive it's attached to.
+  const gearMaterial = () =>
+    new THREE.MeshStandardMaterial({ color: 0xe8b93f, emissive: 0x6b4f10, emissiveIntensity: 0.4 });
+
   const body = new THREE.Mesh(
     new THREE.CapsuleGeometry(CAPSULE_RADIUS, CAPSULE_LENGTH, 4, 8),
     new THREE.MeshStandardMaterial({ color: 0x1b2a35 }), // dark neoprene wetsuit
   );
   body.name = "dive-suit-body";
 
+  // Mask/visor — a flat-fronted box instead of a sphere so it reads as a
+  // face plate (a dive mask's actual silhouette) rather than an ambiguous
+  // dot, sized to clearly dominate the head rather than sit lost on it.
   const mask = new THREE.Mesh(
-    new THREE.SphereGeometry(0.24, 12, 8),
-    // Brighter/more opaque and a touch of emissive glow than the original
-    // pale-and-nearly-transparent version, so it doesn't wash out to
-    // nothing under Sea's dim cool-tinted fog once it's actually facing
-    // the camera.
+    new THREE.BoxGeometry(0.36, 0.24, 0.14),
     new THREE.MeshStandardMaterial({
       color: 0x8fd8e8,
       emissive: 0x2a5560,
       emissiveIntensity: 0.5,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.94,
     }),
   );
-  mask.position.set(0, 0.45, 0.34); // face height, pushed further out so it clearly protrudes past the body surface
-  mask.scale.set(1, 0.9, 0.6);
+  mask.position.set(0, 0.45, 0.34); // face height, pushed out so it clearly protrudes past the body surface
   mask.name = "dive-suit-mask";
+
+  // Head strap — same "ring reads from every angle" trick as the waist
+  // belt below, but around the head: changes the head's silhouette from
+  // every heading, not just the one the mask happens to be facing.
+  const headStrap = new THREE.Mesh(new THREE.TorusGeometry(CAPSULE_RADIUS + 0.02, 0.04, 8, 16), gearMaterial());
+  headStrap.rotation.x = Math.PI / 2;
+  headStrap.position.set(0, 0.45, 0);
+  headStrap.name = "dive-suit-head-strap";
 
   const tank = new THREE.Mesh(
     new THREE.CylinderGeometry(0.16, 0.16, 0.95, 10),
-    new THREE.MeshStandardMaterial({
-      color: 0xe8b93f, // bright tank, reads clearly as equipment against the dark suit
-      emissive: 0x6b4f10,
-      emissiveIntensity: 0.4,
-    }),
+    gearMaterial(), // bright tank, reads clearly as equipment against the dark suit
   );
   tank.position.set(0, 0.05, -0.38); // strapped to the back, pushed further out to clear the body surface
   tank.name = "dive-suit-tank";
 
-  // Waist belt — the actual fix for "invisible from the side/front": a
-  // ring around the whole capsule reads as equipment from every angle,
-  // not just the one or two the mask/tank happen to face. Sits at the
-  // capsule's equator, wide enough to clearly stand proud of the body.
-  const belt = new THREE.Mesh(
-    new THREE.TorusGeometry(CAPSULE_RADIUS + 0.03, 0.06, 8, 16),
-    new THREE.MeshStandardMaterial({ color: 0xe8b93f, emissive: 0x6b4f10, emissiveIntensity: 0.4 }),
-  );
-  belt.rotation.x = Math.PI / 2; // lie flat, encircling the body horizontally
+  // Waist belt — a ring around the whole capsule reads as equipment from
+  // every angle, not just the one or two the mask/tank happen to face.
+  // Sits at the capsule's equator, wide enough to clearly stand proud of
+  // the body.
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(CAPSULE_RADIUS + 0.03, 0.06, 8, 16), gearMaterial());
+  belt.rotation.x = Math.PI / 2;
   belt.position.set(0, -0.1, 0);
   belt.name = "dive-suit-belt";
 
-  group.add(body, mask, tank, belt);
+  // Chest strap — a second, higher ring reading as a harness crossing the
+  // front of the body even from a head-on view, where the tank itself is
+  // hidden behind the torso and the waist belt alone reads as "just a
+  // belt" rather than full gear.
+  const chestStrap = new THREE.Mesh(new THREE.TorusGeometry(CAPSULE_RADIUS + 0.02, 0.035, 8, 16), gearMaterial());
+  chestStrap.rotation.x = Math.PI / 2;
+  chestStrap.position.set(0, 0.2, 0);
+  chestStrap.name = "dive-suit-chest-strap";
+
+  // Fins — a wide, flat plate at the feet. Divers' single most
+  // recognizable silhouette cue, and (being flat, centered, and wider
+  // than the body) reads from every heading the same way the belt does,
+  // not just front/back.
+  const fins = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.07, 0.3), gearMaterial());
+  fins.position.set(0, -0.82, 0.03);
+  fins.name = "dive-suit-fins";
+
+  group.add(body, mask, headStrap, tank, belt, chestStrap, fins);
   return group;
 }
 
