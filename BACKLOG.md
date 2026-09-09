@@ -29,8 +29,8 @@ plain top-to-bottom-per-phase ordering until this note is removed):**
    supersedes the old sea-floating-docks item). All three landed
    2026-09-09 in one cycle (see each phase section below for the
    individual writeups).
-4. Real Quaternius castle-piece models (`todo` under "Skins / visual
-   identity").
+4. `done` Real Quaternius castle-piece models (Skins / visual identity
+   below, 2026-09-09).
 5. Camera framing revisit (`todo` under "Skins / visual identity").
 
 Everything under "Later / unscoped" stays parked behind all of the above
@@ -282,16 +282,78 @@ surfaced.
   complete and asserts the expected end state. 16 new unit tests, 1 new
   E2E test (plus 1 rewritten), verified visually with a real screenshot
   of one piece per material.
-- `todo` **Still want:** real Quaternius model packs for castle pieces
-  themselves (not just block materials) — the same GitHub-releases
-  mirror above does carry at least one relevant pack (a "Medieval
-  Village MegaKit" downloaded successfully as a connectivity check, not
-  yet inspected for individual model quality/fit). Logged here since I
-  found it, but wiring actual glTF castle-piece models into
-  `createCastlePieceMesh` would mean changing box-geometry/collision/
-  footprint assumptions in `src/land/` — World's file ownership, a
-  bigger change than this cycle's scope, not something to do solo
-  without checking in first.
+- `done` **Real Quaternius model packs for castle pieces themselves.**
+  Picked up 2026-09-09 (explicitly asked for, resolving the "not something
+  to do solo without checking in first" note this item used to carry).
+  Pulled the "Medieval Village MegaKit" pack for real via
+  `@jgengine/assets`'s own CLI (`pull <source-id>`, not just a
+  connectivity-check download) and actually inspected every candidate
+  model's real geometry (`gltf-transform inspect` — bbox, vertex count)
+  before picking one, same "measure, don't guess" discipline as the
+  Robot-scale/Female-height fixes. Confirmed the pack is genuinely a
+  village/house-building kit, not a fortress kit — no single model reads
+  as "a keep" (a fortified tower) — so the fit is per-type, all recorded
+  in `src/land/castleStructures.ts`'s own comments:
+  - **Wall** (`Wall_UnevenBrick_Straight`) and **Gate**
+    (`DoorFrame_Round_Brick` — a free-standing archway, reads as "a gate"
+    specifically, not a wall-with-a-door-cut-into-it) fully replace their
+    old placeholder box. Both types' `width` already matched the real
+    model almost exactly; `height`/`depth` updated to fit (Wall's box was
+    a stubby 1.0 tall "fence" scale before — a real building wall is
+    genuinely ~3x that).
+  - **Keep**: no real model fits as the whole piece, so its box stays
+    completely unchanged (dimensions, block-material coloring) and only
+    gains a real conical tower-roof cap (`Roof_Tower_RoundTiles`, scaled
+    down ~4x to fit) for a more distinctive silhouette — additive, not a
+    replacement.
+
+  Architecture (`src/land/realCastlePieceModels.ts`, wired from
+  `placement.ts`): `createCastlePieceMesh` still returns the plain box
+  synchronously, completely unchanged for every existing caller
+  (placement, save/load reconstruction, every pre-existing test) — a real
+  model, once loaded, upgrades that same piece in place asynchronously,
+  same "safe default first" philosophy `AvatarView`/`realBlockTextures.ts`
+  already established. Assets reprocessed with `@gltf-transform/cli`
+  (textures resized 2048→256px + pruned — a distant/background prop,
+  same reasoning block materials' resolution choice used) down to
+  340KB–1.2MB each from the pack's ~25MB-per-model originals.
+
+  **Two real bugs found and fixed while building this, not just
+  guessed at** (same "render and look" discipline as the Robot-scale/
+  Gold-metalness/dive-suit-legibility fixes elsewhere in this codebase):
+  1. The first working version nested the real model as the box's own
+     child, then set `box.visible = false` for the "replace" types —
+     screenshotted it and the piece rendered as *nothing at all*.
+     Root cause: three.js's renderer walks the scene via
+     `Object3D.traverseVisible`, which stops descending the instant it
+     hits an invisible object — hiding the box silently hid its nested
+     child right along with it. Fixed by adding the real model as a
+     *sibling* of the box (`box.parent.add(...)`, not `box.add(...)`) —
+     the box stays a fully valid, unchanged raycast/stacking target
+     either way (three.js's `Raycaster` doesn't gate on `.visible`, and
+     `Box3.setFromObject` doesn't either, confirmed by reading three.js's
+     own source rather than assuming).
+  2. `e2e/castle-placement.spec.ts`'s type-switching test started failing
+     intermittently once Wall's real height landed — root-caused (not
+     dismissed as a flake) via a temporary debug log: the old
+     0.2/0.5/0.8-of-viewport screen-fraction click spread, tuned against
+     the *old* short Wall, no longer reliably cleared
+     `validatePlacement`'s true-3D overlap check now that Wall's taller
+     footprint widened its Y-overlap window against the Keep placed
+     first. Fixed by switching the test to click at deliberately
+     far-apart *world* coordinates (via the app's own
+     `__projectToScreen`, same pattern the "stacking" test in the same
+     file already used) instead of guessed screen fractions — robust
+     regardless of any structure type's future dimensions.
+
+  8 new unit tests (`realCastlePieceModels.test.ts`: both placement
+  modes, scale, world-position correctness, independent instances across
+  multiple placements of one type, load-failure fallback); full suite
+  verified (typecheck, 250 unit tests, build, 64 E2E tests, re-run
+  multiple times to confirm the E2E fix was real, not still flaky).
+  Verified visually with real screenshots of all three types placed
+  together. `public/assets/ATTRIBUTIONS.md` and the in-app credits screen
+  (`src/skins/attributions.ts`) both updated.
 - `todo` Revisit the 3rd-person camera's framing once there's more
   character content to actually showcase — noted in `DECISIONS.md`: the
   current steep ~31° elevation makes an elongated quadruped read as

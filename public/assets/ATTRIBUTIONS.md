@@ -117,4 +117,29 @@ and the shared "universal human" animation library (`static/animations/human-bas
   at the origin throughout), so they don't fight the engine's own root-position movement, same as
   every other skin. Packed `.glb` is ~907KB.
 
+## `models/castle-wall.glb`, `models/castle-gate.glb`, `models/castle-keep-roof.glb`
+
+Source: Quaternius's "Medieval Village MegaKit", via the same `@jgengine/assets` GitHub-releases
+mirror described above (`Noisemaker111/jgengine`, `packs` release) — reachable even though
+quaternius.com/opengameart.org themselves are blocked by this session's network policy.
+
+- All three: [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/) — Quaternius.
+- A village/house-building kit, not a dedicated fortress kit — no single model in it reads as
+  "a keep" (a fortified tower), so the fit varies per `castle-*` structure type
+  (`src/land/castleStructures.ts` records the measurements this was based on):
+  - `castle-wall.glb` (source: `Wall_UnevenBrick_Straight`) and `castle-gate.glb` (source:
+    `DoorFrame_Round_Brick` — a free-standing archway, not a wall-with-a-door-cut-into-it, so it
+    reads as "a gate" specifically) fully replace their type's old placeholder box once loaded.
+  - `castle-keep-roof.glb` (source: `Roof_Tower_RoundTiles`) is a roof cap only — Keep's own box
+    stays exactly as it was (block-material colored, unchanged dimensions), just topped with this
+    for a more distinctive silhouette.
+- Each downloaded at the pack's own resolution (2048×2048 textures, ~25MB per model — a full
+  scene export retains every material in the source file, most unused by any one piece) and
+  reprocessed with `@gltf-transform/cli`: textures resized to 256×256 (a distant/background prop,
+  same "generated pattern before real photos" discipline as the block materials, just resolution
+  instead of interim-vs-real) and pruned, landing at 340KB–1.2MB each.
+- `realCastlePieceModels.ts` upgrades each placed piece's box in place once its model loads (same
+  "safe default first" philosophy as every other real asset here) — a load failure leaves the
+  plain box exactly as it already was.
+
 CC0 — no attribution legally required, but credited here anyway for provenance.

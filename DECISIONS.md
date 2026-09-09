@@ -30,6 +30,24 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-09 — Real Quaternius castle-piece models, the long-blocked
+  item, unblocked by you directly asking for it.** Pulled the "Medieval
+  Village MegaKit" pack for real and inspected every candidate model's
+  actual geometry before picking one — it's a village/house kit, not a
+  fortress kit, so Wall and Gate got real models but Keep only got a real
+  roof cap (no model in the pack reads as "a keep" itself; the box stays,
+  unchanged, underneath). Found and fixed two real bugs while building
+  this (not guessed at): (1) nesting the real model as the box's own
+  child, then hiding the box, silently hid the model too — three.js's
+  renderer stops descending into an invisible object's children entirely;
+  fixed by adding the model as a sibling instead. (2) The existing
+  type-switching E2E test started failing intermittently once Wall's real
+  (taller) height landed, root-caused via a debug log rather than
+  dismissed as a flake — fixed the test's click coordinates, not papered
+  over with a retry. Verified visually with real screenshots of all three
+  types; full suite green. See `BACKLOG.md`'s "Skins / visual identity"
+  section for the full writeup.
+
 - **2026-09-09 — Environment art pass shipped: land parkland, cloud-shaped
   air platforms, sea shipwreck centerpiece.** Continuing per the current
   priority order once the dive-suit reproduction step re-confirmed still

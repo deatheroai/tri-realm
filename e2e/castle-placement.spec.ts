@@ -58,26 +58,34 @@ test("clicking an existing piece stacks a new one on top of it", async ({ page }
 test("defaults to the Keep structure type, and switching type changes new placements", async ({ page }) => {
   await page.goto("/");
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const groundY = viewport.height * 0.75;
-  // Widely separated screen X positions (not just a small pixel delta) so
-  // this holds regardless of which structure type's (differently-sized)
-  // footprint is being placed — a click this near the camera covers less
-  // world distance per pixel than it looks, so a modest offset that's
-  // safe for one type's footprint isn't necessarily safe for a wider one.
-  const leftX = viewport.width * 0.2;
-  const centerX = viewport.width * 0.5;
-  const rightX = viewport.width * 0.8;
+  // Click at deliberately far-apart *world* ground points (via the app's
+  // own world-to-screen projection, same reasoning as the "stacking" test
+  // above) rather than guessed screen-fraction offsets — this camera's
+  // shallow angle means a wide screen-space spread doesn't reliably
+  // become a wide world-space one (bitten by this for real: `castle-wall`
+  // and `castle-gate`'s real-model dimensions, BACKLOG.md's "real
+  // Quaternius castle-piece models" item, are tall enough that the old
+  // 0.2/0.5/0.8-of-viewport spread let two placements' 3D footprints
+  // still Y-overlap despite looking "widely separated" on screen). 16
+  // world units of X separation clears every current catalog type's
+  // width by a wide margin regardless of height.
+  const projectToScreen = (x: number, z: number) =>
+    page.evaluate((p) => window.__projectToScreen?.(p.x, 0, p.z), { x, z });
 
-  await page.mouse.click(centerX, groundY);
+  const keepPoint = await projectToScreen(0, -4);
+  if (!keepPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(keepPoint.x, keepPoint.y);
   expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-keep");
 
   await page.getByRole("button", { name: "Wall" }).click();
-  await page.mouse.click(rightX, groundY);
+  const wallPoint = await projectToScreen(8, -4);
+  if (!wallPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(wallPoint.x, wallPoint.y);
   expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-wall");
 
   await page.getByRole("button", { name: "Gate" }).click();
-  await page.mouse.click(leftX, groundY);
+  const gatePoint = await projectToScreen(-8, -4);
+  if (!gatePoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(gatePoint.x, gatePoint.y);
   expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-gate");
 });

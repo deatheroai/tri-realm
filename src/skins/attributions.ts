@@ -59,4 +59,11 @@ export const ATTRIBUTIONS: readonly AttributionEntry[] = [
     creator: "Mesh2Motion",
     creatorUrl: "https://github.com/Mesh2Motion/mesh2motion-app",
   },
+  {
+    asset: "Castle piece models (Wall, Gate, Keep roof) — Medieval Village MegaKit",
+    license: "CC0-1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    creator: "Quaternius",
+    creatorUrl: "https://www.patreon.com/quaternius",
+  },
 ];
