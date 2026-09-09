@@ -77,6 +77,13 @@ Resolved).
   Full suite green. See `BACKLOG.md`'s "Skins / visual identity" section
   for the full writeup.
 
+  **Third follow-up same day** — you asked why the dive suit had so many
+  yellow rings: fair, it still had three (head strap, chest strap, waist
+  belt) left over from when the gear's silhouette alone had to carry all
+  the "reads as a diver" weight against a blank capsule. Decorating a
+  real character doesn't need that anymore — cut to one (the weight
+  belt) plus the mask and tank. Re-verified visually, full suite green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

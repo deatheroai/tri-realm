@@ -43,12 +43,12 @@ export function createProceduralAvatarMesh(): THREE.Mesh {
 
 /**
  * The dive-suit "costume" (`src/skins/avatarSkins.ts`'s `diveSuit` entry)
- * — mask/head-strap, chest strap, waist belt, tank, and flippers, laid out
- * proportionally to whatever character is *actually being worn
- * underneath* (its own bounding box), so the dive suit reads as gear on
- * top of the current character (Fox/Robot/Princess/Mannequin/Female/
- * Capsule alike) instead of replacing it with an unrelated generic body —
- * see `AvatarView.buildVisual`'s `DIVE_SUIT_AVATAR_SKIN_ID` branch for how
+ * — mask, one weight belt, tank, and flippers, laid out proportionally to
+ * whatever character is *actually being worn underneath* (its own
+ * bounding box), so the dive suit reads as gear on top of the current
+ * character (Fox/Robot/Princess/Mannequin/Female/Capsule alike) instead
+ * of replacing it with an unrelated generic body — see
+ * `AvatarView.buildVisual`'s `DIVE_SUIT_AVATAR_SKIN_ID` branch for how
  * the underlying character is chosen and kept.
  *
  * **History**: originally its own procedural body (a plain capsule with
@@ -72,12 +72,23 @@ export function createProceduralAvatarMesh(): THREE.Mesh {
  * current skin's `facingOffset` is 0, i.e. already aligned with the
  * engine's forward convention — see `AvatarSkin.facingOffset`), same
  * assumption `faceDirection` already relies on elsewhere.
+ *
+ * **Trimmed 2026-09-09, same day again**: the first pass at this (still
+ * carrying over the belt/chest-strap/head-strap rings from the
+ * capsule-only version's own "ring reads from every angle" fix) put
+ * three same-colored torus rings stacked up the body — reported as
+ * looking like a stack of yellow hula hoops. Now that the gear decorates
+ * a real, already-distinctive character instead of a blank capsule, it
+ * doesn't need three redundant rings to read as "equipped" — cut down to
+ * one (the waist/weight belt, the single most recognizable diver-gear
+ * ring) plus the mask and tank, which read as gear on their own without
+ * needing a ring escort.
  */
 function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const gear = new THREE.Group();
   gear.name = "dive-gear-overlay";
 
-  // Shared "bright equipment" look for every non-mask part (straps, tank,
+  // Shared "bright equipment" look for every non-mask part (belt, tank,
   // flippers) — one consistent gold reads as "gear" at a glance no matter
   // which primitive it's attached to.
   const gearMaterial = () =>
@@ -93,7 +104,6 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const headRadius = torsoRadius * 0.68; // heads read narrower than chests/waists
 
   const headY = box.min.y + height * 0.75;
-  const chestY = box.min.y + height * 0.61;
   const tankY = box.min.y + height * 0.53;
   const waistY = box.min.y + height * 0.44;
   const footY = box.min.y + height * 0.03;
@@ -114,14 +124,6 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   mask.position.set(centerX, headY, box.max.z + headRadius * 0.3);
   mask.name = "dive-suit-mask";
 
-  // Head strap — a ring reads as equipment from every angle, not just the
-  // one the mask happens to face; frames the head so its silhouette
-  // changes from every heading.
-  const headStrap = new THREE.Mesh(new THREE.TorusGeometry(headRadius, 0.035, 8, 16), gearMaterial());
-  headStrap.rotation.x = Math.PI / 2;
-  headStrap.position.set(centerX, headY, centerZ);
-  headStrap.name = "dive-suit-head-strap";
-
   const tank = new THREE.Mesh(
     new THREE.CylinderGeometry(torsoRadius * 0.4, torsoRadius * 0.4, height * 0.4, 10),
     gearMaterial(), // bright tank, reads clearly as equipment against the character underneath
@@ -129,20 +131,12 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   tank.position.set(centerX, tankY, box.min.z - torsoRadius * 0.25); // strapped to the back
   tank.name = "dive-suit-tank";
 
-  // Waist belt — a ring around the whole body reads as equipment from
+  // Waist belt — the one ring, at the equator; reads as equipment from
   // every angle, including dead-on front/back and side-on.
   const belt = new THREE.Mesh(new THREE.TorusGeometry(torsoRadius, 0.05, 8, 16), gearMaterial());
   belt.rotation.x = Math.PI / 2;
   belt.position.set(centerX, waistY, centerZ);
   belt.name = "dive-suit-belt";
-
-  // Chest strap — a second, higher ring reading as a harness crossing the
-  // front of the body even head-on, where the tank itself is hidden
-  // behind the torso and the waist belt alone would just read as a belt.
-  const chestStrap = new THREE.Mesh(new THREE.TorusGeometry(torsoRadius * 0.95, 0.03, 8, 16), gearMaterial());
-  chestStrap.rotation.x = Math.PI / 2;
-  chestStrap.position.set(centerX, chestY, centerZ);
-  chestStrap.name = "dive-suit-chest-strap";
 
   // Flippers — two actual paddle-shaped blades at the feet, not just a
   // flat plate (a plate reads as a skirt/base, not swim fins). Each is a
@@ -159,7 +153,7 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
     return flipper;
   }
 
-  gear.add(mask, headStrap, tank, belt, chestStrap, createFlipper(-1), createFlipper(1));
+  gear.add(mask, tank, belt, createFlipper(-1), createFlipper(1));
   return gear;
 }
 

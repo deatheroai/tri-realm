@@ -1021,6 +1021,17 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   build, 61 E2E tests (including both diving-house auto-equip/revert
   tests, unchanged since this is purely how the dive suit *builds* its
   visual, not the trigger/revert flow around it).
+  **Third follow-up same day**: you asked why the dive suit had so many
+  yellow rings — fair, the gear overlay above still carried three
+  same-colored torus rings (head strap, chest strap, waist belt) over
+  from the capsule-only version's own "a ring reads from every angle"
+  fix. That trick mattered when the gear's silhouette was the *only*
+  thing making the avatar read as a diver; now that it's decorating an
+  already-distinctive real character, three stacked rings just look like
+  hula hoops. Cut down to one (the waist/weight belt) plus the mask and
+  tank, which read as gear on their own. Re-verified visually across
+  Fox, Female, and Princess — much cleaner, still clearly "wearing dive
+  gear." Full suite re-verified green.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark
