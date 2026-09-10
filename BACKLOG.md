@@ -1171,6 +1171,30 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   "Survey" animation's look-around cycle, sampled every ~500ms across
   several seconds. Full suite green: typecheck, 215 unit tests, build,
   61 E2E tests.
+  **Ninth follow-up, same day**: reported two more pieces that "don't
+  fit the dive suit narrative" — a big yellow box behind Female's body
+  (the tank) and a round hula hoop around her body (the waist belt).
+  Same root cause as the eighth follow-up's mask-sizing bug, just never
+  applied to the rest of the gear: `createDiveGearOverlay`'s
+  `torsoRadius` (which sizes and places the tank, belt, *and* flippers)
+  was still derived from the whole body's bounding-box *width* — and
+  since Female's bind pose is a T-stance, that width was really her
+  ~1.48-world-unit arm-span, on a 1.71-tall character. A belt/tank sized
+  off arm-span reads exactly as reported: a hula hoop wide enough to
+  loop around her outstretched arms, and a tank cylinder inflated into a
+  slab. Fixed the same way the mask's `headRadius` already was: derive
+  `torsoRadius` from measured *height* instead, with the proportionality
+  constant picked to land close to Fox's own already-correct look under
+  the old formula (Fox's build was never T-pose-distorted, so this
+  doesn't regress the one skin the old formula happened to suit) —
+  flippers' size/placement (which also read raw body width before)
+  switched to derive from the corrected `torsoRadius` too, for the same
+  pose-stability reason. Verified visually at high resolution: belt now
+  sits snugly at the actual waist on Female, tank reads as a normal-
+  sized cylinder strapped to her back (checked from behind specifically,
+  since it's meant to be mostly hidden from the front) and Fox
+  unaffected. Full suite green: typecheck, 215 unit tests, build, 61
+  E2E tests.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark

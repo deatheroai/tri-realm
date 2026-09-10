@@ -104,10 +104,25 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   // Floors guard against a degenerate/empty box (e.g. a not-yet-loaded
   // model) producing zero- or negative-sized geometry.
   const height = Math.max(box.max.y - box.min.y, 0.4);
-  const width = Math.max(box.max.x - box.min.x, 0.3);
   const centerX = (box.max.x + box.min.x) / 2;
   const centerZ = (box.max.z + box.min.z) / 2;
-  const torsoRadius = width / 2 + 0.04; // stands proud of the actual body surface
+  // Sized from the character's own measured *height*, not the whole
+  // body's bounding-box width — reported directly ("the big yellow box
+  // behind her body," "the round hula hoop around her body"), and
+  // confirmed by measuring rather than assumed: this used to be
+  // `width / 2 + 0.04`, and Female's bind pose is a T-stance (arms
+  // straight out), so `width` was really her arm-span (~1.48 world
+  // units, wider than her own 1.71-tall body) — the exact same bug
+  // `createMaskGroup`'s own `headRadius` had, just never fixed here when
+  // that one was. A torso radius derived from arm-span puts a belt/tank
+  // sized to hoop around her outstretched arms, not her actual waist —
+  // hence the hula hoop and the tank ballooning into a box-sized slab.
+  // Height is pose-stable (a T-pose doesn't change how tall a character
+  // stands); the 0.15 factor was picked to land close to Fox's own
+  // already-correct-looking proportions under the old formula (Fox's
+  // build has no T-pose to distort width in the first place), so this
+  // doesn't newly break the one skin the old formula happened to suit.
+  const torsoRadius = height * 0.15 + 0.02;
 
   const tankY = box.min.y + height * 0.53;
   const waistY = box.min.y + height * 0.44;
@@ -131,12 +146,14 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   // flat plate (a plate reads as a skirt/base, not swim fins). Each is a
   // flattened, elongated sphere (a paddle silhouette) splayed outward and
   // forward past the character's own front, unmistakably fin-shaped from
-  // front, side, and back alike.
-  const finGeometry = new THREE.SphereGeometry(Math.max(width * 0.22, 0.12), 10, 6);
+  // front, side, and back alike. Sized/placed from `torsoRadius` (now
+  // height-based, see above) rather than raw body width, for the same
+  // pose-stability reason.
+  const finGeometry = new THREE.SphereGeometry(Math.max(torsoRadius * 0.45, 0.12), 10, 6);
   function createFlipper(xSign: 1 | -1): THREE.Mesh {
     const flipper = new THREE.Mesh(finGeometry, gearMaterial());
     flipper.scale.set(0.9, 0.3, 2.4); // flattened + elongated into a paddle blade
-    flipper.position.set(centerX + xSign * width * 0.28, footY, box.max.z + width * 0.15);
+    flipper.position.set(centerX + xSign * torsoRadius * 0.56, footY, box.max.z + torsoRadius * 0.3);
     flipper.rotation.y = xSign * 0.3; // toes-out splay, distinct from a single centered plate
     flipper.name = xSign === -1 ? "dive-suit-flipper-left" : "dive-suit-flipper-right";
     return flipper;

@@ -150,6 +150,16 @@ Resolved).
   fix by sampling Fox's mask through several seconds of its look-around
   cycle. Full suite green.
 
+  **Ninth follow-up, same day** — reported two more pieces that "don't
+  fit the narrative": a big yellow box behind Female's body (the tank)
+  and a round hula hoop around her body (the belt). Same root cause as
+  the mask-sizing bug just fixed, never applied to the rest of the
+  gear: `torsoRadius` (sizing/placing the tank, belt, and flippers) was
+  still derived from body width — her T-pose arm-span again. Fixed by
+  deriving it from height too, tuned to keep Fox's already-correct look
+  unchanged. Verified visually — belt now sits at her actual waist,
+  tank reads as a normal-sized tank on her back. Full suite green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):
