@@ -160,6 +160,15 @@ Resolved).
   unchanged. Verified visually — belt now sits at her actual waist,
   tank reads as a normal-sized tank on her back. Full suite green.
 
+  **Tenth follow-up, same day** — "too bulky, like a rubber tube" on the
+  belt. A real regression from the fix just above, not a fresh
+  complaint: its tube thickness was a fixed number tuned for the old,
+  much larger arm-span-based `torsoRadius`; shrinking the ring without
+  shrinking the tube to match left it proportionally chunkier. Fixed by
+  making the tube thickness a fraction of `torsoRadius` instead of
+  fixed, plus flattened it into a strap's cross-section instead of a
+  round cord. Verified visually on Female and Fox. Full suite green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

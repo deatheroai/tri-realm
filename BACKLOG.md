@@ -1195,6 +1195,22 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   since it's meant to be mostly hidden from the front) and Fox
   unaffected. Full suite green: typecheck, 215 unit tests, build, 61
   E2E tests.
+  **Tenth follow-up, same day**: "not a rubber tube, too bulky" on the
+  belt specifically. Real self-inflicted regression from the ninth
+  follow-up just above, not a fresh style complaint: the belt's tube
+  radius was a fixed `0.05`, tuned back when `torsoRadius` was still the
+  arm-span-inflated body-width figure (~0.4-0.78), where a fixed 0.05
+  read as a slim ~6-12% of the ring's own radius. Shrinking `torsoRadius`
+  to the correct waist-based size (previous fix) without also scaling
+  this down left the belt *relatively* much thicker than before — same
+  absolute thickness wrapped around a smaller ring reads as a chunkier
+  ring, not the same belt at the right size. Fixed by making the tube
+  radius a fraction of `torsoRadius` (`* 0.08`) instead of a fixed
+  number, so it scales down together with the ring, plus flattened it
+  (`scale.y`) into a strap's flat cross-section instead of a round
+  cord/hose. Verified visually on both Female (now a slim flat strap,
+  not a tube) and Fox (unaffected). Full suite green: typecheck, 215
+  unit tests, build, 27 skins.spec.ts E2E tests.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark

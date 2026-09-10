@@ -137,8 +137,20 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
 
   // Waist belt — the one ring, at the equator; reads as equipment from
   // every angle, including dead-on front/back and side-on.
-  const belt = new THREE.Mesh(new THREE.TorusGeometry(torsoRadius, 0.05, 8, 16), gearMaterial());
+  // Tube radius is a *fraction* of torsoRadius, not a fixed number —
+  // reported directly as "too bulky, like a rubber tube," and that
+  // tracks: the fixed 0.05 here was tuned back when torsoRadius was
+  // still derived from body width (effectively arm-span on a T-posed
+  // character, ~0.4-0.78), where it read as a slim ~6-12% of the ring's
+  // own radius. Shrinking torsoRadius to the correct waist-based size
+  // (previous fix) without scaling this down to match left the belt
+  // proportionally *much* thicker than before — a fixed absolute
+  // thickness on a smaller ring is a chunkier ring, not the same belt.
+  // Also flattened (scale.y) into a strap's flat cross-section instead
+  // of a round cord/hose.
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(torsoRadius, torsoRadius * 0.08, 8, 16), gearMaterial());
   belt.rotation.x = Math.PI / 2;
+  belt.scale.y = 0.55;
   belt.position.set(centerX, waistY, centerZ);
   belt.name = "dive-suit-belt";
 
