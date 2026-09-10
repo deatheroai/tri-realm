@@ -257,14 +257,17 @@ to game logic.
   swim-stroke) remains future refinement, genuinely gated on sourcing a
   skin with one, not required for the skin system itself to work
   correctly in a third realm (`BACKLOG.md`).
-- **Sea's one real realm-specific visual: vertical pitch.**
+- **Vertical pitch: sea first, air later matched to it.**
   `AvatarView.setVerticalPitch(verticalVelocity, dt)` leans the model
   into its actual vertical velocity — nose-down while diving, nose-up
   while surfacing or passively drifting — smoothed the same
-  turn-speed-based-lerp way `faceDirection` eases yaw. Only sea's branch
-  in `main.ts` calls it (with `seaMovement.velocity.y`); land has no
-  vertical velocity and air's is `todo` (BACKLOG.md), so both stay
-  perfectly level as before. The angle-per-velocity mapping (clamped at
+  turn-speed-based-lerp way `faceDirection` eases yaw. Sea's branch in
+  `main.ts` calls it with `seaMovement.velocity.y`; air's branch calls it
+  too, with `airMovement.velocity.y` (added 2026-09-08, `BACKLOG.md`'s
+  Phase 2 "Air-specific animation/pitch parity with Sea" — flying used to
+  never lean into vertical motion at all, reading as "walking on land").
+  Land has no meaningful vertical velocity and stays level. The
+  angle-per-velocity mapping (clamped at
   a tuned max velocity, so wildly fast dives don't over-rotate the model)
   is `AvatarView`'s own constant, not something sea's movement code needs
   to know about. **The sign was verified against a real side-on render,

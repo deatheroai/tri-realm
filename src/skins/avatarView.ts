@@ -128,6 +128,90 @@ export function createDiveSuitAvatarMesh(): THREE.Group {
   return group;
 }
 
+const BIRD_BODY_RADIUS = 0.22;
+const BIRD_BODY_LENGTH = 0.9;
+const BIRD_BODY_COLOR = 0x8fa8bf; // soft sky blue-gray — reads as "belongs up there", distinct from Fox's orange/Dive Suit's navy
+const BIRD_ACCENT_COLOR = 0x5f7a91; // darker blue-gray, wings/tail — contrast against the body
+const BIRD_BEAK_COLOR = 0xf2b134;
+
+/**
+ * The "bird" procedural variant (`src/skins/avatarSkins.ts`) — requested
+ * 2026-09-10 as an Air-appropriate avatar once no reachable real asset
+ * turned up (`DECISIONS.md`): no rig to animate, so this is a purpose-
+ * built shape rather than a costume on the default capsule body, same
+ * "distinct primitives, not just a recolor" bar `createDiveSuitAvatarMesh`
+ * above already set.
+ *
+ * The body lies *along* local Z (elongated front-to-back, like an actual
+ * bird) rather than standing tall along Y like every other skin's roughly
+ * capsule-shaped silhouette — deliberately: a bird's whole point is
+ * reading as "shaped for flight" even holding still, which a tall/narrow
+ * upright silhouette can't do regardless of pose. Wings spread wide and
+ * fixed (no flap animation — there's no rig) is enough on its own to read
+ * as "a bird," matching this codebase's own "silhouette carries the read,
+ * animation is a bonus" pattern (e.g. the balloon/cloud/shipwreck
+ * landmarks are all static too).
+ *
+ * Local +Z is still this mesh's authored "front" (beak side), same
+ * `faceDirection` convention every other skin uses (no `facingOffset`
+ * needed).
+ */
+export function createBirdAvatarMesh(): THREE.Group {
+  const group = new THREE.Group();
+  group.name = "bird-avatar";
+
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: BIRD_BODY_COLOR });
+  const accentMaterial = new THREE.MeshStandardMaterial({ color: BIRD_ACCENT_COLOR });
+
+  const body = new THREE.Mesh(
+    new THREE.CapsuleGeometry(BIRD_BODY_RADIUS, BIRD_BODY_LENGTH, 4, 8),
+    bodyMaterial,
+  );
+  body.rotation.x = Math.PI / 2; // capsule's long axis defaults to Y (up) — lay it along Z (forward) instead
+  body.name = "bird-body";
+
+  const bodyHalfLength = BIRD_BODY_LENGTH / 2 + BIRD_BODY_RADIUS; // capsule's own front tip, in its rotated (Z) orientation
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), bodyMaterial);
+  head.position.set(0, 0.02, bodyHalfLength - 0.05); // slightly forward of the body's own front, a touch of overlap so it doesn't float
+  head.name = "bird-head";
+
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 8), new THREE.MeshStandardMaterial({ color: BIRD_BEAK_COLOR }));
+  beak.rotation.x = Math.PI / 2; // cone points +Y by default — point it +Z (forward) instead
+  beak.position.set(0, 0, bodyHalfLength + 0.16);
+  beak.name = "bird-beak";
+
+  // Wings: flattened, elongated boxes rather than tapered cones — a blunt
+  // wingtip is fine at this rough-primitives bar (matches everything else
+  // in this codebase, e.g. the parkland fountain/cloud platforms). Angled
+  // up slightly (a shallow dihedral) and back a touch, reading as "spread
+  // for gliding" rather than a flat cross shape.
+  const wingSpan = 1.0;
+  const wingGeometry = new THREE.BoxGeometry(wingSpan, 0.05, 0.35);
+  const wingX = BIRD_BODY_RADIUS + wingSpan / 2 - 0.05; // slight overlap into the body so there's no visible gap
+  const wingDihedral = THREE.MathUtils.degToRad(12);
+  const wingSweep = THREE.MathUtils.degToRad(10);
+
+  const rightWing = new THREE.Mesh(wingGeometry, accentMaterial);
+  rightWing.position.set(wingX, 0.05, -0.05);
+  rightWing.rotation.z = -wingDihedral;
+  rightWing.rotation.y = wingSweep;
+  rightWing.name = "bird-wing-right";
+
+  const leftWing = new THREE.Mesh(wingGeometry, accentMaterial);
+  leftWing.position.set(-wingX, 0.05, -0.05);
+  leftWing.rotation.z = wingDihedral;
+  leftWing.rotation.y = -wingSweep;
+  leftWing.name = "bird-wing-left";
+
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.4), accentMaterial);
+  tail.position.set(0, 0, -bodyHalfLength - 0.1);
+  tail.name = "bird-tail";
+
+  group.add(body, head, beak, rightWing, leftWing, tail);
+  return group;
+}
+
 const gltfLoader = new GLTFLoader();
 const gltfCache = new Map<string, Promise<GLTF>>();
 
@@ -204,7 +288,11 @@ export class AvatarView {
   }> {
     if (skin.kind === "procedural") {
       const visual =
-        skin.proceduralVariant === "diveSuit" ? createDiveSuitAvatarMesh() : createProceduralAvatarMesh();
+        skin.proceduralVariant === "diveSuit"
+          ? createDiveSuitAvatarMesh()
+          : skin.proceduralVariant === "bird"
+            ? createBirdAvatarMesh()
+            : createProceduralAvatarMesh();
       return { visual, mixer: null, actions: {}, resolvedSkinId: skin.id };
     }
 

@@ -62,6 +62,48 @@ describe("AvatarView", () => {
     expect(diveSuitHeight).toBeLessThan(capsuleHeight * 1.3);
   });
 
+  it("sets a distinct bird-shaped group (not the plain capsule) as the visual for the bird skin", async () => {
+    const root = new THREE.Group();
+    const view = new AvatarView(root);
+
+    await view.setSkin("bird");
+
+    expect(view.skinId).toBe("bird");
+    expect(root.children).toHaveLength(1);
+    const visual = root.children[0];
+    expect(visual).toBeInstanceOf(THREE.Group);
+    // body + head + beak + 2 wings + tail
+    expect(visual.children.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("spreads the bird's wings notably wider than its own body — the whole point of the shape", async () => {
+    const root = new THREE.Group();
+    await new AvatarView(root).setSkin("bird");
+    const visual = root.children[0];
+
+    const bodyMesh = visual.getObjectByName("bird-body") as THREE.Mesh;
+    const bodyRadius = (bodyMesh.geometry as THREE.CapsuleGeometry).parameters.radius;
+
+    const box = new THREE.Box3().setFromObject(visual);
+    const wingspan = box.max.x - box.min.x;
+
+    expect(wingspan).toBeGreaterThan(bodyRadius * 4);
+  });
+
+  it("mirrors the left and right wings symmetrically", async () => {
+    const root = new THREE.Group();
+    await new AvatarView(root).setSkin("bird");
+    const visual = root.children[0];
+
+    const rightWing = visual.getObjectByName("bird-wing-right")!;
+    const leftWing = visual.getObjectByName("bird-wing-left")!;
+
+    expect(leftWing.position.x).toBeCloseTo(-rightWing.position.x, 5);
+    expect(leftWing.position.y).toBeCloseTo(rightWing.position.y, 5);
+    expect(leftWing.position.z).toBeCloseTo(rightWing.position.z, 5);
+    expect(leftWing.rotation.z).toBeCloseTo(-rightWing.rotation.z, 5);
+  });
+
   it("loads a gltf skin and wires up its animation clips", async () => {
     const fakeModel = new THREE.Group();
     const fakeClip = new THREE.AnimationClip("Walk", 1, []);
