@@ -1129,6 +1129,48 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   per-frame tracking actually holds up under animation, not just at
   rest). Full suite green: typecheck, 215 unit tests, build, 61 E2E
   tests.
+  **Eighth follow-up, next day (2026-09-10)**: the dive-mask shape
+  candidates were compared side by side first this time (three
+  variants — thin visor band, wide single-pane wraparound mask, twin
+  swim goggles — screenshotted on Fox and Female without touching the
+  committed code) rather than iterating another shape blind; the wide
+  single-pane mask was picked as the real design. Reported back with two
+  concrete problems on it: oversized on Female, misaligned to one side
+  on Fox. Root-caused both before touching code, then fixed:
+  (1) **sizing** — `headRadius` was derived from the whole body's
+  bounding-box *width* (shoulders included), a proxy that happened to
+  read fine against Fox (a quadruped's width is close to its actual head
+  width) but put a mask sized for shoulders on Female's head — and
+  measuring, not assuming, found it was worse than plain shoulder width:
+  her rig's bind pose is a T-stance (arms straight out), so "body width"
+  was really her full arm-span. (2) **alignment** — `syncMaskToHeadBone`
+  only tracked the head bone's *position*, not its rotation; Fox's idle
+  clip is named `"Survey"` (a look-around animation), so whenever it
+  turned the head independent of the body, the mask kept projecting
+  forward along the body's fixed axis instead of the now-turned face,
+  drifting visibly to one side. Fixed sizing by deriving `headRadius`
+  from the character's own measured *height* instead of width (pose-
+  stable — a T-pose doesn't change how tall a character stands, unlike
+  how wide it measures). First attempt at this actually measured the
+  real head-mesh vertices directly (bounding-box of whatever's
+  predominantly skinned to the head bone) rather than a proportional
+  guess — abandoned after measuring, not assuming it worked: on Female
+  specifically (a mesh + rig merged from separate sources, see
+  `avatarSkins.ts`'s `female` entry) most of her visible head came back
+  weighted to other bones, undermeasuring badly enough to put the mask
+  at her neck. Fixed alignment by tracking the bone's full transform
+  (position *and* rotation) via a fixed matrix expressing the mask's
+  transform relative to the bone's own bind pose, reapplied on top of
+  the bone's current world matrix every frame — mathematically the same
+  thing parenting the mask under the bone would give, computed by hand
+  to avoid inheriting the bone's own local coordinate scale. Verified
+  visually at high resolution (1800×1400 @2x — small default screenshots
+  weren't reliable for this level of detail) on both Fox and Female;
+  also confirmed directly (not assumed) that the rotation fix visibly
+  works — Fox's mask now genuinely turns with its head through the
+  "Survey" animation's look-around cycle, sampled every ~500ms across
+  several seconds. Full suite green: typecheck, 215 unit tests, build,
+  61 E2E tests.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark

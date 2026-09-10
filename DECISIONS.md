@@ -131,6 +131,25 @@ Resolved).
   generic fraction. Verified visually across Fox and Female, idle and
   mid-walk. Full suite green.
 
+  **Eighth follow-up, next day (2026-09-10)** — three mask-shape
+  candidates were screenshotted side by side first this time, without
+  touching committed code, and you picked the wide single-pane mask.
+  Reported back two concrete problems on it: oversized on Female,
+  misaligned to one side on Fox. Root-caused both before fixing:
+  (1) `headRadius` was derived from body *width*, and Female's rig
+  turned out to be bind-posed in a T-stance, so "width" was really her
+  arm-span — an even bigger mismatch than shoulder width alone. Fixed by
+  deriving it from body *height* instead, which a T-pose doesn't affect.
+  (2) the mask only tracked the head bone's position, not its rotation;
+  Fox's idle clip is literally named "Survey" (a look-around animation),
+  so an independent head turn left the mask projecting along the body's
+  old fixed direction. Fixed by tracking the bone's full transform
+  (position + rotation) via a matrix fixed relative to its bind pose,
+  reapplied on the bone's current transform every frame. Verified at
+  high resolution on both characters, including confirming the rotation
+  fix by sampling Fox's mask through several seconds of its look-around
+  cycle. Full suite green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):
