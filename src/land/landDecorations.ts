@@ -60,6 +60,7 @@ const TRUNK_COLOR = 0x6b4a2f;
 const FOLIAGE_COLOR = 0x3f7d3f;
 const FOLIAGE_COLOR_LIGHT = 0x5a9650; // a second, lighter tone breaks up the canopy's silhouette
 const SOIL_COLOR = 0x4a3524;
+const FLOWER_CENTER_COLOR = 0xf2c14e; // warm "pollen" tone, shared by every bloom regardless of petal color
 const PATH_STONE_COLOR = 0xb9ac8f;
 const FOUNTAIN_STONE_COLOR = 0x9a9a92;
 const WATER_COLOR = 0x5fb8d8;
@@ -160,14 +161,33 @@ function createFlowerBed(): THREE.Group {
   soil.name = "flower-bed-soil";
   group.add(soil);
 
+  // Each bloom used to be one bare colored sphere — read as a ball, not a
+  // flower. Now a thin stem plus a flattened, faceted head (an
+  // IcosahedronGeometry squashed in Y, same low-poly-blob language
+  // createTree's canopy uses, just wide/flat instead of round) plus a
+  // tiny warm "pollen" center on top — the shape+center combination is
+  // what actually reads as a flower instead of a colored marble.
+  const stemMaterial = new THREE.MeshStandardMaterial({ color: FOLIAGE_COLOR });
+  const flowerCenterMaterial = new THREE.MeshStandardMaterial({ color: FLOWER_CENTER_COLOR });
   for (const bloom of BLOOM_LAYOUT) {
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.16, 5), stemMaterial);
+    stem.position.set(bloom.dx, 0.2, bloom.dz);
+    stem.name = "flower-bed-stem";
+    group.add(stem);
+
     const blossom = new THREE.Mesh(
-      new THREE.SphereGeometry(0.16, 8, 6),
+      new THREE.IcosahedronGeometry(0.13, 0),
       new THREE.MeshStandardMaterial({ color: bloom.color }),
     );
-    blossom.position.set(bloom.dx, 0.24, bloom.dz);
+    blossom.scale.y = 0.5; // flattened into an open blossom, not a ball
+    blossom.position.set(bloom.dx, 0.29, bloom.dz);
     blossom.name = "flower-bed-bloom";
     group.add(blossom);
+
+    const center = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), flowerCenterMaterial);
+    center.position.set(bloom.dx, 0.33, bloom.dz);
+    center.name = "flower-bed-center";
+    group.add(center);
   }
 
   return group;

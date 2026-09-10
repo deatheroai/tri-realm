@@ -74,6 +74,30 @@ describe("createLandDecorationMesh", () => {
     expect(bloomsA.length).toBeGreaterThan(0);
     expect(bloomsA).toEqual(bloomsB);
   });
+
+  it("gives every bloom a stem and a pollen center, not just a bare colored ball", () => {
+    const flowerBed = createLandDecorationMesh("flowerBed");
+    const blooms = flowerBed.children.filter((c) => c.name === "flower-bed-bloom");
+    const stems = flowerBed.children.filter((c) => c.name === "flower-bed-stem");
+    const centers = flowerBed.children.filter((c) => c.name === "flower-bed-center");
+
+    expect(stems).toHaveLength(blooms.length);
+    expect(centers).toHaveLength(blooms.length);
+    for (const [i, bloom] of blooms.entries()) {
+      // Stacked bottom to top at the same (x, z): stem, then blossom, then center.
+      expect(stems[i].position.y).toBeLessThan(bloom.position.y);
+      expect(centers[i].position.y).toBeGreaterThan(bloom.position.y);
+      expect(stems[i].position.x).toBeCloseTo(bloom.position.x);
+      expect(centers[i].position.x).toBeCloseTo(bloom.position.x);
+    }
+  });
+
+  it("flattens each blossom into an open shape rather than a round ball", () => {
+    const flowerBed = createLandDecorationMesh("flowerBed");
+    const [bloom] = flowerBed.children.filter((c) => c.name === "flower-bed-bloom");
+
+    expect(bloom.scale.y).toBeLessThan(1);
+  });
 });
 
 describe("treeSwayAngle", () => {

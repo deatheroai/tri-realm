@@ -160,6 +160,24 @@ system.
   and by confirming rendered pixels genuinely differ frame-to-frame; full
   suite green (typecheck, 254 unit tests, build, 64 E2E tests).
 
+  **2026-09-10 follow-up #3 — flower-bed blooms looked like plain colored
+  balls, made more flower-like.** You asked, after seeing the deployed
+  scene, whether the colorful balls were meant to be flowers, then asked
+  for a more realistic flower bed. `createFlowerBed`
+  (`src/land/landDecorations.ts`): each bloom in `BLOOM_LAYOUT` used to be
+  one bare `SphereGeometry`. Now it's three stacked pieces — a thin stem
+  (`CylinderGeometry`), a flattened `IcosahedronGeometry` head (same
+  low-poly-blob language `createTree`'s canopy already uses, scaled down
+  in Y into an open-blossom shape instead of a round ball, colored per
+  the bloom's existing fixed color), and a tiny shared warm "pollen"
+  center on top — the shape-plus-center combination is what actually
+  reads as a flower rather than a marble. Stem color reuses the tree
+  canopy's own green, tying the palette together. 2 new unit tests
+  (stem/center presence and ordering, blossom flattening); the existing
+  "same fixed bloom layout" determinism test still passes unchanged.
+  Verified visually with a real close-up screenshot; full suite green
+  (typecheck, 256 unit tests, build, 64 E2E tests).
+
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
 

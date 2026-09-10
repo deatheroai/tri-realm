@@ -62,6 +62,23 @@ Resolved).
   frame; full suite green (typecheck, 254 unit tests, build, 64 E2E
   tests).
 
+- **2026-09-10 — Flower-bed blooms looked like plain colored balls; made
+  more flower-like.** You asked, after seeing the deployed scene, whether
+  the colorful balls were meant to be flowers, then asked for a more
+  realistic flower bed once confirmed. Root of the "ball" read: a bare
+  `SphereGeometry` has no feature that reads as a flower rather than a
+  marble. Fixed in `createFlowerBed` (`src/land/landDecorations.ts`) by
+  giving each bloom a thin stem (`CylinderGeometry`) and swapping the
+  sphere for a flattened `IcosahedronGeometry` (same low-poly-blob
+  language `createTree`'s canopy already uses, scaled down in Y into an
+  open-blossom shape) plus a tiny shared warm "pollen" center on top —
+  it's the shape-plus-center combination, not either alone, that reads
+  as a flower. Stem color reuses the tree canopy's own green. Every
+  bloom still uses the same fixed `BLOOM_LAYOUT` positions/colors (no
+  `Math.random`), so the scene stays screenshot/test-reproducible.
+  Verified visually with a real close-up screenshot; full suite green
+  (typecheck, 256 unit tests, build, 64 E2E tests).
+
 - **2026-09-09 — Real Quaternius castle-piece models, the long-blocked
   item, unblocked by you directly asking for it.** Pulled the "Medieval
   Village MegaKit" pack for real and inspected every candidate model's
