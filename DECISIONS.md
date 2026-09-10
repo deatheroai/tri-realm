@@ -30,6 +30,23 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-10 — Air avatar: no real flying-creature asset reachable;
+  built a purpose-made procedural "Bird" skin instead, resolved via
+  `AskUserQuestion`.** You asked about avatars that might suit Air
+  better. Researched what's actually reachable first: Quaternius's own
+  animated-animal pack (the obvious source for a bird) is blocked, same
+  class of block the original Princess search hit; the one candidate
+  that *is* reachable (Modular Sci-Fi's alien creatures) was checked for
+  real and ruled out — idle-only animation, wrong theme. Asked you to
+  choose between building a new procedural shape, using the aliens
+  anyway, leaving the roster as-is, or hand-delivering an asset yourself
+  (the path that unblocked Princess before) — you picked the procedural
+  build. `createBirdAvatarMesh` (`src/skins/avatarView.ts`): a body lying
+  along local Z with fixed, wide-spread wings, no external asset
+  dependency. Verified visually (screenshots sent, both on Land and
+  flying through Air's clouds); full suite green. See `BACKLOG.md`'s
+  "Skins / visual identity" section for the full writeup.
+
 - **2026-09-09 — Real Quaternius castle-piece models, the long-blocked
   item, unblocked by you directly asking for it.** Pulled the "Medieval
   Village MegaKit" pack for real and inspected every candidate model's

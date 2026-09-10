@@ -25,7 +25,7 @@ export interface AvatarSkin {
    * default plain capsule. Absent means the default capsule look — what
    * both "capsule" and `FALLBACK_AVATAR_SKIN_ID` render as.
    */
-  proceduralVariant?: "diveSuit";
+  proceduralVariant?: "diveSuit" | "bird";
 }
 
 export const AVATAR_SKINS: readonly AvatarSkin[] = [
@@ -111,6 +111,25 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
       swimIdle: "Swim_Idle_Loop",
       swimActive: "Swim_Fwd_Loop",
     },
+  },
+  {
+    id: "bird",
+    label: "Bird",
+    kind: "procedural",
+    proceduralVariant: "bird",
+    // Built specifically for Air, requested 2026-09-10: no genuine rigged
+    // flying-creature CC0 asset turned up reachable anywhere this session
+    // could check (Quaternius's own animated-animal pack is blocked, same
+    // as the original Princess search; Khronos's sample repo has none
+    // either) — see DECISIONS.md. Rather than force-fitting an off-theme
+    // asset (a sci-fi alien was the one other candidate actually reachable,
+    // checked and rejected — idle-only animation, wrong theme), this is a
+    // purpose-built procedural shape instead: same "primitives first" bar
+    // Capsule/Dive Suit already meet, no external asset dependency at all,
+    // so it can't hit the same network-block wall future sessions keep
+    // running into. No animation clips (a shape, not a rig) — gets the
+    // same procedural idle/movement bob every other clip-less skin
+    // (Capsule, Princess) already does.
   },
   {
     id: "diveSuit",

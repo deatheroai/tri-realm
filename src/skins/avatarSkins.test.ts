@@ -63,9 +63,17 @@ describe("AVATAR_SKINS catalog", () => {
     expect(diveSuit?.proceduralVariant).toBe("diveSuit");
   });
 
-  it("only the dive-suit skin declares a proceduralVariant — every other procedural skin (capsule, the fallback) renders the default capsule look", () => {
+  it("every procedural skin with its own distinct shape declares a matching proceduralVariant", () => {
+    // Was "only dive-suit" until the bird skin (2026-09-10) — updated to
+    // stay a real guard (a distinctly-shaped skin can't silently lose its
+    // variant and fall back to the plain capsule look) without hardcoding
+    // "exactly these two forever".
+    const distinctlyShapedIds = ["diveSuit", "bird"];
     for (const skin of AVATAR_SKINS) {
-      if (skin.kind === "procedural" && skin.id !== DIVE_SUIT_AVATAR_SKIN_ID) {
+      if (skin.kind !== "procedural") continue;
+      if (distinctlyShapedIds.includes(skin.id)) {
+        expect(skin.proceduralVariant).toBe(skin.id);
+      } else {
         expect(skin.proceduralVariant).toBeUndefined();
       }
     }

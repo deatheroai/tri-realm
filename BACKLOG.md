@@ -32,6 +32,9 @@ plain top-to-bottom-per-phase ordering until this note is removed):**
 4. `done` Real Quaternius castle-piece models (Skins / visual identity
    below, 2026-09-09).
 5. Camera framing revisit (`todo` under "Skins / visual identity").
+6. `done` Air-appropriate procedural "Bird" avatar skin (Skins / visual
+   identity below, 2026-09-10 — asked for directly, not previously in
+   this list).
 
 Everything under "Later / unscoped" stays parked behind all of the above
 with no target, as before.
@@ -354,6 +357,44 @@ surfaced.
   Verified visually with real screenshots of all three types placed
   together. `public/assets/ATTRIBUTIONS.md` and the in-app credits screen
   (`src/skins/attributions.ts`) both updated.
+- `done` **New procedural "Bird" avatar skin, purpose-built for Air.**
+  Asked for directly 2026-09-10 ("avatars that might suit the floating
+  air environment better"). Researched what's actually reachable first,
+  same discipline the castle-piece-models item above used: no genuine
+  rigged flying-creature CC0 asset turned up anywhere this session could
+  check — Quaternius's own "Ultimate Animated Animal Pack" (the obvious
+  candidate) routes only through the blocked quaternius.com/itch.io
+  directly, same class of block the original Princess search hit; the
+  reachable Modular Sci-Fi pack's three alien creatures were checked for
+  real (`gltf-transform inspect`) and ruled out — idle-only animation
+  (no walk/run clip), and a sci-fi look that clashes with the game's
+  medieval/nature theme elsewhere. Presented these findings plus a
+  recommendation via `AskUserQuestion`; you picked "build a purpose-made
+  procedural skin" over the alien fallback, leaving the roster as-is, or
+  hand-delivering an asset yourself.
+  `createBirdAvatarMesh` (`src/skins/avatarView.ts`, new `proceduralVariant:
+  "bird"` alongside the existing `"diveSuit"`) — a body lying *along*
+  local Z (elongated front-to-back, unlike every other skin's roughly
+  capsule-shaped upright silhouette) with fixed, wide-spread wings: a
+  bird's whole point is reading as "shaped for flight" holding
+  completely still, which an upright silhouette can't do regardless of
+  pose, and there's no rig here to flap them anyway. No external asset
+  dependency at all, so it can't hit the same network-block wall future
+  sessions keep running into. No animation clips, so it automatically
+  gets the same procedural idle/movement bob every other clip-less skin
+  (Capsule, Princess) already does, and — flying in Air specifically —
+  the same pitch tilt (`setVerticalPitch`, unchanged) every skin already
+  gets there.
+  `avatarSkins.test.ts`'s "only dive-suit has a proceduralVariant" guard
+  updated to a general "every distinctly-shaped procedural skin declares
+  a matching variant" check (was already due for generalizing, per its
+  own comment) rather than a one-off carve-out. 3 new unit tests
+  (`avatarView.test.ts`: distinct group shape, wingspan notably wider
+  than the body, left/right wing mirroring). Verified visually with real
+  screenshots on Land and flying through Air's cloud platforms (sent to
+  you) — full suite green (typecheck, 253 unit tests, build, 64 E2E
+  tests, including the narrow-viewport dev-panel-overlap check with the
+  new button added).
 - `todo` Revisit the 3rd-person camera's framing once there's more
   character content to actually showcase — noted in `DECISIONS.md`: the
   current steep ~31° elevation makes an elongated quadruped read as
