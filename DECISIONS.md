@@ -115,6 +115,22 @@ Resolved).
   E2E timeout during verification confirmed as a parallel-load flake,
   not a regression — passed clean alone and in a full re-run).
 
+  **Seventh follow-up same day** — still "too out of place," asked for
+  an actual attachment to the face. Right diagnosis: every fix through
+  the sixth round was still repositioning a box-fraction guess, never a
+  real attachment point. Checked rather than assumed one didn't exist:
+  dumped every skin's bone names directly, and every skinned character
+  (all but Princess, which has no rig) ships a bone with "head" in its
+  name. Rebuilt the mask to track that bone's actual world position
+  every frame — it now follows real head motion from the character's
+  own animation. Caught and fixed one real bug along the way: the
+  forward push off the bone's pivot was first a flat fraction of head
+  size, which buried the mask almost entirely inside Fox's elongated
+  snout (measured directly: ~0.91 world units short). Fixed by measuring
+  each character's actual face-to-bone distance instead of guessing a
+  generic fraction. Verified visually across Fox and Female, idle and
+  mid-walk. Full suite green.
+
 - **2026-09-08 — Dive suit looked like a plain capsule; fixed.** You
   reported the avatar reading as an undecorated Capsule after switching
   to the Dive Suit skin. Confirmed programmatically first (not assumed):

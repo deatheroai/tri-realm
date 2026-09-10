@@ -83,6 +83,13 @@ export function createProceduralAvatarMesh(): THREE.Mesh {
  * one (the waist/weight belt, the single most recognizable diver-gear
  * ring) plus the mask and tank, which read as gear on their own without
  * needing a ring escort.
+ *
+ * The mask is built and positioned separately (`createMaskGroup`,
+ * `findHeadBone`, `syncMaskToHeadBone` below) — see those for why: this
+ * function's own box-fraction placement (fine for the belt/tank/flippers,
+ * which don't need to land on one exact anatomical point) kept putting
+ * the mask somewhere in the neighborhood of the head rather than on it,
+ * no matter how its position or shape was tuned.
  */
 function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const gear = new THREE.Group();
@@ -101,64 +108,10 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const centerX = (box.max.x + box.min.x) / 2;
   const centerZ = (box.max.z + box.min.z) / 2;
   const torsoRadius = width / 2 + 0.04; // stands proud of the actual body surface
-  const headRadius = torsoRadius * 0.68; // heads read narrower than chests/waists
 
-  const headY = box.min.y + height * 0.75;
   const tankY = box.min.y + height * 0.53;
   const waistY = box.min.y + height * 0.44;
   const footY = box.min.y + height * 0.03;
-
-  // Mask — redesigned from a flat box to a rounded, lens-shaped pair
-  // (dark rim + inset tinted lens) plus a strap, since a hard-edged box
-  // kept reading as "a sign held up to the face" no matter how it was
-  // positioned (reported repeatedly — a floating box, then a flush box
-  // that still looked out of place). Real dive-mask/goggle skirts are
-  // rounded, not rectangular, and noticeably narrower than the whole
-  // head (they span eyes + nose, not ear to ear) — both of those were
-  // true problems with the box version, not just its position. Built
-  // from scaled spheres (smooth, rounded silhouette in every direction,
-  // unlike a box's flat faces and hard corners) rather than a box or a
-  // capsule, so there's no separate rotation to get right. The strap is
-  // dark, not the gold "equipment" color the belt/tank use — it's a
-  // functional part of the mask itself, not another bright accessory
-  // ring (see the 2026-09-09 "too many yellow rings" trim above for why
-  // that distinction matters here). Embedded roughly half into the face
-  // surface at `box.max.z` (same placement the waist belt uses below) so
-  // it sits flush rather than floating clear of it — the fix for "should
-  // be on the face, not a box" that a shape change alone doesn't cover.
-  const rimGeometry = new THREE.SphereGeometry(headRadius * 0.62, 12, 8);
-  const maskFrame = new THREE.Mesh(rimGeometry, new THREE.MeshStandardMaterial({ color: 0x1c1c1c }));
-  maskFrame.scale.set(1, 0.62, 0.5); // wide, short, shallow — a lens-shaped skirt, not a ball or a box
-  maskFrame.position.set(centerX, headY, box.max.z);
-  maskFrame.name = "dive-suit-mask-frame";
-
-  const lensGeometry = new THREE.SphereGeometry(headRadius * 0.46, 12, 8);
-  const maskLens = new THREE.Mesh(
-    lensGeometry,
-    new THREE.MeshStandardMaterial({
-      color: 0x8fd8e8,
-      emissive: 0x2a5560,
-      emissiveIntensity: 0.5,
-      transparent: true,
-      opacity: 0.9,
-    }),
-  );
-  maskLens.scale.set(1, 0.58, 0.5);
-  // The frame's own front face sits at box.max.z + (0.62*0.5)*headRadius
-  // = box.max.z + 0.31*headRadius; the lens is centered right there so
-  // it's anchored inside the frame but its own front half still pokes
-  // out past it — visible "glass in a socket," not swallowed whole by
-  // the opaque frame around it.
-  maskLens.position.set(centerX, headY, box.max.z + headRadius * 0.31);
-  maskLens.name = "dive-suit-mask-lens";
-
-  const maskStrap = new THREE.Mesh(
-    new THREE.TorusGeometry(headRadius * 0.95, 0.022, 6, 16),
-    new THREE.MeshStandardMaterial({ color: 0x1c1c1c }),
-  );
-  maskStrap.rotation.x = Math.PI / 2;
-  maskStrap.position.set(centerX, headY, centerZ);
-  maskStrap.name = "dive-suit-mask-strap";
 
   const tank = new THREE.Mesh(
     new THREE.CylinderGeometry(torsoRadius * 0.4, torsoRadius * 0.4, height * 0.4, 10),
@@ -189,8 +142,162 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
     return flipper;
   }
 
-  gear.add(maskFrame, maskLens, maskStrap, tank, belt, createFlipper(-1), createFlipper(1));
+  gear.add(tank, belt, createFlipper(-1), createFlipper(1));
   return gear;
+}
+
+/**
+ * The mask — a dark rounded rim, an inset tinted lens, and a thin strap
+ * (see the shape rationale in `createDiveGearOverlay`'s own doc comment
+ * above for why these are scaled spheres, not boxes). Built around the
+ * group's own local origin at (0, 0, 0) rather than pre-positioned in
+ * world/box space — `findHeadBone`/`syncMaskToHeadBone` below move the
+ * *group itself* to track a real head bone every frame, so the mask
+ * actually follows the character's head (including animation) instead of
+ * sitting at a fixed point in space computed once from the body's overall
+ * bounding box.
+ *
+ * **Position, rebuilt 2026-09-09, same day yet again**: every previous
+ * fix — floating box, flush box, then rounded goggles — was still just
+ * moving the same box-fraction placement (`box.max.z` + a height
+ * fraction) around. That heuristic locates "somewhere in front of the
+ * body, near head height," which is a fair approximation for *where the
+ * head roughly is* but never *exactly where the face is*, and reads as
+ * "close but off" no matter how the shape improves — confirmed directly:
+ * you kept saying it looked out of place through three straight rounds
+ * of shape/position tweaks. You asked for it to actually *attach* to the
+ * face. glTF humanoid (and even Fox's quadruped) rigs all ship a bone
+ * with "head" in its name (confirmed directly — dumped every skin's
+ * bone names rather than assuming: Fox's `b_Head_05`, Robot's `Head`,
+ * Mannequin's `DEF-head`, Female's `head`), so the mask now tracks that
+ * bone's actual world position every frame instead of a static estimate
+ * — it moves with the real head, including any head motion the
+ * character's own animation carries. Only skins with no skeleton at all
+ * (Princess — no rig, see ATTRIBUTIONS.md; Capsule — procedural, no
+ * bones) fall back to the old static estimate, in `buildVisual`'s
+ * `DIVE_SUIT_AVATAR_SKIN_ID` branch.
+ */
+function createMaskGroup(headRadius: number): THREE.Group {
+  const mask = new THREE.Group();
+  mask.name = "dive-suit-mask";
+
+  const rimGeometry = new THREE.SphereGeometry(headRadius * 0.62, 12, 8);
+  const maskFrame = new THREE.Mesh(rimGeometry, new THREE.MeshStandardMaterial({ color: 0x1c1c1c }));
+  maskFrame.scale.set(1, 0.62, 0.5); // wide, short, shallow — a lens-shaped skirt, not a ball or a box
+  maskFrame.name = "dive-suit-mask-frame";
+
+  const lensGeometry = new THREE.SphereGeometry(headRadius * 0.46, 12, 8);
+  const maskLens = new THREE.Mesh(
+    lensGeometry,
+    new THREE.MeshStandardMaterial({
+      color: 0x8fd8e8,
+      emissive: 0x2a5560,
+      emissiveIntensity: 0.5,
+      transparent: true,
+      opacity: 0.9,
+    }),
+  );
+  maskLens.scale.set(1, 0.58, 0.5);
+  // The frame's own front face sits at (0.62*0.5)*headRadius = 0.31 *
+  // headRadius in front of the group's own origin; the lens is centered
+  // right there so it's anchored inside the frame but its own front half
+  // still pokes out past it — visible "glass in a socket," not swallowed
+  // whole by the opaque frame around it.
+  maskLens.position.set(0, 0, headRadius * 0.31);
+  maskLens.name = "dive-suit-mask-lens";
+
+  // Strap sits a little behind the group's own origin (roughly at the
+  // head's actual center rather than out at the face) so it reads as
+  // wrapping around the head, not just the frame's own front sliver. Dark
+  // rather than the gold "equipment" color the belt/tank use — it's a
+  // functional part of the mask itself, not another bright accessory
+  // ring (see the 2026-09-09 "too many yellow rings" trim above
+  // `createDiveGearOverlay` for why that distinction matters here).
+  const maskStrap = new THREE.Mesh(
+    new THREE.TorusGeometry(headRadius * 0.95, 0.022, 6, 16),
+    new THREE.MeshStandardMaterial({ color: 0x1c1c1c }),
+  );
+  maskStrap.rotation.x = Math.PI / 2;
+  maskStrap.position.set(0, 0, -headRadius * 0.4);
+  maskStrap.name = "dive-suit-mask-strap";
+
+  mask.add(maskFrame, maskLens, maskStrap);
+  return mask;
+}
+
+/**
+ * First bone whose name contains "head" (case-insensitive), depth-first —
+ * every current skin with a real skeleton names its head bone this way
+ * (confirmed directly per-skin, see `createMaskGroup`'s comment), and a
+ * parent head bone is always visited before a "*_leaf"/end-effector child
+ * bone some rigs add (Female ships both `head` and `head_leaf`), so the
+ * first match is reliably the real head joint, not its tip marker.
+ * `null` for a skin with no skeleton at all (Princess, Capsule).
+ */
+function findHeadBone(root: THREE.Object3D): THREE.Bone | null {
+  let found: THREE.Bone | null = null;
+  root.traverse((node) => {
+    if (!found && (node as THREE.Bone).isBone && /head/i.test(node.name)) {
+      found = node as THREE.Bone;
+    }
+  });
+  return found;
+}
+
+/**
+ * Moves `mask` to follow `headBone`'s current world position, expressed
+ * in `parent`'s local space (`parent` is the mask's actual Object3D
+ * parent — the dive-suit wrapper — so the result is a valid local
+ * `.position` regardless of how that wrapper itself is currently
+ * positioned/rotated by `main.ts`), then nudges it by `forwardOffset`/
+ * `upOffset` — a head bone's own pivot is typically where the neck joins
+ * the skull, not out at the face, so tracking the bone alone would still
+ * bury the mask inside the head. Called once at build time (so the mask
+ * isn't at the origin for the first rendered frame) and again every frame
+ * from `AvatarView.update` (so it actually tracks head motion from the
+ * character's own animation, not just a one-time snapshot) — both call
+ * sites pass the *same* offsets, computed once (see `buildVisual`'s
+ * `DIVE_SUIT_AVATAR_SKIN_ID` branch), since those depend on the
+ * character's own measured proportions, not on anything that changes
+ * frame to frame.
+ *
+ * **Fixed 2026-09-10, confirmed by measuring, not guessing**: the first
+ * version derived `forwardOffset` as a flat fraction of `headRadius`
+ * (itself derived from the character's *torso* width) — reasonable for a
+ * compact humanoid head, but Fox's head bone turned out to sit a full
+ * ~0.91 world units behind its own nose tip (measured directly, not
+ * assumed), while that headRadius-based guess only pushed the mask
+ * forward by ~0.24 — nowhere near the visible snout surface, so the mask
+ * rendered buried inside the head with just a sliver poking out. Callers
+ * now measure `forwardOffset` from the character's own bounding box
+ * (`box.max.z` minus the bone's own world Z — literally "how far this
+ * character's face actually extends past its head bone") instead of
+ * guessing a generic fraction, so it scales correctly for an elongated
+ * snout the same way it does for a compact human head.
+ *
+ * `headBone.updateWorldMatrix(true, false)` — not just reading
+ * `matrixWorld` as-is — walks the *entire* ancestor chain (the bone's own
+ * skeleton root, the wrapper, everything up through `main.ts`'s avatar
+ * group) and recomputes it fresh, the same fix `buildVisual`'s box
+ * measurement above already needed for the same underlying reason: nothing
+ * guarantees that chain's matrices reflect this frame's actual transforms
+ * (this frame's mixer pose, this frame's avatar position/rotation) unless
+ * something explicitly asks for it — the renderer normally does this once
+ * per frame, but not necessarily before `AvatarView.update` runs.
+ */
+function syncMaskToHeadBone(
+  mask: THREE.Object3D,
+  headBone: THREE.Bone,
+  parent: THREE.Object3D,
+  forwardOffset: number,
+  upOffset: number,
+): void {
+  headBone.updateWorldMatrix(true, false);
+  const worldPosition = new THREE.Vector3().setFromMatrixPosition(headBone.matrixWorld);
+  const localPosition = parent.worldToLocal(worldPosition);
+  localPosition.z += forwardOffset;
+  localPosition.y += upOffset;
+  mask.position.copy(localPosition);
 }
 
 const gltfLoader = new GLTFLoader();
@@ -229,6 +336,15 @@ export class AvatarView {
   private underlyingSkinId = "";
   private facingOffset = 0;
   private visual: THREE.Object3D | null = null;
+  // Set only while the dive suit is equipped on a character with a real
+  // head bone — update() re-syncs diveSuitMaskGroup to diveSuitHeadBone
+  // every frame so the mask actually follows head motion. Both null the
+  // rest of the time (see setSkin, and createMaskGroup/syncMaskToHeadBone
+  // in this file for the full "why a bone, not a box-fraction" story).
+  private diveSuitHeadBone: THREE.Bone | null = null;
+  private diveSuitMaskGroup: THREE.Group | null = null;
+  private diveSuitMaskForwardOffset = 0;
+  private diveSuitMaskUpOffset = 0;
   // Continuous, never reset on setSkin — a skin swapped in mid-oscillation
   // just picks up the same phase rather than jumping, and it's imperceptible
   // either way given the tiny amplitude (see bobOffset).
@@ -268,6 +384,10 @@ export class AvatarView {
     this.currentSkinId = built.resolvedSkinId;
     this.facingOffset = skin.facingOffset ?? 0;
     this.visual = built.visual;
+    this.diveSuitHeadBone = built.diveSuitHeadBone ?? null;
+    this.diveSuitMaskGroup = built.diveSuitMaskGroup ?? null;
+    this.diveSuitMaskForwardOffset = built.diveSuitMaskForwardOffset ?? 0;
+    this.diveSuitMaskUpOffset = built.diveSuitMaskUpOffset ?? 0;
     this.visual.position.y = 0; // fresh visual — no stale bob offset carried over
     this.playState(this.currentState, true);
   }
@@ -277,6 +397,15 @@ export class AvatarView {
     mixer: THREE.AnimationMixer | null;
     actions: Partial<Record<MoveAnimationState, THREE.AnimationAction>>;
     resolvedSkinId: string;
+    // Only set for the dive-suit branch, and only when the character it
+    // dressed has a real head bone to track — see createMaskGroup's and
+    // syncMaskToHeadBone's own comments. AvatarView carries these forward
+    // so `update()` can keep the mask following head motion every frame,
+    // not just at build time.
+    diveSuitHeadBone?: THREE.Bone | null;
+    diveSuitMaskGroup?: THREE.Group | null;
+    diveSuitMaskForwardOffset?: number;
+    diveSuitMaskUpOffset?: number;
   }> {
     if (skin.id === DIVE_SUIT_AVATAR_SKIN_ID) {
       // Dress whoever was actually worn last (Fox/Female/Robot/…), not a
@@ -312,7 +441,49 @@ export class AvatarView {
       const box = new THREE.Box3().setFromObject(base.visual);
       wrapper.add(createDiveGearOverlay(box));
 
-      return { visual: wrapper, mixer: base.mixer, actions: base.actions, resolvedSkinId: DIVE_SUIT_AVATAR_SKIN_ID };
+      const width = Math.max(box.max.x - box.min.x, 0.3);
+      const headRadius = (width / 2 + 0.04) * 0.68; // same derivation createDiveGearOverlay uses for its own headRadius
+      const maskGroup = createMaskGroup(headRadius);
+      wrapper.add(maskGroup);
+
+      // Bone-tracked when the character actually has a skeleton (every
+      // current gltf skin except Princess) — see createMaskGroup's own
+      // comment for why this replaced box-fraction placement. Falls back
+      // to the old static estimate for a skin with no skeleton at all
+      // (Princess, or the procedural Capsule base when nothing else was
+      // ever worn) — same box.max.z + height-fraction heuristic as
+      // before, just with no bone to track afterward.
+      const headBone = findHeadBone(base.visual);
+      let maskForwardOffset = headRadius * 0.85; // fallback default — see below for why bone-tracked skins override it
+      const maskUpOffset = headRadius * 0.1;
+      if (headBone) {
+        headBone.updateWorldMatrix(true, false);
+        const boneWorldZ = new THREE.Vector3().setFromMatrixPosition(headBone.matrixWorld).z;
+        // How far this character's own face actually extends past its
+        // head bone's pivot, measured from its own bounding box (see
+        // syncMaskToHeadBone's own comment for the bug this replaced —
+        // headRadius alone badly underestimated Fox's snout length).
+        // box.max.z is the frontmost point of the whole body, which for
+        // every skin checked — upright bipeds, and Fox stood on all
+        // fours — is the face/snout, not some other body part.
+        const faceReach = box.max.z - boneWorldZ;
+        if (faceReach > 0) maskForwardOffset = faceReach * 0.85; // just shy of the very tip, not past it
+        syncMaskToHeadBone(maskGroup, headBone, wrapper, maskForwardOffset, maskUpOffset);
+      } else {
+        const height = Math.max(box.max.y - box.min.y, 0.4);
+        maskGroup.position.set((box.max.x + box.min.x) / 2, box.min.y + height * 0.75, box.max.z);
+      }
+
+      return {
+        visual: wrapper,
+        mixer: base.mixer,
+        actions: base.actions,
+        resolvedSkinId: DIVE_SUIT_AVATAR_SKIN_ID,
+        diveSuitHeadBone: headBone,
+        diveSuitMaskGroup: maskGroup,
+        diveSuitMaskForwardOffset: maskForwardOffset,
+        diveSuitMaskUpOffset: maskUpOffset,
+      };
     }
 
     if (skin.kind === "procedural") {
@@ -419,6 +590,20 @@ export class AvatarView {
 
   update(dt: number): void {
     this.mixer?.update(dt);
+    // Re-sync every frame, after the mixer above has applied this frame's
+    // pose — a real head bone moves with its character's own animation
+    // (a walk cycle's head bob, a swim stroke, …), not just once at build
+    // time. No-op whenever there's no bone to track (see buildVisual's
+    // DIVE_SUIT_AVATAR_SKIN_ID branch and createMaskGroup's own comment).
+    if (this.diveSuitHeadBone && this.diveSuitMaskGroup && this.visual) {
+      syncMaskToHeadBone(
+        this.diveSuitMaskGroup,
+        this.diveSuitHeadBone,
+        this.visual,
+        this.diveSuitMaskForwardOffset,
+        this.diveSuitMaskUpOffset,
+      );
+    }
     this.bobElapsed += dt;
     // Only skins with no real clip for the current state get the
     // procedural bob (Capsule always, Princess always — see bobOffset's

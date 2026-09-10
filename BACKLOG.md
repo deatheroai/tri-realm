@@ -1092,6 +1092,43 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   under 2-worker parallel load, then passed clean both run alone and in
   a full re-run of the file. Full suite green: typecheck, 215 unit
   tests, build, 27 skins.spec.ts E2E tests.
+  **Seventh follow-up same day — still "too out of place"; asked to
+  actually attach it to the face like a real mask.** Right diagnosis:
+  every fix through the sixth round, including that one, was still just
+  repositioning a box-fraction estimate (`box.max.z` + a height fraction
+  of the whole body) — a reasonable guess at "roughly where the head is,"
+  never an actual attachment to the face. Checked whether a real
+  attachment point exists rather than assuming one didn't: dumped every
+  current skin's bone names directly (not guessed), and every skin with a
+  real skeleton (Fox, Robot, Mannequin, Female — everything except
+  Princess, which has none) ships a bone with "head" in its name (Fox's
+  `b_Head_05`, Robot's `Head`, Mannequin's `DEF-head`, Female's `head`).
+  Rebuilt the mask around that: split it out of `createDiveGearOverlay`
+  into its own `createMaskGroup` built at local origin, and a new
+  `findHeadBone`/`syncMaskToHeadBone` pair that locates that bone and
+  moves the mask group to track its actual world position every single
+  frame (in `AvatarView.update`, after the mixer has applied that frame's
+  pose) — so the mask now follows real head motion from the character's
+  own animation (a walk cycle's head bob, a swim stroke) instead of
+  sitting at a fixed point computed once. Skins with no skeleton at all
+  (Princess, Capsule) keep the old static box-fraction placement as a
+  fallback, unchanged. Hit and fixed one real bug getting here, caught by
+  measuring rather than assumed correct: the forward offset (how far past
+  the bone's own pivot — typically the neck/skull joint, not the face —
+  to push the mask) was first derived as a flat fraction of `headRadius`
+  (itself from *torso* width), which worked passably for compact humanoid
+  heads but buried the mask almost entirely inside Fox's elongated snout
+  — measured directly (not guessed) at a ~0.91-world-unit gap between the
+  bone and the actual nose tip, against only ~0.24 of forward push from
+  the old formula. Fixed by measuring that forward reach directly per
+  character instead (`box.max.z` minus the bone's own world Z — "how far
+  this character's face actually extends past its head bone"), computed
+  once at build time and reused every frame. Verified visually across
+  Fox (now clearly sitting over the eyes/snout, a real fix — zoomed crop
+  confirms it) and Female, both idle and mid-walk (confirms the
+  per-frame tracking actually holds up under animation, not just at
+  rest). Full suite green: typecheck, 215 unit tests, build, 61 E2E
+  tests.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark
