@@ -397,9 +397,10 @@ export class AvatarView {
     this.mixer?.update(dt);
     this.bobElapsed += dt;
     // Only skins with no real clip for the current state get the
-    // procedural bob (Capsule always, Princess always — see bobOffset's
-    // own comment); an animated skin's actual clip already carries its own
-    // motion, so this stays exactly 0 and never fights it.
+    // procedural bob (every procedural skin, plus Princess — see
+    // bobOffset's own comment for the current full list); an animated
+    // skin's actual clip already carries its own motion, so this stays
+    // exactly 0 and never fights it.
     if (this.visual) {
       this.visual.position.y = this.hasAnimation(this.currentState)
         ? 0

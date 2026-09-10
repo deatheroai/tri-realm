@@ -558,6 +558,41 @@ reasoning (changing the shared `cameraOffset` in `main.ts` would move
 click-position assumptions baked into several of World's own E2E specs)
 still holds unchanged; not re-investigated further this cycle.
 
+**2026-09-10 (this cycle) — both remaining `todo`s re-checked again, still
+not solo-actionable; no new backlog item picked up, real parallel work
+found instead of manufacturing busywork.** Dive-suit auto-equip: unchanged,
+still needs a human with a real browser at the live deployment (see
+`DECISIONS.md`'s "Needs Your Action"). Camera framing: unchanged, same
+blast-radius reasoning as every prior re-check holds. Before assuming
+nothing was left to build, checked for other in-flight work this cycle
+might duplicate or conflict with — found three active, unmerged branches
+with very recent commits (same day, some within the hour) doing real work
+squarely in this track's own territory: `claude/dive-suit-auto-equip-zb1qvy`
+(an extensive from-scratch rebuild of the dive-suit visual — dressing the
+actual worn character instead of a separate generic body, fixing a T-pose
+arm-span sizing bug across the mask/tank/belt/flippers — a much deeper fix
+than the angle-legibility one already on `main`), and
+`claude/garden-implementation-status-g3b8o5` (real downloaded models/wind-
+sway for land's flower beds and trees, `public/assets/` territory). A
+third, `claude/avatar-floating-air-realm-yibz10`, predates and is
+superseded by the float-vs-run fix already on `main`. None of these are
+this track's own daily branches and `AUTONOMY.md`'s merge protocol only
+covers `main` + the two daily branches, so none were merged or touched —
+logged here purely so a future Skins cycle doesn't duplicate the dive-suit
+rework already well underway elsewhere, and checks whether it landed on
+`main` yet before touching `createDiveSuitAvatarMesh` itself. With the
+usual two items still stuck and the obvious adjacent real gaps already
+spoken for by that other work, this cycle picked up a small, genuinely safe
+loose end instead: three doc comments (`avatarSkins.ts`'s `bobOffset`,
+`avatarView.ts`'s `update`, and `ARCHITECTURE.md`'s matching section) had
+gone stale listing "Capsule and Princess" as the only no-animation skins —
+true when written, wrong since Dive Suit and (today) Bird also ship with no
+clips. Reworded to name the actual current set and point at
+`hasAnimation()` as the real source of truth rather than a list that has to
+be remembered on every new skin. No behavior change, so no new tests;
+full suite re-verified after the edit (typecheck, 253 unit tests, build,
+64 E2E tests).
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
