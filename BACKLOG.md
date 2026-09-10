@@ -132,6 +132,82 @@ system.
   suite green (typecheck, 242 unit tests, build, 64 E2E tests).
   Rolling-hill terrain and all movement/build mechanics stay untouched.
 
+  **2026-09-09 follow-up — trees looked "blockish" (a bare cone), made
+  more organic.** You reviewed the deployed dressing and asked for more
+  realistic trees. `createTree` (`src/land/landDecorations.ts`) swapped
+  the single `ConeGeometry` foliage for `CANOPY_LAYOUT`, a small fixed
+  (not random, same discipline as `BLOOM_LAYOUT`) cluster of 4 overlapping
+  low-detail `IcosahedronGeometry` blobs — faceted rather than smooth, so
+  it still reads as a procedural primitive, but the irregular multi-lobe
+  silhouette (plus a second, lighter foliage tone on two of the four
+  blobs) breaks the single-sharp-point "traffic cone" look. Trunk got a
+  wider root-flare taper too. Every tree still uses the identical fixed
+  cluster, so the scene stays screenshot/test-reproducible. Verified
+  visually with real screenshots at two distances; full suite green
+  (typecheck, 250 unit tests, build, 64 E2E tests).
+
+  **2026-09-09 follow-up #2 — trees now sway in a gentle wind.** You
+  asked for some sway to feel like natural wind once the canopy shape
+  itself looked right. New `treeSwayAngle(elapsedSeconds, phaseSeed)`
+  (`src/land/landDecorations.ts`) — a pure function summing a slow main
+  sway and a faster, smaller flutter (same "combine a couple of sines"
+  discipline `terrainHeightAt` already uses), same shape as `skins/
+  avatarSkins.ts`'s `bobOffset`. `main.ts` caches every `"tree"` group
+  once at startup and, each frame while in the land realm, sets its
+  `rotation.z` from this function — the whole group leans from its base
+  (every tree's local origin is ground level already), no separate bend
+  needed. `phaseSeed` comes from each tree's own `(x, z)`, so different
+  trees sway out of phase with each other rather than in lockstep like
+  one puppet. Small amplitude (~2°) — a gentle lean, not cartoonish.
+  Verified visually (real screenshots ~1s apart showing the lean shift)
+  and by confirming rendered pixels genuinely differ frame-to-frame; full
+  suite green (typecheck, 254 unit tests, build, 64 E2E tests).
+
+  **2026-09-10 follow-up #3 — flower-bed blooms looked like plain colored
+  balls, made more flower-like.** You asked, after seeing the deployed
+  scene, whether the colorful balls were meant to be flowers, then asked
+  for a more realistic flower bed. `createFlowerBed`
+  (`src/land/landDecorations.ts`): each bloom in `BLOOM_LAYOUT` used to be
+  one bare `SphereGeometry`. Now it's three stacked pieces — a thin stem
+  (`CylinderGeometry`), a flattened `IcosahedronGeometry` head (same
+  low-poly-blob language `createTree`'s canopy already uses, scaled down
+  in Y into an open-blossom shape instead of a round ball, colored per
+  the bloom's existing fixed color), and a tiny shared warm "pollen"
+  center on top — the shape-plus-center combination is what actually
+  reads as a flower rather than a marble. Stem color reuses the tree
+  canopy's own green, tying the palette together. 2 new unit tests
+  (stem/center presence and ordering, blossom flattening); the existing
+  "same fixed bloom layout" determinism test still passes unchanged.
+  Verified visually with a real close-up screenshot; full suite green
+  (typecheck, 256 unit tests, build, 64 E2E tests).
+
+  **2026-09-10 follow-up #4 — flower bed upgraded to a real downloaded
+  model, same pattern the castle pieces already use.** You asked, rather
+  than continuing to hand-build the procedural flower further, whether a
+  real shared asset could be used instead — same question that led to
+  the castle pieces' own real models. New `public/assets/models/
+  flower.glb`: Quaternius's "Stylized Nature MegaKit"
+  (`Flower_3_Group.gltf`), CC0-1.0, reached via the same GitHub-releases
+  mirror the castle pieces use (quaternius.com itself is blocked by this
+  session's network policy); reprocessed with `@gltf-transform/cli`
+  (textures resized to 256×256, packed to one `.glb`, pruned) from ~3MB
+  down to 192KB. New `src/land/realFlowerModel.ts` mirrors
+  `realCastlePieceModels.ts`'s exact "safe default first" shape:
+  `createFlowerBed` still builds the procedural stem/blossom/center trio
+  synchronously (unchanged, so it's still the fallback on a load
+  failure), and `upgradeFlowerBedToRealModel` fires a fire-and-forget
+  load that hides those and adds the real, scaled model as a sibling
+  once it resolves — the soil disc stays either way. Scale (0.35×)
+  measured via `gltf-transform inspect` against the bed's own 0.8-radius
+  soil disc, not guessed, same discipline the castle pieces' own scale
+  values use. 6 new unit tests (hide/swap wiring, soil stays visible,
+  scale, two-beds-don't-share-one-object, load-failure fallback,
+  createLandDecorationMesh still synchronous). Verified visually with
+  real screenshots (no console errors, textures load cleanly, flowers
+  read as real stylized blooms with stems/leaves/petals, appropriately
+  sized against the nearby trees); full suite green (typecheck, 262 unit
+  tests, build, 64 E2E tests).
+
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
 

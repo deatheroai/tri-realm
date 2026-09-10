@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { upgradeFlowerBedToRealModel } from "./realFlowerModel";
 
 /**
  * Land's "parkland" dressing (`BACKLOG.md`, locked in during a 2026-09-08
@@ -58,7 +59,9 @@ export const LAND_DECORATION_POSITIONS: LandDecorationPosition[] = [
 
 const TRUNK_COLOR = 0x6b4a2f;
 const FOLIAGE_COLOR = 0x3f7d3f;
+const FOLIAGE_COLOR_LIGHT = 0x5a9650; // a second, lighter tone breaks up the canopy's silhouette
 const SOIL_COLOR = 0x4a3524;
+const FLOWER_CENTER_COLOR = 0xf2c14e; // warm "pollen" tone, shared by every bloom regardless of petal color
 const PATH_STONE_COLOR = 0xb9ac8f;
 const FOUNTAIN_STONE_COLOR = 0x9a9a92;
 const WATER_COLOR = 0x5fb8d8;
@@ -73,26 +76,78 @@ const BLOOM_LAYOUT: Array<{ dx: number; dz: number; color: number }> = [
   { dx: -0.2, dz: -0.22, color: 0xe85d8a },
 ];
 
+// A cone reads as a traffic cone, not a tree — this replaces it with a
+// small cluster of overlapping, low-poly (faceted, not smooth) blobs that
+// build up an irregular canopy silhouette instead of one perfect point.
+// Fixed, not random, same "no Math.random" discipline as BLOOM_LAYOUT
+// above: every tree gets the identical cluster, so the scene stays
+// screenshot/test-reproducible. `light` alternates in so the canopy reads
+// as leaf clumps rather than one flat-shaded mass.
+const CANOPY_LAYOUT: Array<{ dx: number; dy: number; dz: number; radius: number; light?: boolean }> = [
+  { dx: 0, dy: 0, dz: 0, radius: 0.75 },
+  { dx: 0.38, dy: 0.22, dz: 0.12, radius: 0.5, light: true },
+  { dx: -0.32, dy: 0.3, dz: -0.22, radius: 0.48 },
+  { dx: 0.08, dy: 0.5, dz: -0.3, radius: 0.42, light: true },
+];
+
 function createTree(): THREE.Group {
   const group = new THREE.Group();
   group.name = "tree";
 
+  // A slight root flare (wider at the base than the old uniform taper)
+  // reads less like a plain pole.
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.15, 0.2, 1.2, 6),
+    new THREE.CylinderGeometry(0.13, 0.24, 1.2, 7),
     new THREE.MeshStandardMaterial({ color: TRUNK_COLOR }),
   );
   trunk.position.y = 0.6;
   trunk.name = "tree-trunk";
+  group.add(trunk);
 
-  const foliage = new THREE.Mesh(
-    new THREE.ConeGeometry(0.9, 1.6, 8),
-    new THREE.MeshStandardMaterial({ color: FOLIAGE_COLOR }),
-  );
-  foliage.position.y = 1.2 + 0.8;
-  foliage.name = "tree-foliage";
+  const canopyBaseY = 1.2 + 0.55;
+  const foliageMaterial = new THREE.MeshStandardMaterial({ color: FOLIAGE_COLOR });
+  const foliageMaterialLight = new THREE.MeshStandardMaterial({ color: FOLIAGE_COLOR_LIGHT });
+  for (const blob of CANOPY_LAYOUT) {
+    // IcosahedronGeometry at low detail gives a faceted, irregular ball —
+    // closer to a leaf clump than SphereGeometry's perfectly smooth dome
+    // (still "procedural primitive," same discipline the rest of this
+    // file uses, just a rounder primitive than a cone).
+    const clump = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(blob.radius, 1),
+      blob.light ? foliageMaterialLight : foliageMaterial,
+    );
+    clump.position.set(blob.dx, canopyBaseY + blob.dy, blob.dz);
+    clump.name = "tree-foliage";
+    group.add(clump);
+  }
 
-  group.add(trunk, foliage);
   return group;
+}
+
+const WIND_SWAY_AMPLITUDE = 0.035; // radians (~2°) — a gentle lean, not cartoonish
+const WIND_SWAY_PERIOD = 3.4; // seconds per full back-and-forth cycle of the main sway
+
+/**
+ * Small back-and-forth lean (radians), meant for a tree group's own
+ * `rotation.z` — every tree's local origin sits at ground level (see
+ * `createTree`), so rotating the whole group pivots naturally at the
+ * base, like a flexible trunk, with no separate bend needed. Two summed
+ * sine waves (a slow main sway plus a faster, smaller flutter), same
+ * "combine a couple of sines instead of one flat metronome" discipline
+ * `land/terrain.ts`'s `terrainHeightAt` already uses for organic-looking
+ * motion from a small deterministic formula. `phaseSeed` — typically a
+ * tree's own position, e.g. `x * 1.7 + z * 0.9` — offsets each tree out
+ * of phase with the others, so a row of trees reads as wind moving across
+ * the field rather than every tree swaying in lockstep like one puppet.
+ * Pure and deterministic given (elapsedSeconds, phaseSeed), same
+ * discipline as `skins/avatarSkins.ts`'s `bobOffset` — directly
+ * unit-testable without a mixer or a real clock.
+ */
+export function treeSwayAngle(elapsedSeconds: number, phaseSeed: number): number {
+  const cycle = (Math.PI * 2) / WIND_SWAY_PERIOD;
+  const mainSway = Math.sin(elapsedSeconds * cycle + phaseSeed);
+  const flutter = Math.sin(elapsedSeconds * cycle * 2.8 + phaseSeed * 1.3) * 0.25;
+  return WIND_SWAY_AMPLITUDE * (mainSway + flutter);
 }
 
 function createFlowerBed(): THREE.Group {
@@ -107,15 +162,41 @@ function createFlowerBed(): THREE.Group {
   soil.name = "flower-bed-soil";
   group.add(soil);
 
+  // Each bloom used to be one bare colored sphere — read as a ball, not a
+  // flower. Now a thin stem plus a flattened, faceted head (an
+  // IcosahedronGeometry squashed in Y, same low-poly-blob language
+  // createTree's canopy uses, just wide/flat instead of round) plus a
+  // tiny warm "pollen" center on top — the shape+center combination is
+  // what actually reads as a flower instead of a colored marble.
+  const stemMaterial = new THREE.MeshStandardMaterial({ color: FOLIAGE_COLOR });
+  const flowerCenterMaterial = new THREE.MeshStandardMaterial({ color: FLOWER_CENTER_COLOR });
   for (const bloom of BLOOM_LAYOUT) {
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.16, 5), stemMaterial);
+    stem.position.set(bloom.dx, 0.2, bloom.dz);
+    stem.name = "flower-bed-stem";
+    group.add(stem);
+
     const blossom = new THREE.Mesh(
-      new THREE.SphereGeometry(0.16, 8, 6),
+      new THREE.IcosahedronGeometry(0.13, 0),
       new THREE.MeshStandardMaterial({ color: bloom.color }),
     );
-    blossom.position.set(bloom.dx, 0.24, bloom.dz);
+    blossom.scale.y = 0.5; // flattened into an open blossom, not a ball
+    blossom.position.set(bloom.dx, 0.29, bloom.dz);
     blossom.name = "flower-bed-bloom";
     group.add(blossom);
+
+    const center = new THREE.Mesh(new THREE.IcosahedronGeometry(0.045, 0), flowerCenterMaterial);
+    center.position.set(bloom.dx, 0.33, bloom.dz);
+    center.name = "flower-bed-center";
+    group.add(center);
   }
+
+  // Fire-and-forget, same shape `land/placement.ts` already allows
+  // `upgradeCastlePieceToRealModel` — the group above is the safe
+  // default, rendered and usable immediately; this upgrades it in place
+  // once (if) the real model loads, never blocking or re-shaping the
+  // synchronous return here.
+  upgradeFlowerBedToRealModel(group);
 
   return group;
 }
