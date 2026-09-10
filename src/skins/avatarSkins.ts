@@ -25,7 +25,7 @@ export interface AvatarSkin {
    * default plain capsule. Absent means the default capsule look — what
    * both "capsule" and `FALLBACK_AVATAR_SKIN_ID` render as.
    */
-  proceduralVariant?: "diveSuit" | "bird";
+  proceduralVariant?: "diveSuit" | "bird" | "eagle";
 }
 
 export const AVATAR_SKINS: readonly AvatarSkin[] = [
@@ -130,6 +130,25 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     // running into. No animation clips (a shape, not a rig) — gets the
     // same procedural idle/movement bob every other clip-less skin
     // (Capsule, Princess) already does.
+    //
+    // Color reviewed and reworked the same day: the first pass (a
+    // blue-grey body) was reported as "grey, too similar to Dive Suit."
+    // Three real-rendered candidates were sent for review before any of
+    // them landed here — this dove/seagull white-cream one was one of two
+    // picked (see "eagle" below for the other); a cardinal red/black
+    // option was reviewed but not chosen.
+  },
+  {
+    id: "eagle",
+    label: "Eagle",
+    kind: "procedural",
+    proceduralVariant: "eagle",
+    // The second color option picked in the same 2026-09-10 review —
+    // golden-brown rather than "bird"'s white-cream. Exact same shape
+    // (`buildBirdShapedAvatarMesh` in avatarView.ts), a distinct skin
+    // rather than a recolor-in-place so both are choosable side by side,
+    // same reasoning `female` shipped alongside `princess` rather than
+    // replacing it.
   },
   {
     id: "diveSuit",

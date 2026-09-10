@@ -68,7 +68,7 @@ describe("AVATAR_SKINS catalog", () => {
     // stay a real guard (a distinctly-shaped skin can't silently lose its
     // variant and fall back to the plain capsule look) without hardcoding
     // "exactly these two forever".
-    const distinctlyShapedIds = ["diveSuit", "bird"];
+    const distinctlyShapedIds = ["diveSuit", "bird", "eagle"];
     for (const skin of AVATAR_SKINS) {
       if (skin.kind !== "procedural") continue;
       if (distinctlyShapedIds.includes(skin.id)) {

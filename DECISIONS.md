@@ -30,6 +30,16 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-10 — Bird's first color pass called "ugly... too similar to
+  Dive Suit"; reworked with your review, and split into two skins.** You
+  didn't want another ship-then-fix round, so three real candidate color
+  schemes were rendered and sent for review *before* touching the
+  catalog. You picked both the white/dove and golden-brown options, and
+  asked for both as separate selectable skins rather than picking one —
+  `bird` (white) and a new `eagle` (brown), same shape, distinct
+  palettes. Verified visually; full suite green. See `BACKLOG.md` for
+  the full writeup.
+
 - **2026-09-10 — Air avatar: no real flying-creature asset reachable;
   built a purpose-made procedural "Bird" skin instead, resolved via
   `AskUserQuestion`.** You asked about avatars that might suit Air

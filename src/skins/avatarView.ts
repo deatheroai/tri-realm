@@ -130,17 +130,30 @@ export function createDiveSuitAvatarMesh(): THREE.Group {
 
 const BIRD_BODY_RADIUS = 0.22;
 const BIRD_BODY_LENGTH = 0.9;
-const BIRD_BODY_COLOR = 0x8fa8bf; // soft sky blue-gray — reads as "belongs up there", distinct from Fox's orange/Dive Suit's navy
-const BIRD_ACCENT_COLOR = 0x5f7a91; // darker blue-gray, wings/tail — contrast against the body
-const BIRD_BEAK_COLOR = 0xf2b134;
+
+interface BirdColorPalette {
+  body: number;
+  accent: number;
+  beak: number;
+}
+
+// Reviewed live 2026-09-10 against three real-rendered candidates (sent as
+// screenshots) before any of this landed in the catalog — the first pass's
+// blue-grey read as "grey, too similar to Dive Suit." Both of these two
+// were picked; the third (cardinal red/black) was reviewed but not chosen.
+const BIRD_PALETTE: BirdColorPalette = { body: 0xf2efe6, accent: 0x9db4c4, beak: 0xe8834a }; // dove/seagull white-cream
+const EAGLE_PALETTE: BirdColorPalette = { body: 0xa8672a, accent: 0xe8dcc4, beak: 0xf2c14e }; // golden eagle brown
 
 /**
- * The "bird" procedural variant (`src/skins/avatarSkins.ts`) — requested
- * 2026-09-10 as an Air-appropriate avatar once no reachable real asset
- * turned up (`DECISIONS.md`): no rig to animate, so this is a purpose-
- * built shape rather than a costume on the default capsule body, same
- * "distinct primitives, not just a recolor" bar `createDiveSuitAvatarMesh`
- * above already set.
+ * Shared builder behind the "bird" and "eagle" procedural variants
+ * (`src/skins/avatarSkins.ts`) — same shape, different `BirdColorPalette`
+ * and part-name prefix (so `getObjectByName` lookups — tests, any future
+ * debug hook — stay unambiguous between the two). Requested 2026-09-10 as
+ * an Air-appropriate avatar once no reachable real asset turned up
+ * (`DECISIONS.md`): no rig to animate, so this is a purpose-built shape
+ * rather than a costume on the default capsule body, same "distinct
+ * primitives, not just a recolor" bar `createDiveSuitAvatarMesh` above
+ * already set.
  *
  * The body lies *along* local Z (elongated front-to-back, like an actual
  * bird) rather than standing tall along Y like every other skin's roughly
@@ -156,30 +169,30 @@ const BIRD_BEAK_COLOR = 0xf2b134;
  * `faceDirection` convention every other skin uses (no `facingOffset`
  * needed).
  */
-export function createBirdAvatarMesh(): THREE.Group {
+function buildBirdShapedAvatarMesh(namePrefix: string, palette: BirdColorPalette): THREE.Group {
   const group = new THREE.Group();
-  group.name = "bird-avatar";
+  group.name = `${namePrefix}-avatar`;
 
-  const bodyMaterial = new THREE.MeshStandardMaterial({ color: BIRD_BODY_COLOR });
-  const accentMaterial = new THREE.MeshStandardMaterial({ color: BIRD_ACCENT_COLOR });
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: palette.body });
+  const accentMaterial = new THREE.MeshStandardMaterial({ color: palette.accent });
 
   const body = new THREE.Mesh(
     new THREE.CapsuleGeometry(BIRD_BODY_RADIUS, BIRD_BODY_LENGTH, 4, 8),
     bodyMaterial,
   );
   body.rotation.x = Math.PI / 2; // capsule's long axis defaults to Y (up) — lay it along Z (forward) instead
-  body.name = "bird-body";
+  body.name = `${namePrefix}-body`;
 
   const bodyHalfLength = BIRD_BODY_LENGTH / 2 + BIRD_BODY_RADIUS; // capsule's own front tip, in its rotated (Z) orientation
 
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), bodyMaterial);
   head.position.set(0, 0.02, bodyHalfLength - 0.05); // slightly forward of the body's own front, a touch of overlap so it doesn't float
-  head.name = "bird-head";
+  head.name = `${namePrefix}-head`;
 
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 8), new THREE.MeshStandardMaterial({ color: BIRD_BEAK_COLOR }));
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 8), new THREE.MeshStandardMaterial({ color: palette.beak }));
   beak.rotation.x = Math.PI / 2; // cone points +Y by default — point it +Z (forward) instead
   beak.position.set(0, 0, bodyHalfLength + 0.16);
-  beak.name = "bird-beak";
+  beak.name = `${namePrefix}-beak`;
 
   // Wings: flattened, elongated boxes rather than tapered cones — a blunt
   // wingtip is fine at this rough-primitives bar (matches everything else
@@ -196,20 +209,44 @@ export function createBirdAvatarMesh(): THREE.Group {
   rightWing.position.set(wingX, 0.05, -0.05);
   rightWing.rotation.z = -wingDihedral;
   rightWing.rotation.y = wingSweep;
-  rightWing.name = "bird-wing-right";
+  rightWing.name = `${namePrefix}-wing-right`;
 
   const leftWing = new THREE.Mesh(wingGeometry, accentMaterial);
   leftWing.position.set(-wingX, 0.05, -0.05);
   leftWing.rotation.z = wingDihedral;
   leftWing.rotation.y = -wingSweep;
-  leftWing.name = "bird-wing-left";
+  leftWing.name = `${namePrefix}-wing-left`;
 
   const tail = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.04, 0.4), accentMaterial);
   tail.position.set(0, 0, -bodyHalfLength - 0.1);
-  tail.name = "bird-tail";
+  tail.name = `${namePrefix}-tail`;
 
   group.add(body, head, beak, rightWing, leftWing, tail);
   return group;
+}
+
+/** The "bird" procedural variant — dove/seagull white-cream. */
+export function createBirdAvatarMesh(): THREE.Group {
+  return buildBirdShapedAvatarMesh("bird", BIRD_PALETTE);
+}
+
+/** The "eagle" procedural variant — golden-brown, same shape as "bird". */
+export function createEagleAvatarMesh(): THREE.Group {
+  return buildBirdShapedAvatarMesh("eagle", EAGLE_PALETTE);
+}
+
+/** Dispatches a skin's `proceduralVariant` to its mesh factory — undefined (capsule, the fallback) renders the default capsule look. */
+function buildProceduralVisual(variant: AvatarSkin["proceduralVariant"]): THREE.Object3D {
+  switch (variant) {
+    case "diveSuit":
+      return createDiveSuitAvatarMesh();
+    case "bird":
+      return createBirdAvatarMesh();
+    case "eagle":
+      return createEagleAvatarMesh();
+    default:
+      return createProceduralAvatarMesh();
+  }
 }
 
 const gltfLoader = new GLTFLoader();
@@ -287,12 +324,7 @@ export class AvatarView {
     resolvedSkinId: string;
   }> {
     if (skin.kind === "procedural") {
-      const visual =
-        skin.proceduralVariant === "diveSuit"
-          ? createDiveSuitAvatarMesh()
-          : skin.proceduralVariant === "bird"
-            ? createBirdAvatarMesh()
-            : createProceduralAvatarMesh();
+      const visual = buildProceduralVisual(skin.proceduralVariant);
       return { visual, mixer: null, actions: {}, resolvedSkinId: skin.id };
     }
 

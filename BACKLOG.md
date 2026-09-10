@@ -395,6 +395,30 @@ surfaced.
   you) — full suite green (typecheck, 253 unit tests, build, 64 E2E
   tests, including the narrow-viewport dev-panel-overlap check with the
   new button added).
+- `done` **Bird's colors reworked, plus a second "Eagle" skin — reviewed
+  live the same day.** You called the first pass "a little ugly... grey
+  and too similar to Dive Suit." Rather than guess again, built and
+  actually rendered three real, distinct candidates (cardinal red/black,
+  dove white-cream, golden-eagle brown) before touching the catalog at
+  all — sent as screenshots for review, same discipline this project
+  uses for every other real design call (e.g. Female's mesh variant
+  picked from a live preview). You picked both white and brown, and
+  asked for both as separate selectable skins rather than just the one.
+  `avatarView.ts`'s `createBirdAvatarMesh` split into a shared
+  `buildBirdShapedAvatarMesh(namePrefix, palette)` builder — identical
+  shape, distinct `BirdColorPalette` and part-name prefix (so
+  `getObjectByName` lookups stay unambiguous) — with two thin named
+  wrappers (`createBirdAvatarMesh`, `createEagleAvatarMesh`), same
+  "separate skin, not a mode on one skin" precedent `female`/`princess`
+  already set. New `eagle` catalog entry (`proceduralVariant: "eagle"`).
+  `AvatarView.buildVisual`'s growing procedural-variant ternary chain
+  replaced with a small `buildProceduralVisual` switch while here —
+  three variants deep was past where ternary-chaining stays readable.
+  4 new/generalized unit tests (the three bird-shape tests now loop over
+  both `bird`/`eagle` instead of duplicating; one new test confirms the
+  two palettes are actually distinct, not just distinct labels).
+  Verified visually with real screenshots of both in Air — full suite
+  green (typecheck, 257 unit tests, build, 64 E2E tests).
 - `todo` Revisit the 3rd-person camera's framing once there's more
   character content to actually showcase — noted in `DECISIONS.md`: the
   current steep ~31° elevation makes an elongated quadruped read as

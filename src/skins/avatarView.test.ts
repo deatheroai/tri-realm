@@ -62,46 +62,66 @@ describe("AvatarView", () => {
     expect(diveSuitHeight).toBeLessThan(capsuleHeight * 1.3);
   });
 
-  it("sets a distinct bird-shaped group (not the plain capsule) as the visual for the bird skin", async () => {
-    const root = new THREE.Group();
-    const view = new AvatarView(root);
+  // "bird" (dove/seagull white-cream) and "eagle" (golden-brown) share the
+  // exact same shape (buildBirdShapedAvatarMesh) — only the color palette
+  // and part-name prefix differ, picked together in the same 2026-09-10
+  // color review. One loop covers both rather than duplicating three tests.
+  for (const skinId of ["bird", "eagle"]) {
+    it(`sets a distinct bird-shaped group (not the plain capsule) as the visual for the ${skinId} skin`, async () => {
+      const root = new THREE.Group();
+      const view = new AvatarView(root);
 
-    await view.setSkin("bird");
+      await view.setSkin(skinId);
 
-    expect(view.skinId).toBe("bird");
-    expect(root.children).toHaveLength(1);
-    const visual = root.children[0];
-    expect(visual).toBeInstanceOf(THREE.Group);
-    // body + head + beak + 2 wings + tail
-    expect(visual.children.length).toBeGreaterThanOrEqual(6);
-  });
+      expect(view.skinId).toBe(skinId);
+      expect(root.children).toHaveLength(1);
+      const visual = root.children[0];
+      expect(visual).toBeInstanceOf(THREE.Group);
+      // body + head + beak + 2 wings + tail
+      expect(visual.children.length).toBeGreaterThanOrEqual(6);
+    });
 
-  it("spreads the bird's wings notably wider than its own body — the whole point of the shape", async () => {
-    const root = new THREE.Group();
-    await new AvatarView(root).setSkin("bird");
-    const visual = root.children[0];
+    it(`spreads the ${skinId}'s wings notably wider than its own body — the whole point of the shape`, async () => {
+      const root = new THREE.Group();
+      await new AvatarView(root).setSkin(skinId);
+      const visual = root.children[0];
 
-    const bodyMesh = visual.getObjectByName("bird-body") as THREE.Mesh;
-    const bodyRadius = (bodyMesh.geometry as THREE.CapsuleGeometry).parameters.radius;
+      const bodyMesh = visual.getObjectByName(`${skinId}-body`) as THREE.Mesh;
+      const bodyRadius = (bodyMesh.geometry as THREE.CapsuleGeometry).parameters.radius;
 
-    const box = new THREE.Box3().setFromObject(visual);
-    const wingspan = box.max.x - box.min.x;
+      const box = new THREE.Box3().setFromObject(visual);
+      const wingspan = box.max.x - box.min.x;
 
-    expect(wingspan).toBeGreaterThan(bodyRadius * 4);
-  });
+      expect(wingspan).toBeGreaterThan(bodyRadius * 4);
+    });
 
-  it("mirrors the left and right wings symmetrically", async () => {
-    const root = new THREE.Group();
-    await new AvatarView(root).setSkin("bird");
-    const visual = root.children[0];
+    it(`mirrors the ${skinId}'s left and right wings symmetrically`, async () => {
+      const root = new THREE.Group();
+      await new AvatarView(root).setSkin(skinId);
+      const visual = root.children[0];
 
-    const rightWing = visual.getObjectByName("bird-wing-right")!;
-    const leftWing = visual.getObjectByName("bird-wing-left")!;
+      const rightWing = visual.getObjectByName(`${skinId}-wing-right`)!;
+      const leftWing = visual.getObjectByName(`${skinId}-wing-left`)!;
 
-    expect(leftWing.position.x).toBeCloseTo(-rightWing.position.x, 5);
-    expect(leftWing.position.y).toBeCloseTo(rightWing.position.y, 5);
-    expect(leftWing.position.z).toBeCloseTo(rightWing.position.z, 5);
-    expect(leftWing.rotation.z).toBeCloseTo(-rightWing.rotation.z, 5);
+      expect(leftWing.position.x).toBeCloseTo(-rightWing.position.x, 5);
+      expect(leftWing.position.y).toBeCloseTo(rightWing.position.y, 5);
+      expect(leftWing.position.z).toBeCloseTo(rightWing.position.z, 5);
+      expect(leftWing.rotation.z).toBeCloseTo(-rightWing.rotation.z, 5);
+    });
+  }
+
+  it("gives bird and eagle distinct color palettes, not just distinct labels", async () => {
+    const birdRoot = new THREE.Group();
+    await new AvatarView(birdRoot).setSkin("bird");
+    const birdBody = birdRoot.children[0].getObjectByName("bird-body") as THREE.Mesh;
+    const birdColor = (birdBody.material as THREE.MeshStandardMaterial).color.getHex();
+
+    const eagleRoot = new THREE.Group();
+    await new AvatarView(eagleRoot).setSkin("eagle");
+    const eagleBody = eagleRoot.children[0].getObjectByName("eagle-body") as THREE.Mesh;
+    const eagleColor = (eagleBody.material as THREE.MeshStandardMaterial).color.getHex();
+
+    expect(birdColor).not.toBe(eagleColor);
   });
 
   it("loads a gltf skin and wires up its animation clips", async () => {
