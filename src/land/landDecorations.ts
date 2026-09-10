@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { upgradeFlowerBedToRealModel } from "./realFlowerModel";
 
 /**
  * Land's "parkland" dressing (`BACKLOG.md`, locked in during a 2026-09-08
@@ -189,6 +190,13 @@ function createFlowerBed(): THREE.Group {
     center.name = "flower-bed-center";
     group.add(center);
   }
+
+  // Fire-and-forget, same shape `land/placement.ts` already allows
+  // `upgradeCastlePieceToRealModel` — the group above is the safe
+  // default, rendered and usable immediately; this upgrades it in place
+  // once (if) the real model loads, never blocking or re-shaping the
+  // synchronous return here.
+  upgradeFlowerBedToRealModel(group);
 
   return group;
 }

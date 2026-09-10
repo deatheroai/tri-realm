@@ -66,4 +66,11 @@ export const ATTRIBUTIONS: readonly AttributionEntry[] = [
     creator: "Quaternius",
     creatorUrl: "https://www.patreon.com/quaternius",
   },
+  {
+    asset: 'Flower bed model ("Flower_3_Group") — Stylized Nature MegaKit',
+    license: "CC0-1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    creator: "Quaternius",
+    creatorUrl: "https://www.patreon.com/quaternius",
+  },
 ];

@@ -79,6 +79,30 @@ Resolved).
   Verified visually with a real close-up screenshot; full suite green
   (typecheck, 256 unit tests, build, 64 E2E tests).
 
+- **2026-09-10 — Flower bed upgraded to a real downloaded model, same
+  pattern the castle pieces already use.** Follow-up to the flower-shape
+  fix above: you asked whether a real shared asset — same idea the
+  castle pieces already used — could replace the hand-built procedural
+  flower instead of refining it further. New `public/assets/models/
+  flower.glb`: Quaternius's "Stylized Nature MegaKit" (`Flower_3_Group.
+  gltf`), [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/),
+  reached via the same GitHub-releases mirror `castle-wall.glb` etc.
+  already use (quaternius.com itself is still blocked by this session's
+  network policy — confirmed directly this session, not assumed from the
+  earlier castle-pieces note). Reprocessed with `@gltf-transform/cli`:
+  packed to one `.glb`, both source textures resized 2048×2048/
+  1008×981 → 256×256, pruned — ~3MB down to 192KB. New
+  `src/land/realFlowerModel.ts` mirrors `realCastlePieceModels.ts`'s
+  exact shape: `createFlowerBed` still builds the procedural stem/
+  blossom/center trio synchronously first (unchanged — still the
+  fallback on a load failure), and a fire-and-forget upgrade hides those
+  and adds the real, scaled (0.35×, measured via `gltf-transform
+  inspect` against the bed's own 0.8-radius soil disc) model as a
+  sibling once it resolves; the soil disc itself stays either way.
+  6 new unit tests. Verified visually (real screenshots, no console
+  errors, textures load cleanly); full suite green (typecheck, 262 unit
+  tests, build, 64 E2E tests).
+
 - **2026-09-09 — Real Quaternius castle-piece models, the long-blocked
   item, unblocked by you directly asking for it.** Pulled the "Medieval
   Village MegaKit" pack for real and inspected every candidate model's

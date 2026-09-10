@@ -143,3 +143,25 @@ quaternius.com/opengameart.org themselves are blocked by this session's network 
   plain box exactly as it already was.
 
 CC0 — no attribution legally required, but credited here anyway for provenance.
+
+## `models/flower.glb`
+
+Source: Quaternius's "Stylized Nature MegaKit" (Standard/free tier), source file
+`glTF/Flower_3_Group.gltf`, via the same `@jgengine/assets` GitHub-releases mirror described
+above (`Noisemaker111/jgengine`, `packs` release) — reachable even though quaternius.com itself
+is blocked by this session's network policy.
+
+- [CC0-1.0](https://creativecommons.org/publicdomain/zero/1.0/) — Quaternius.
+- You asked whether the flower bed's colored balls were meant to be flowers, then asked for a
+  real asset instead of the procedural stem/blossom/center built earlier the same day — this
+  replaces that procedural bloom, per model, once it loads (`realFlowerModel.ts`); the soil disc
+  underneath and the procedural version itself both stay, as the safe default.
+- Downloaded at the pack's own resolution (2048×2048 `Leaves.png`, 1008×981 `Flowers.png` — the
+  model's two materials) and reprocessed with `@gltf-transform/cli`: converted to a single `.glb`,
+  both textures resized to 256×256 (same "distant/background prop" discipline the castle pieces
+  above already use) and pruned, landing at 192KB (down from ~3MB before resizing).
+- Authored at a much larger, single-plant scale (bbox ~1.5 × 2.0 × 1.6 units) — `realFlowerModel.ts`
+  scales it down (0.35×, measured via `gltf-transform inspect` against the flower bed's own
+  0.8-radius soil disc, not guessed) to sit comfortably within one bed's existing footprint.
+
+CC0 — no attribution legally required, but credited here anyway for provenance.

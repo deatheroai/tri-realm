@@ -178,6 +178,33 @@ system.
   Verified visually with a real close-up screenshot; full suite green
   (typecheck, 256 unit tests, build, 64 E2E tests).
 
+  **2026-09-10 follow-up #4 — flower bed upgraded to a real downloaded
+  model, same pattern the castle pieces already use.** You asked, rather
+  than continuing to hand-build the procedural flower further, whether a
+  real shared asset could be used instead — same question that led to
+  the castle pieces' own real models. New `public/assets/models/
+  flower.glb`: Quaternius's "Stylized Nature MegaKit"
+  (`Flower_3_Group.gltf`), CC0-1.0, reached via the same GitHub-releases
+  mirror the castle pieces use (quaternius.com itself is blocked by this
+  session's network policy); reprocessed with `@gltf-transform/cli`
+  (textures resized to 256×256, packed to one `.glb`, pruned) from ~3MB
+  down to 192KB. New `src/land/realFlowerModel.ts` mirrors
+  `realCastlePieceModels.ts`'s exact "safe default first" shape:
+  `createFlowerBed` still builds the procedural stem/blossom/center trio
+  synchronously (unchanged, so it's still the fallback on a load
+  failure), and `upgradeFlowerBedToRealModel` fires a fire-and-forget
+  load that hides those and adds the real, scaled model as a sibling
+  once it resolves — the soil disc stays either way. Scale (0.35×)
+  measured via `gltf-transform inspect` against the bed's own 0.8-radius
+  soil disc, not guessed, same discipline the castle pieces' own scale
+  values use. 6 new unit tests (hide/swap wiring, soil stays visible,
+  scale, two-beds-don't-share-one-object, load-failure fallback,
+  createLandDecorationMesh still synchronous). Verified visually with
+  real screenshots (no console errors, textures load cleanly, flowers
+  read as real stylized blooms with stems/leaves/petals, appropriately
+  sized against the nearby trees); full suite green (typecheck, 262 unit
+  tests, build, 64 E2E tests).
+
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
 
