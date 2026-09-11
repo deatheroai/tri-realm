@@ -414,7 +414,7 @@ fetch it.
   is the once-written pipeline — bounds check, a true 3D overlap check
   against existing structures (so stacking is allowed; only genuine
   overlap is rejected), and a realm-supplied `terrainRule`. Land's catalog
-  (`src/land/castleStructures.ts`: Keep/Wall/Gate) and terrain rule
+  (`src/land/castleStructures.ts`: Keep/Wall/Gate/Tower) and terrain rule
   (`landTerrainPlacementRule` in `src/land/landRealmMap.ts`, trivially
   true today) are the first realm plugging into that shape; sea/air add
   their own catalog + rule later without this file changing.

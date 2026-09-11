@@ -88,4 +88,10 @@ test("defaults to the Keep structure type, and switching type changes new placem
   if (!gatePoint) throw new Error("__projectToScreen not available");
   await page.mouse.click(gatePoint.x, gatePoint.y);
   expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-gate");
+
+  await page.getByRole("button", { name: "Tower" }).click();
+  const towerPoint = await projectToScreen(16, -4);
+  if (!towerPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(towerPoint.x, towerPoint.y);
+  expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-tower");
 });

@@ -37,7 +37,12 @@ plain top-to-bottom-per-phase ordering until this note is removed):**
    this list).
 
 Everything under "Later / unscoped" stays parked behind all of the above
-with no target, as before.
+with no target, as before — **except 2026-09-11's world cycle**, which
+found every item above either `done` or genuinely stuck for this track
+(item 2 needs a human; item 5 lives outside World's own section) and
+pulled forward "Structure types beyond castles" (`Later / unscoped` below)
+rather than stall — a new `castle-tower` type, per `AUTONOMY.md`'s "new
+content on an established pattern" bar for not needing a decision.
 
 ## Phase 0 — Get something live
 
@@ -1223,7 +1228,39 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
 
 ## Later / unscoped
 
-- `todo` Structure types beyond castles.
+- `done` **Structure types beyond castles — read as "more castle-catalog
+  pieces" (the established, data-driven interpretation) since it had no
+  further elaboration; flag if a different reading was meant.** Picked up
+  2026-09-11: every item in the current priority order was either already
+  `done` or genuinely stuck (dive-suit bug still needs a human with a
+  browser; the camera-framing item lives under "Skins / visual identity",
+  outside this track's own section), so rather than stall the cycle this
+  parked item was pulled forward — squarely "new content on an established,
+  data-driven pattern within an already-chosen realm," `AUTONOMY.md`'s own
+  bar for *not* needing a decision. Fourth `CASTLE_STRUCTURE_TYPES` entry
+  (`src/land/castleStructures.ts`): `castle-tower`, a narrower-than-Keep
+  (1.0 vs 1.2), taller-than-everything-else (3.6, clears Wall's 3.1) plain
+  box — a distinct tall/thin corner-watchtower silhouette, not just a
+  resized Keep. No `realModel` yet — same "rough is fine, real assets can
+  follow later" discipline Keep/Wall/Gate themselves started under before
+  the Quaternius pack landed (`realCastlePieceModels.ts`'s no-op path for a
+  type with no `realModel` was previously untested, since every existing
+  type had one by the time that module shipped — now genuinely exercised).
+  Both `placement.ts`'s `createCastlePieceMesh`/`castlePieceGroundOffset`
+  and `placementValidation.ts` are already fully generic over the catalog
+  array, and `main.ts`'s `#dev-structure-panel` already builds one button
+  per `CASTLE_STRUCTURE_TYPES` entry — so the new type needed zero changes
+  outside the catalog itself and its own tests to become placeable, footprint-
+  checked, and save/load-able. 3 new/updated unit tests
+  (`castleStructures.test.ts`: distinct/tallest-of-the-others shape;
+  `realCastlePieceModels.test.ts`: the "every type has a realModel" test
+  updated to name exactly which three do, plus a new test for the
+  previously-unexercised no-`realModel` no-op path); 1 new E2E assertion
+  (`e2e/castle-placement.spec.ts`, extending the existing type-switching
+  test) confirms clicking "Tower" places a `castle-tower`. Verified visually
+  with a real screenshot (a tall, narrow gray box standing clearly taller
+  than the surrounding trees/other structures) — full suite green
+  (typecheck, 259 unit tests, build, 64 E2E tests).
 - `todo` **Climbable-slope limit + terrain-face collision.** Movement
   currently has no concept of "too steep/tall to climb" — the avatar's
   height snaps directly to `terrainHeightAt` every frame with zero
