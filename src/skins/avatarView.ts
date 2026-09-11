@@ -106,6 +106,7 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const height = Math.max(box.max.y - box.min.y, 0.4);
   const centerX = (box.max.x + box.min.x) / 2;
   const centerZ = (box.max.z + box.min.z) / 2;
+  const depth = box.max.z - box.min.z;
   // Sized from the character's own measured *height*, not the whole
   // body's bounding-box width — reported directly ("the big yellow box
   // behind her body," "the round hula hoop around her body"), and
@@ -125,7 +126,36 @@ function createDiveGearOverlay(box: THREE.Box3): THREE.Group {
   const torsoRadius = height * 0.15 + 0.02;
 
   const tankY = box.min.y + height * 0.53;
-  const waistY = box.min.y + height * 0.44;
+  // A single height fraction can't place the belt correctly on both body
+  // plans this overlay has to fit. The original 0.44 lands around the
+  // crotch/upper-thigh line on a standing biped (roughly 8-heads-tall
+  // figure proportions: the crotch itself sits at ~0.5, so 0.44 is
+  // *below* that) — reported directly on Female ("below the buttocks").
+  // This was wrong from the belt's very first version, just never visible
+  // before: the belt used to be an oversized ring derived from arm-span
+  // (see `torsoRadius`'s own comment above), and a hoop that much too big
+  // doesn't read as sitting at any particular height, so the wrong
+  // vertical position only became obvious once the *size* fix made it a
+  // properly snug ring with an actual height to judge.
+  //
+  // Raising it to 0.56 (confirmed by rendering as Female's natural waist
+  // — just below `tankY`, above the hips) then regressed Fox: Fox's own
+  // `box` isn't a standing-biped shape at all — measured directly, Fox is
+  // height 2.37 but *depth* (nose-to-tail, box.max.z - box.min.z) 4.64,
+  // nearly twice as deep as it is tall, vs. Female's height 1.71 and
+  // depth just 0.29 (T-pose only distorts her *width*, not this axis —
+  // see `torsoRadius`'s comment — so depth-vs-height is a reliable
+  // biped/quadruped signal even for a T-posed rig). On a body that long
+  // and low rather than upright, "0.56 of total height" lands the belt up
+  // near Fox's spine instead of around its belly, swallowing it inside
+  // the torso mesh (confirmed by rendering: only a sliver poked out from
+  // under the body). There's no single fraction that's simultaneously
+  // Female's natural waist and a belly-height ring on Fox's build, so
+  // this picks the fraction by the same depth-vs-height shape signal:
+  // deep-bodied (quadruped-like) characters keep the original,
+  // already-correct 0.44; upright ones (depth well under half their
+  // height) get the corrected 0.56 waist.
+  const waistY = box.min.y + height * (depth > height * 0.6 ? 0.44 : 0.56);
   const footY = box.min.y + height * 0.03;
 
   const tank = new THREE.Mesh(

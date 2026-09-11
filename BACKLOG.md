@@ -1211,6 +1211,36 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   cord/hose. Verified visually on both Female (now a slim flat strap,
   not a tube) and Fox (unaffected). Full suite green: typecheck, 215
   unit tests, build, 27 skins.spec.ts E2E tests.
+  **Eleventh follow-up, next day (2026-09-11)**: "Belt is now below the
+  buttocks for female, it should be on the waist?" Pre-existing bug, not
+  a new regression: the belt's vertical position (`waistY`, a fraction of
+  total body height) had been `0.44` since the belt's very first version
+  — in classic 8-heads-tall figure proportions that lands around the
+  crotch/upper-thigh line, not the waist (the crotch itself sits at
+  ~0.5). Only became visible now because the ninth follow-up's size fix
+  turned the belt into a properly snug ring with an actual height to
+  judge; the old oversized arm-span-derived hoop never read as sitting at
+  any particular height. First tried raising it to `0.56` — confirmed by
+  rendering as Female's correct natural waist — but that regressed Fox:
+  a side-view render showed the belt mostly swallowed inside Fox's torso,
+  only a sliver visible under the belly. Root cause: a single height
+  fraction can't place a "waist" ring correctly on both body plans this
+  overlay fits. Measured Fox's and Female's boxes directly rather than
+  guessing further — Fox is height 2.37 but *depth* (nose-to-tail)
+  4.64, nearly twice as deep as tall; Female is height 1.71 and depth
+  just 0.29 (T-pose only distorts her *width*, per the ninth follow-up's
+  own note, so depth-vs-height stays a reliable signal even on a T-posed
+  rig). Fixed by picking the fraction from that same depth-vs-height
+  shape signal instead of a single constant: deep-bodied
+  (quadruped-like, `depth > height * 0.6`) characters keep the original
+  `0.44` (already correct — a belly-height ring on Fox), upright ones get
+  the corrected `0.56` (Female's natural waist). A geometric read of the
+  measured box, not a per-skin-name special case, so it should transfer
+  to any future quadruped or biped skin without new code. Verified
+  visually on both Female (belt now clearly at the natural waist, just
+  below the tank straps) and Fox (belt back to a clearly visible ring
+  around the belly, no longer hidden). Full suite green: typecheck, 215
+  unit tests, build, 61 E2E tests.
 - `todo` **(World) Centerpiece shipwreck landmark.** Locked in during a
   2026-09-08 design review, supersedes the sea-floating-docks item above:
   a single large, dramatic broken-ship hull + mast as a real landmark
