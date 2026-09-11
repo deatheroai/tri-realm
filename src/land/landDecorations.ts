@@ -216,6 +216,23 @@ function createPathStone(): THREE.Group {
   return group;
 }
 
+// A ball floating above the spout read as a marble on a stick, not water
+// — same shape problem the tree canopy (a bare cone) and flower blooms (a
+// bare sphere) already got fixed for. This replaces it with a slim jet
+// (a cylinder that flares wider at the top, like water rising and
+// spreading before it falls) plus a small fixed spray of droplets arcing
+// outward and down from the jet's peak. Fixed, not random, same "no
+// Math.random" discipline as BLOOM_LAYOUT/CANOPY_LAYOUT above — every
+// fountain gets the identical spray, so the scene stays screenshot/test-
+// reproducible. Offsets are relative to the jet's own peak (spoutTopY +
+// jetHeight in `createFountain`), not world space.
+const SPRAY_LAYOUT: Array<{ dx: number; dy: number; dz: number; radius: number }> = [
+  { dx: 0.17, dy: 0.04, dz: 0.02, radius: 0.05 },
+  { dx: -0.15, dy: 0.01, dz: 0.09, radius: 0.045 },
+  { dx: 0.06, dy: -0.06, dz: -0.16, radius: 0.04 },
+  { dx: -0.11, dy: -0.09, dz: -0.09, radius: 0.04 },
+];
+
 function createFountain(): THREE.Group {
   const group = new THREE.Group();
   group.name = "fountain";
@@ -235,27 +252,38 @@ function createFountain(): THREE.Group {
   rim.position.y = 0.5;
   rim.name = "fountain-rim";
 
+  const spoutHeight = 0.9;
   const spout = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.15, 0.2, 0.9, 8),
+    new THREE.CylinderGeometry(0.15, 0.2, spoutHeight, 8),
     new THREE.MeshStandardMaterial({ color: FOUNTAIN_STONE_COLOR }),
   );
-  spout.position.y = 0.5 + 0.45;
+  spout.position.y = 0.5 + spoutHeight / 2;
   spout.name = "fountain-spout";
 
-  const water = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 10, 8),
-    new THREE.MeshStandardMaterial({
-      color: WATER_COLOR,
-      emissive: WATER_COLOR,
-      emissiveIntensity: 0.3,
-      transparent: true,
-      opacity: 0.85,
-    }),
-  );
-  water.position.y = 0.5 + 0.9 + 0.15;
-  water.name = "fountain-water";
+  const waterMaterial = new THREE.MeshStandardMaterial({
+    color: WATER_COLOR,
+    emissive: WATER_COLOR,
+    emissiveIntensity: 0.3,
+    transparent: true,
+    opacity: 0.85,
+  });
 
-  group.add(basin, rim, spout, water);
+  const spoutTopY = 0.5 + spoutHeight;
+  const jetHeight = 0.4;
+  const water = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.06, jetHeight, 8), waterMaterial);
+  water.position.y = spoutTopY + jetHeight / 2; // base sits flush on the spout top, no gap
+  water.name = "fountain-water";
+  group.add(water);
+
+  const jetPeakY = spoutTopY + jetHeight;
+  for (const droplet of SPRAY_LAYOUT) {
+    const spray = new THREE.Mesh(new THREE.IcosahedronGeometry(droplet.radius, 0), waterMaterial);
+    spray.position.set(droplet.dx, jetPeakY + droplet.dy, droplet.dz);
+    spray.name = "fountain-spray";
+    group.add(spray);
+  }
+
+  group.add(basin, rim, spout);
   return group;
 }
 

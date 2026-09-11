@@ -208,6 +208,24 @@ system.
   sized against the nearby trees); full suite green (typecheck, 262 unit
   tests, build, 64 E2E tests).
 
+  **2026-09-11 follow-up #5 — the fountain's water read as a ball on a
+  stick, made it read as a jet.** You asked, after noticing it, whether
+  the sphere floating above the spout was meant to be water — confirmed,
+  then asked for the same shape treatment the tree canopy/flower blooms
+  already got. `createFountain` (`src/land/landDecorations.ts`): the
+  bare `SphereGeometry` floating with a gap above the spout is now a
+  `CylinderGeometry` jet flush against the spout top (no gap), flaring
+  wider as it rises, plus a small fixed (not random, same discipline as
+  `BLOOM_LAYOUT`/`CANOPY_LAYOUT`) `SPRAY_LAYOUT` of droplets scattered
+  outward and down from the jet's peak — same "no `Math.random`"
+  determinism, same emissive/transparent water material as before, kept
+  local to this file (no real asset needed here, unlike the flower bed
+  above — a procedural shape fix was enough). 3 new unit tests (jet sits
+  flush on the spout with no gap, spray droplets present and offset off
+  the jet's own axis, existing water-above-rim test untouched). Verified
+  visually with real screenshots from two angles; full suite green
+  (typecheck, 267 unit tests, build, 64 E2E tests).
+
 Phase 1a complete. Stop here and get your read on direction before
 Phase 1b.
 

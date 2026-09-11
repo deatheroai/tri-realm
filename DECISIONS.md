@@ -30,6 +30,22 @@ Resolved).
 
 ## Resolved
 
+- **2026-09-11 — Fountain water read as a ball on a stick; made it read
+  as a jet.** Follow-up to the tree/flower shape fixes below: you asked
+  whether the sphere floating above the spout was meant to be water
+  (confirmed) then asked for the same treatment once confirmed. Fixed in
+  `createFountain` (`src/land/landDecorations.ts`): the bare
+  `SphereGeometry` floating with a gap above the spout is now a
+  `CylinderGeometry` jet sitting flush on the spout top (no gap), flaring
+  wider as it rises, plus a small fixed `SPRAY_LAYOUT` of droplets
+  scattered outward/down from the jet's peak — same "no `Math.random`"
+  determinism as `BLOOM_LAYOUT`/`CANOPY_LAYOUT`. Kept procedural (no real
+  asset needed, unlike the flower bed below) — a shape fix was enough
+  here, same emissive/transparent water material as before. 3 new unit
+  tests; the existing water-above-rim test passes unchanged. Verified
+  visually with real screenshots from two angles; full suite green
+  (typecheck, 267 unit tests, build, 64 E2E tests).
+
 - **2026-09-09 — Trees looked "blockish" (a bare cone); made more
   organic.** You reviewed the deployed parkland dressing and asked for
   more realistic trees. Root of the "blockish" read: a single sharp

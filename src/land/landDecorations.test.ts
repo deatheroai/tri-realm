@@ -65,6 +65,33 @@ describe("createLandDecorationMesh", () => {
     expect(water.position.y).toBeGreaterThan(rim.position.y);
   });
 
+  it("sits the water jet flush on the spout, no floating gap", () => {
+    const fountain = createLandDecorationMesh("fountain");
+    const spout = fountain.getObjectByName("fountain-spout") as THREE.Mesh;
+    const water = fountain.getObjectByName("fountain-water") as THREE.Mesh;
+
+    spout.geometry.computeBoundingBox();
+    water.geometry.computeBoundingBox();
+    const spoutTopY = spout.position.y + spout.geometry.boundingBox!.max.y;
+    const waterBottomY = water.position.y + water.geometry.boundingBox!.min.y;
+
+    expect(waterBottomY).toBeCloseTo(spoutTopY, 5);
+  });
+
+  it("gives the fountain a small fixed spray of droplets arcing off the jet's peak", () => {
+    const fountain = createLandDecorationMesh("fountain");
+    const water = fountain.getObjectByName("fountain-water")!;
+    const spray = fountain.children.filter((c) => c.name === "fountain-spray");
+
+    expect(spray.length).toBeGreaterThan(0);
+    // Droplets scatter out from the jet's own (x, z) axis, not sit dead
+    // center on it — that's what makes it read as a spray, not a second
+    // ball stacked on the first.
+    for (const droplet of spray) {
+      expect(Math.hypot(droplet.position.x - water.position.x, droplet.position.z - water.position.z)).toBeGreaterThan(0);
+    }
+  });
+
   it("gives every flower bed the same fixed bloom layout — deterministic, not random", () => {
     const a = createLandDecorationMesh("flowerBed");
     const b = createLandDecorationMesh("flowerBed");
