@@ -33,3 +33,16 @@ describe("findCastleStructureType", () => {
     expect(() => findCastleStructureType("does-not-exist")).toThrow();
   });
 });
+
+describe("castle-tower", () => {
+  it("is a distinct, taller-than-the-others plain-box type with no real model yet", () => {
+    const tower = findCastleStructureType("castle-tower");
+
+    expect(tower.label).toBe("Tower");
+    expect(tower.realModel).toBeUndefined();
+    for (const other of CASTLE_STRUCTURE_TYPES) {
+      if (other.id === "castle-tower") continue;
+      expect(tower.dimensions.height).toBeGreaterThan(other.dimensions.height);
+    }
+  });
+});

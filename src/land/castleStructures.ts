@@ -80,6 +80,20 @@ export const CASTLE_STRUCTURE_TYPES: CastleStructureType[] = [
     dimensions: { width: 1.6, height: 2.6, depth: 0.48 },
     realModel: { modelUrl: "/assets/models/castle-gate.glb", scale: 1, placement: "replace-ground" },
   },
+  // Fourth type (`BACKLOG.md`'s "structure types beyond castles" item) — a
+  // corner watchtower: narrower footprint than Keep (1.0 vs 1.2) and
+  // taller than every other piece (3.6, clears Wall's 3.1) so it reads as
+  // a distinct tall/thin silhouette next to the others rather than just a
+  // resized Keep. Plain box, no `realModel` yet — same Phase 1a "rough is
+  // fine, real assets can follow later" discipline Keep/Wall/Gate
+  // themselves started under before the Quaternius pack landed; nothing
+  // in the reachable Medieval Village MegaKit index was inspected for a
+  // tower-specific piece this cycle, left for a future pass.
+  {
+    id: "castle-tower",
+    label: "Tower",
+    dimensions: { width: 1.0, height: 3.6, depth: 1.0 },
+  },
 ];
 
 export const DEFAULT_CASTLE_STRUCTURE_TYPE_ID = "castle-keep";

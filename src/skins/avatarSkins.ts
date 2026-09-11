@@ -25,7 +25,7 @@ export interface AvatarSkin {
    * default plain capsule. Absent means the default capsule look — what
    * both "capsule" and `FALLBACK_AVATAR_SKIN_ID` render as.
    */
-  proceduralVariant?: "diveSuit" | "bird";
+  proceduralVariant?: "diveSuit" | "bird" | "eagle";
 }
 
 export const AVATAR_SKINS: readonly AvatarSkin[] = [
@@ -130,6 +130,25 @@ export const AVATAR_SKINS: readonly AvatarSkin[] = [
     // running into. No animation clips (a shape, not a rig) — gets the
     // same procedural idle/movement bob every other clip-less skin
     // (Capsule, Princess) already does.
+    //
+    // Color reviewed and reworked the same day: the first pass (a
+    // blue-grey body) was reported as "grey, too similar to Dive Suit."
+    // Three real-rendered candidates were sent for review before any of
+    // them landed here — this dove/seagull white-cream one was one of two
+    // picked (see "eagle" below for the other); a cardinal red/black
+    // option was reviewed but not chosen.
+  },
+  {
+    id: "eagle",
+    label: "Eagle",
+    kind: "procedural",
+    proceduralVariant: "eagle",
+    // The second color option picked in the same 2026-09-10 review —
+    // golden-brown rather than "bird"'s white-cream. Exact same shape
+    // (`buildBirdShapedAvatarMesh` in avatarView.ts), a distinct skin
+    // rather than a recolor-in-place so both are choosable side by side,
+    // same reasoning `female` shipped alongside `princess` rather than
+    // replacing it.
   },
   {
     id: "diveSuit",
@@ -177,13 +196,15 @@ const BOB_PARAMS: Record<MoveAnimationState, { amplitude: number; period: number
  * Small vertical offset (world units) `AvatarView` applies to a skin's
  * visual — never the avatar root main.ts repositions every frame — to
  * keep a skin with no animation clip for the current state from reading
- * as visually "dead" while it stands or moves. Today that's Capsule
- * (never animated) and Princess (no clips in the source model at all,
- * see ATTRIBUTIONS.md); Fox/Robot/Mannequin always have a real clip for
- * idle/walk/run so `AvatarView` never calls this for them (only used
- * when `hasAnimation(state)` is false). Pure and deterministic given
- * (elapsedSeconds, state) so it's directly unit-testable without a mixer
- * or a real clock.
+ * as visually "dead" while it stands or moves. Today that's every
+ * `kind: "procedural"` skin (Capsule, Dive Suit, Bird — none have a rig
+ * to animate) plus Princess (a `kind: "gltf"` model with no clips in the
+ * source at all, see ATTRIBUTIONS.md); Fox/Robot/Mannequin/Female always
+ * have a real clip for idle/walk/run so `AvatarView` never calls this for
+ * them (only used when `hasAnimation(state)` is false — that check, not
+ * this list, is the actual source of truth as the roster keeps growing).
+ * Pure and deterministic given (elapsedSeconds, state) so it's directly
+ * unit-testable without a mixer or a real clock.
  */
 export function bobOffset(elapsedSeconds: number, state: MoveAnimationState): number {
   const { amplitude, period } = BOB_PARAMS[state];

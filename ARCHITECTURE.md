@@ -281,10 +281,11 @@ to game logic.
   pure sine-wave function — small/slow while idle, bigger/faster while
   walking or running — and `AvatarView.update` applies it to the visual's
   *local* y (never the root `main.ts` repositions every frame) only when
-  `hasAnimation(currentState)` is false. Today that's Capsule (never
-  animated) and Princess (no clips in the source model at all) — Fox/
-  Robot/Mannequin always have a real clip for every state they're asked
-  for, so this never fires for them and their own clip's motion is
+  `hasAnimation(currentState)` is false. Today that's every procedural
+  skin (Capsule, Dive Suit, Bird — none have a rig to animate) and
+  Princess (a gltf model with no clips in the source at all) — Fox/
+  Robot/Mannequin/Female always have a real clip for every state they're
+  asked for, so this never fires for them and their own clip's motion is
   untouched. Reset to 0 on every `setSkin` so a skin switch never carries
   a stale offset into the new visual.
 
@@ -413,7 +414,7 @@ fetch it.
   is the once-written pipeline — bounds check, a true 3D overlap check
   against existing structures (so stacking is allowed; only genuine
   overlap is rejected), and a realm-supplied `terrainRule`. Land's catalog
-  (`src/land/castleStructures.ts`: Keep/Wall/Gate) and terrain rule
+  (`src/land/castleStructures.ts`: Keep/Wall/Gate/Tower) and terrain rule
   (`landTerrainPlacementRule` in `src/land/landRealmMap.ts`, trivially
   true today) are the first realm plugging into that shape; sea/air add
   their own catalog + rule later without this file changing.

@@ -36,10 +36,23 @@ describe("upgradeCastlePieceToRealModel", () => {
     __resetRealCastlePieceModelCacheForTests();
   });
 
-  it("every catalog type has a real model configured — none is left on the old plain-box-only behavior", () => {
-    for (const type of CASTLE_STRUCTURE_TYPES) {
-      expect(type.realModel).toBeDefined();
-    }
+  it("every catalog type with a realModel is one of the Quaternius-sourced ones", () => {
+    // Not every type needs one — Tower (BACKLOG.md's "structure types
+    // beyond castles" item) deliberately shipped as a plain box, same
+    // Phase 1a discipline Keep/Wall/Gate themselves started under.
+    const withRealModel = CASTLE_STRUCTURE_TYPES.filter((t) => t.realModel !== undefined).map((t) => t.id);
+    expect(withRealModel.sort()).toEqual(["castle-gate", "castle-keep", "castle-wall"]);
+  });
+
+  it("no-ops for a type with no realModel configured, leaving the box exactly as it was", async () => {
+    const loadAsyncSpy = vi.spyOn(GLTFLoader.prototype, "loadAsync");
+
+    const { box, scene } = bareBoxInScene("castle-tower");
+    await upgradeCastlePieceToRealModel(box, "castle-tower");
+
+    expect(loadAsyncSpy).not.toHaveBeenCalled();
+    expect(box.visible).toBe(true);
+    expect(scene.children).toEqual([box]);
   });
 
   it("'replace-ground' (Wall/Gate): hides the box and adds the loaded model as its sibling, base on the ground", async () => {
