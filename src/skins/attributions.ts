@@ -53,6 +53,13 @@ export const ATTRIBUTIONS: readonly AttributionEntry[] = [
     creatorUrl: "https://sketchfab.com/3d-models/apple-white-royal-pirate-365255d49d5e46e8a25b2bf921ef5b64",
   },
   {
+    asset: "Mannequin model + animation library",
+    license: "CC0-1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    creator: "Quaternius",
+    creatorUrl: "https://www.patreon.com/quaternius",
+  },
+  {
     asset: 'Female model + rig ("female_8") and animation library',
     license: "CC0",
     licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
