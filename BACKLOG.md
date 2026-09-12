@@ -593,6 +593,61 @@ reasoning (changing the shared `cameraOffset` in `main.ts` would move
 click-position assumptions baked into several of World's own E2E specs)
 still holds unchanged; not re-investigated further this cycle.
 
+- `done` **In-app credits screen was silently missing the Mannequin
+  entry — found and fixed, plus a generalized regression guard.** The
+  usual two `todo`s below were re-checked first (see the 2026-09-12 note
+  further down) and found still genuinely not-solo-actionable, same as
+  the last two cycles, so this cycle looked for a real gap instead of
+  manufacturing busywork — same pattern that turned up the credits screen
+  itself and dev-panel active-state highlighting earlier in this section.
+  Found one: `public/assets/ATTRIBUTIONS.md` has a full `models/
+  mannequin.glb` section (its own text says this file "is still the
+  source of truth... keep both in sync"), but `src/skins/attributions.ts`
+  — the in-app mirror players actually see via the "ⓘ Credits" toggle —
+  had no Mannequin entry at all; it went straight from Female to nothing,
+  so a real player checking credits for the swim-animation source
+  (Quaternius, via the `J-Ponzo/gltf-universal-animation-library` GitHub
+  mirror — the same reachable-mirror pattern the block textures and
+  castle-piece models use) would find it missing. CC0, so not a legal
+  compliance gap like Fox's CC-BY the way the original credits-screen
+  item was, but still a real "the two files drifted out of sync" bug.
+  Added the missing entry. Rather than stop at a one-off fix (which
+  would only catch *this* skin slipping through, not the next one),
+  generalized the regression guard: a new test
+  (`attributions.test.ts`) asserts every `kind: "gltf"` entry in
+  `AVATAR_SKINS` has at least one `ATTRIBUTIONS` entry whose asset text
+  names its id — matches how every existing entry is actually worded
+  ("Fox...", "Robot model...", "Mannequin model...") — so a future gltf
+  skin shipped without updating the credits mirror fails a test instead
+  of silently shipping an incomplete credits screen, same "tested
+  generically where possible" bar the rest of this codebase holds to.
+  1 new unit test (the generalized guard above; the existing Fox-CC-BY
+  compliance test is untouched, still its own dedicated check since
+  that one really is legally load-bearing). No E2E change needed —
+  `e2e/skins.spec.ts`'s credits tests don't assert a fixed entry count.
+  Full suite verified (typecheck, 263 unit tests, build, 64 E2E tests).
+
+**2026-09-12 (this cycle) — both remaining `todo`s re-checked again,
+still not solo-actionable.** Dive-suit auto-equip: unchanged, still
+needs a human with a real browser at the live deployment (see
+`DECISIONS.md`'s "Needs Your Action") — and a separate, non-daily branch
+(`claude/dive-suit-auto-equip-zb1qvy`, active as recently as yesterday)
+is already deep into an extensive from-scratch rebuild of the dive-suit
+visual itself (mask/tank/belt/flipper sizing, attaching to a real head
+bone), so touching `createDiveSuitAvatarMesh` here risks duplicating or
+conflicting with that in-progress work rather than helping — left alone,
+same reasoning the 2026-09-10 cycle used for not merging it in (not this
+track's own daily branch, outside `AUTONOMY.md`'s merge protocol).
+Camera framing: unchanged, same blast-radius reasoning as every prior
+re-check holds. A second non-daily branch
+(`claude/garden-implementation-status-g3b8o5`) is likewise still active
+in `public/assets/`/land-decoration territory as of yesterday — noted,
+not touched, for the same reason. `claude/floating-in-air-5urm2i` (the
+Bird/Eagle color-rework session flagged as in-flight by the 2026-09-10
+cycle) has since landed on `main` on its own — its work is the
+Bird-colors/Eagle entry already recorded above, nothing left to merge
+from it.
+
 **2026-09-10 (this cycle) — both remaining `todo`s re-checked again, still
 not solo-actionable; no new backlog item picked up, real parallel work
 found instead of manufacturing busywork.** Dive-suit auto-equip: unchanged,
