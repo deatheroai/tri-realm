@@ -184,13 +184,19 @@ A realm transition (via portal) swaps the active movement module and
 teleports the avatar to the target map's spawn position — no continuous
 blending between modules is required under this model.
 
-**Known gap:** the land module's ground collision has no concept of "too
-steep to climb" — position snaps to `terrainHeightAt` every frame with no
-max step-height check and no horizontal collision against steepness, so a
-literal cliff or wall doesn't block movement today. Deliberately deferred
-(see `DECISIONS.md`) rather than an oversight — a max-climbable-angle
-check plus terrain-face collision is real, separate scope from the
-current rolling-hill terrain, which never gets steep enough to expose it.
+**Climbable-slope limit / terrain-face collision** (`src/land/landMovement.ts`,
+`stepLandMovement`): a candidate horizontal move is checked against the
+grade (rise/run) between the current and candidate ground heights; a climb
+steeper than `MAX_CLIMB_GRADE` (1.0, a 45° face) blocks the horizontal move
+entirely instead of snapping the avatar up to the new height, so a literal
+cliff or wall now actually stops movement rather than being climbed for
+free. Only gates climbing — walking off a ledge into a steep drop is left
+alone, since gravity already handles that correctly (the avatar falls
+instead of teleporting down). `terrainHeightAt`'s own worst-case local
+grade stays well under this threshold by construction, so today's
+rolling-hill terrain is completely unaffected in practice; this exists for
+whatever future terrain/structure actually needs a real wall (see
+`BACKLOG.md`).
 
 ## Skins (visual identity)
 

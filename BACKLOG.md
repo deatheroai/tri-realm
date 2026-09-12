@@ -42,7 +42,13 @@ found every item above either `done` or genuinely stuck for this track
 (item 2 needs a human; item 5 lives outside World's own section) and
 pulled forward "Structure types beyond castles" (`Later / unscoped` below)
 rather than stall — a new `castle-tower` type, per `AUTONOMY.md`'s "new
-content on an established pattern" bar for not needing a decision.
+content on an established pattern" bar for not needing a decision — and
+**2026-09-12's world cycle**, same situation again (item 2 still needs a
+human, item 5 still lives outside this track's section), which pulled
+forward "Climbable-slope limit + terrain-face collision" (`Later /
+unscoped` below) instead — a real `src/land/` bug fix/core-system gap
+closed, not new content, but the same "don't manufacture busywork, don't
+stall either" reasoning applies equally to a genuine fix as to new content.
 
 ## Phase 0 — Get something live
 
@@ -1261,14 +1267,38 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   with a real screenshot (a tall, narrow gray box standing clearly taller
   than the surrounding trees/other structures) — full suite green
   (typecheck, 259 unit tests, build, 64 E2E tests).
-- `todo` **Climbable-slope limit + terrain-face collision.** Movement
-  currently has no concept of "too steep/tall to climb" — the avatar's
-  height snaps directly to `terrainHeightAt` every frame with zero
-  horizontal collision against steepness, so a literal cliff or wall
-  wouldn't block you, you'd just walk straight up it. Not visible yet
-  because the current rolling-hill terrain never gets steeper than ~30%
-  grade by construction. Deferred deliberately (see `DECISIONS.md`) —
-  pick this up once a realm actually needs real cliffs/walls (e.g. castle
-  walls in Phase 1b, or any future terrain authored steeper than today's).
+- `done` **Climbable-slope limit + terrain-face collision.** Picked up
+  2026-09-12: with the current priority order's own items either `done` or
+  genuinely stuck for this track (dive-suit bug still needs a human with a
+  browser; camera framing lives under "Skins / visual identity", outside
+  this track's own section) and no realm yet having actually forced the
+  issue, pulled this parked item forward rather than stall the cycle — a
+  genuine `src/land/` core-system gap, not new content, so no decision
+  needed either way. `stepLandMovement` (`src/land/landMovement.ts`) now
+  checks the grade (rise/run) between the avatar's current and candidate
+  ground height before accepting a horizontal move: a climb steeper than
+  the new `MAX_CLIMB_GRADE` (1.0, a 45° face — comfortably above
+  `terrainHeightAt`'s own worst-case local grade, well under 0.5 by
+  construction) blocks the horizontal move entirely, like hitting a wall,
+  instead of snapping the avatar up to the new height (the actual bug —
+  ground collision had zero concept of "too steep," so a literal cliff or
+  wall could be climbed for free). Deliberately only gates climbing:
+  walking off a ledge into a steep drop is left alone, since gravity
+  already handles that correctly today (the avatar falls under gravity
+  instead of teleporting down to the new, lower ground instantly) —
+  verified directly with a dedicated test, not just assumed. Tested
+  generically, per `AUTONOMY.md`'s "core systems tested generically"
+  guardrail — a synthetic gentle-slope function and a synthetic sheer-wall
+  function, not anything real terrain currently produces — rather than
+  waiting for a piece of content to exercise it: 3 new unit tests
+  (`landMovement.test.ts`: a gentle slope keeps climbing normally, a
+  vertical wall blocks the climb and holds position at its base, walking
+  off a ledge into a drop is unaffected). No E2E test added — nothing in
+  today's terrain content is actually steep enough to visually demonstrate
+  this, and the existing land-walk/save-load/touch-controls E2E coverage
+  already confirms ordinary movement over the rolling hills is unaffected.
+  `ARCHITECTURE.md`'s "Known gap" note replaced with a description of the
+  actual fix. Full suite verified (typecheck, 262 unit tests, build, 64
+  E2E tests).
 - Multiplayer or shared persistent world — explicitly out of scope until
   raised, per `AUTONOMY.md`.
