@@ -692,6 +692,70 @@ be remembered on every new skin. No behavior change, so no new tests;
 full suite re-verified after the edit (typecheck, 253 unit tests, build,
 64 E2E tests).
 
+- `done` **Tower gets a real roof-cap model, closing the gap `castleStructures.ts`'s
+  own comment had flagged.** 2026-09-13: the two usual `todo`s below re-checked
+  again first, still not solo-actionable — dive-suit auto-equip still needs a
+  human with a real browser (`DECISIONS.md`'s "Needs Your Action", unchanged);
+  camera framing's blast-radius reasoning still holds. Checked for in-flight
+  work before building: `claude/dive-suit-auto-equip-zb1qvy` and
+  `claude/garden-implementation-status-g3b8o5` (the latter has an open,
+  untouched PR #4) are both now 2 days stale (last commit 2026-09-11) —
+  neither is this track's own daily branch, so per `AUTONOMY.md`'s merge
+  protocol neither was touched, just re-noted here for the next cycle.
+  Rather than manufacture busywork, picked up the real, already-flagged gap
+  instead: Tower (`BACKLOG.md`'s "structure types beyond castles" item)
+  shipped as a plain box with a code comment admitting "nothing in the
+  reachable Medieval Village MegaKit index was inspected for a tower-specific
+  piece." Actually inspected it this time — pulled the pack for real
+  (`@jgengine/assets`'s own CLI, same as the original castle-piece-models
+  cycle) and listed all 176 models: confirmed no dedicated fortress-tower
+  body model exists (same conclusion Keep's own entry already reached, now
+  verified for Tower specifically rather than assumed to generalize).
+  Rather than stay a bare box, reused Keep's own already-downloaded
+  `castle-keep-roof.glb` (`Roof_Tower_RoundTiles`) as Tower's roof cap too —
+  no new asset fetch or attribution entry needed — at a smaller `scale`
+  (0.233 vs Keep's 0.28) computed to match Keep's own cap-width-to-box-width
+  overhang ratio (≈1.318, measured via `gltf-transform inspect`) against
+  Tower's narrower 1.0-wide footprint, rather than guessing a scale and
+  eyeballing it.
+  **Small refactor while here**: `upgradeCastlePieceToRealModel` used to
+  take a bare `typeId` and re-resolve it via `findCastleStructureType` —
+  redundant, since its only caller (`placement.ts`) already has the
+  resolved `type` in scope right before calling it. Changed the signature
+  to take the `CastleStructureType` directly; besides removing the
+  redundant lookup, this let `realCastlePieceModels.test.ts`'s "no-ops for
+  a type with no realModel" test switch to a synthetic type instead of
+  relying on some catalog entry (previously Tower) perpetually lacking a
+  `realModel` to exercise that branch — that assumption broke the moment
+  Tower gained one, so the test is now independent of which catalog entries
+  currently happen to have a real model configured.
+  4 unit tests updated (`castleStructures.test.ts`'s Tower test now asserts
+  the real `realModel` shape instead of `undefined`; `realCastlePieceModels.test.ts`'s
+  catalog-membership test lists all four ids, its no-op test uses a
+  synthetic type, and its call sites pass resolved types) plus 1 new test
+  (Tower's own roof-cap wiring: box stays visible, cap scaled/positioned
+  correctly — mirrors the existing Keep test). Verified visually with a
+  real screenshot (Tower now shows a clear conical red-tiled roof, reading
+  as a distinct watchtower silhouette next to Keep, not just a taller flat
+  box) — full suite green (typecheck, 278 unit tests, build, 68 E2E tests;
+  one `sea-construction.spec.ts` reload-depth-timing failure on the first
+  run was confirmed flaky — passed both isolated and in a full clean
+  re-run — and is unrelated to this change, in World's own sea-buoyancy
+  territory, not this track's file ownership).
+
+**2026-09-13 (this cycle) — the one remaining `todo` re-checked, still not
+solo-actionable.** Camera framing: unchanged, same blast-radius reasoning
+as every prior re-check holds (changing the shared `cameraOffset` in
+`main.ts` would move click-position assumptions baked into several of
+World's own E2E specs). Dive-suit auto-equip bug itself (`DECISIONS.md`'s
+"Needs Your Action") is still genuinely blocked on a human with a real
+browser, but its *visual rework* is well underway elsewhere: rechecked
+`claude/dive-suit-auto-equip-zb1qvy` (still 2 days stale, last commit
+2026-09-11) — not this track's own daily branch, so left untouched per
+`AUTONOMY.md`'s merge protocol, same reasoning every prior cycle used; a
+future cycle should check whether it's landed on `main` before touching
+`createDiveSuitAvatarMesh` itself.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.

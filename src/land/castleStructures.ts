@@ -7,11 +7,13 @@
  *
  * **`realModel`** (`BACKLOG.md`, "real Quaternius castle-piece models"):
  * each type started as a plain box (rough is fine — see `AUTONOMY.md`'s
- * visual-first guardrail) and two of the three now upgrade to a real
- * asset once loaded (`src/land/realCastlePieceModels.ts` owns the actual
- * loading/swap mechanism — this file only declares *which* model and how
- * it fits, same split `skins/blockMaterials.ts`/`skins/realBlockTextures.ts`
- * already use). Source: Quaternius's "Medieval Village MegaKit" (CC0-1.0),
+ * visual-first guardrail); most now upgrade to a real asset once loaded
+ * (`src/land/realCastlePieceModels.ts` owns the actual loading/swap
+ * mechanism — this file only declares *which* model and how it fits, same
+ * split `skins/blockMaterials.ts`/`skins/realBlockTextures.ts` already
+ * use — see each entry's own comment for which, so this doc comment
+ * doesn't need to keep an exact count in sync with the catalog). Source:
+ * Quaternius's "Medieval Village MegaKit" (CC0-1.0),
  * reached via the GitHub-releases mirror (`DECISIONS.md`, 2026-08-31) —
  * a village/house-building kit, not a dedicated fortress kit, so the fit
  * varies per type (see each entry's own comment); full attribution in
@@ -84,15 +86,21 @@ export const CASTLE_STRUCTURE_TYPES: CastleStructureType[] = [
   // corner watchtower: narrower footprint than Keep (1.0 vs 1.2) and
   // taller than every other piece (3.6, clears Wall's 3.1) so it reads as
   // a distinct tall/thin silhouette next to the others rather than just a
-  // resized Keep. Plain box, no `realModel` yet — same Phase 1a "rough is
-  // fine, real assets can follow later" discipline Keep/Wall/Gate
-  // themselves started under before the Quaternius pack landed; nothing
-  // in the reachable Medieval Village MegaKit index was inspected for a
-  // tower-specific piece this cycle, left for a future pass.
+  // resized Keep. Its box (and block-material coloring) stays exactly as
+  // it was — same as Keep's own box, the Medieval Village MegaKit has no
+  // single model that reads as "a fortress tower" either, confirmed by
+  // actually listing the pack's contents (176 models) rather than assuming
+  // Keep's own investigation generalizes without checking. Reuses Keep's
+  // own already-downloaded roof cap (`Roof_Tower_RoundTiles`, no new asset
+  // fetch or attribution entry needed) at a smaller scale so the cap's
+  // overhang-over-box-width ratio matches Keep's (1.582/1.2 ≈ 1.318,
+  // measured via `gltf-transform inspect`) despite Tower's narrower 1.0
+  // footprint: 1.318 * 1.0 / 5.65052 (the cap's own raw width) ≈ 0.233.
   {
     id: "castle-tower",
     label: "Tower",
     dimensions: { width: 1.0, height: 3.6, depth: 1.0 },
+    realModel: { modelUrl: "/assets/models/castle-keep-roof.glb", scale: 0.233, placement: "roof-cap" },
   },
 ];
 

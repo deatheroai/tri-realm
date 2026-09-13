@@ -132,7 +132,9 @@ quaternius.com/opengameart.org themselves are blocked by this session's network 
     reads as "a gate" specifically) fully replace their type's old placeholder box once loaded.
   - `castle-keep-roof.glb` (source: `Roof_Tower_RoundTiles`) is a roof cap only — Keep's own box
     stays exactly as it was (block-material colored, unchanged dimensions), just topped with this
-    for a more distinctive silhouette.
+    for a more distinctive silhouette. Reused (at a smaller scale) for the fourth `castle-tower`
+    type's own roof cap too — same reasoning applies (no single model in the pack reads as "a
+    fortress tower" either), so no second download was needed.
 - Each downloaded at the pack's own resolution (2048×2048 textures, ~25MB per model — a full
   scene export retains every material in the source file, most unused by any one piece) and
   reprocessed with `@gltf-transform/cli`: textures resized to 256×256 (a distant/background prop,
