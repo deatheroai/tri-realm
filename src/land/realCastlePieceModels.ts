@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { findCastleStructureType } from "./castleStructures";
+import type { CastleStructureType } from "./castleStructures";
 
 /**
  * Upgrades a placed castle piece's box mesh in place with its real
@@ -51,9 +51,16 @@ export function __resetRealCastlePieceModelCacheForTests(): void {
  * (the same sharing bug `AvatarView` hit and fixed for land/air's two
  * simultaneous avatars — these pieces have no skeleton, so a plain
  * `.clone(true)` is enough, no need for `SkeletonUtils`).
+ *
+ * Takes the already-resolved `CastleStructureType` rather than a bare
+ * `typeId` — `placement.ts` (this function's only production caller)
+ * already looks the type up via `findCastleStructureType` for the box's
+ * own dimensions right before calling this, so a second lookup here would
+ * be redundant; it also lets tests exercise the no-`realModel` branch with
+ * a synthetic type, independent of which catalog entries currently happen
+ * to have one configured.
  */
-export function upgradeCastlePieceToRealModel(box: THREE.Mesh, typeId: string): Promise<void> {
-  const type = findCastleStructureType(typeId);
+export function upgradeCastlePieceToRealModel(box: THREE.Mesh, type: CastleStructureType): Promise<void> {
   const realModel = type.realModel;
   if (!realModel) return Promise.resolve();
 
@@ -95,6 +102,6 @@ export function upgradeCastlePieceToRealModel(box: THREE.Mesh, typeId: string): 
       box.parent?.add(visual);
     })
     .catch((err) => {
-      console.error(`Failed to load real model for castle piece type "${typeId}" — staying on the procedural box.`, err);
+      console.error(`Failed to load real model for castle piece type "${type.id}" — staying on the procedural box.`, err);
     });
 }

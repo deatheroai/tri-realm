@@ -35,11 +35,18 @@ describe("findCastleStructureType", () => {
 });
 
 describe("castle-tower", () => {
-  it("is a distinct, taller-than-the-others plain-box type with no real model yet", () => {
+  it("is a distinct, taller-than-the-others type with its own real roof-cap model", () => {
     const tower = findCastleStructureType("castle-tower");
 
     expect(tower.label).toBe("Tower");
-    expect(tower.realModel).toBeUndefined();
+    // Reuses Keep's own roof cap (no dedicated fortress-tower model exists
+    // in the reachable pack — see this entry's own comment) at a smaller
+    // scale, same "roof-cap" partial upgrade Keep itself uses.
+    expect(tower.realModel).toEqual({
+      modelUrl: "/assets/models/castle-keep-roof.glb",
+      scale: 0.233,
+      placement: "roof-cap",
+    });
     for (const other of CASTLE_STRUCTURE_TYPES) {
       if (other.id === "castle-tower") continue;
       expect(tower.dimensions.height).toBeGreaterThan(other.dimensions.height);

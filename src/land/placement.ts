@@ -43,7 +43,7 @@ export function createCastlePieceMesh(
   if (material.textureUrls) {
     upgradeToRealTextures(meshMaterial, material.textureUrls, { tint: material.tintRealTexture ?? false });
   }
-  upgradeCastlePieceToRealModel(mesh, typeId);
+  upgradeCastlePieceToRealModel(mesh, type);
   return mesh;
 }
 

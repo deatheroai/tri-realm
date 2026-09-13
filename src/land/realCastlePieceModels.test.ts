@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createCastlePieceMesh } from "./placement";
-import { CASTLE_STRUCTURE_TYPES, findCastleStructureType } from "./castleStructures";
+import { CASTLE_STRUCTURE_TYPES, findCastleStructureType, type CastleStructureType } from "./castleStructures";
 import { upgradeCastlePieceToRealModel, __resetRealCastlePieceModelCacheForTests } from "./realCastlePieceModels";
 
 function fakeGltf(scene: THREE.Object3D) {
@@ -36,19 +36,29 @@ describe("upgradeCastlePieceToRealModel", () => {
     __resetRealCastlePieceModelCacheForTests();
   });
 
-  it("every catalog type with a realModel is one of the Quaternius-sourced ones", () => {
-    // Not every type needs one — Tower (BACKLOG.md's "structure types
-    // beyond castles" item) deliberately shipped as a plain box, same
-    // Phase 1a discipline Keep/Wall/Gate themselves started under.
+  it("every catalog type currently has a realModel configured", () => {
+    // All four ship with one today (Tower's the newest, reusing Keep's own
+    // roof cap — see castleStructures.ts's own comment), but this isn't a
+    // standing invariant: the no-op branch below is still real, exercised
+    // with a synthetic type rather than relying on some catalog entry
+    // perpetually lacking one.
     const withRealModel = CASTLE_STRUCTURE_TYPES.filter((t) => t.realModel !== undefined).map((t) => t.id);
-    expect(withRealModel.sort()).toEqual(["castle-gate", "castle-keep", "castle-wall"]);
+    expect(withRealModel.sort()).toEqual(["castle-gate", "castle-keep", "castle-tower", "castle-wall"]);
   });
 
   it("no-ops for a type with no realModel configured, leaving the box exactly as it was", async () => {
     const loadAsyncSpy = vi.spyOn(GLTFLoader.prototype, "loadAsync");
 
-    const { box, scene } = bareBoxInScene("castle-tower");
-    await upgradeCastlePieceToRealModel(box, "castle-tower");
+    // A synthetic type, not a catalog lookup — this branch needs to hold
+    // regardless of whether every current catalog entry happens to have a
+    // realModel configured (see the test above).
+    const noModelType: CastleStructureType = {
+      id: "test-no-model",
+      label: "Test",
+      dimensions: { width: 1, height: 1, depth: 1 },
+    };
+    const { box, scene } = bareBoxInScene("castle-keep"); // dimensions irrelevant to this branch
+    await upgradeCastlePieceToRealModel(box, noModelType);
 
     expect(loadAsyncSpy).not.toHaveBeenCalled();
     expect(box.visible).toBe(true);
@@ -62,7 +72,7 @@ describe("upgradeCastlePieceToRealModel", () => {
     const { box, scene } = bareBoxInScene("castle-wall");
     expect(box.visible).toBe(true); // synchronous default, before the upgrade lands
 
-    await upgradeCastlePieceToRealModel(box, "castle-wall");
+    await upgradeCastlePieceToRealModel(box, findCastleStructureType("castle-wall"));
 
     expect(box.visible).toBe(false);
     // A sibling in the scene, NOT a child of the (now invisible) box —
@@ -80,7 +90,7 @@ describe("upgradeCastlePieceToRealModel", () => {
     vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue(fakeGltf(fakeModel));
 
     const { box, scene } = bareBoxInScene("castle-keep");
-    await upgradeCastlePieceToRealModel(box, "castle-keep");
+    await upgradeCastlePieceToRealModel(box, findCastleStructureType("castle-keep"));
 
     expect(box.visible).toBe(true);
     expect(box.children).toHaveLength(0);
@@ -89,12 +99,26 @@ describe("upgradeCastlePieceToRealModel", () => {
     expect(visual!.position.y).toBeCloseTo(0.7, 5); // castle-keep's own height/2
   });
 
+  it("'roof-cap' (Tower): reuses Keep's own roof-cap model at its own scale/height offset", async () => {
+    const fakeModel = new THREE.Group();
+    vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue(fakeGltf(fakeModel));
+
+    const { box, scene } = bareBoxInScene("castle-tower");
+    await upgradeCastlePieceToRealModel(box, findCastleStructureType("castle-tower"));
+
+    expect(box.visible).toBe(true); // additive, same as Keep — box stays
+    const visual = scene.children.find((c) => c !== box);
+    expect(visual).toBeDefined();
+    expect(visual!.scale.x).toBeCloseTo(0.233, 5); // narrower than Keep's own 0.28
+    expect(visual!.position.y).toBeCloseTo(1.8, 5); // castle-tower's own height/2
+  });
+
   it("scales the loaded model by the catalog entry's own measured scale", async () => {
     const fakeModel = new THREE.Group();
     vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue(fakeGltf(fakeModel));
 
     const { box, scene } = bareBoxInScene("castle-keep");
-    await upgradeCastlePieceToRealModel(box, "castle-keep");
+    await upgradeCastlePieceToRealModel(box, findCastleStructureType("castle-keep"));
 
     const visual = scene.children.find((c) => c !== box)!;
     expect(visual.scale.x).toBeCloseTo(0.28, 5);
@@ -106,7 +130,7 @@ describe("upgradeCastlePieceToRealModel", () => {
 
     const { box, scene } = bareBoxInScene("castle-wall");
     box.position.set(5, 0, -3); // as if main.ts had already positioned it before scene.add
-    await upgradeCastlePieceToRealModel(box, "castle-wall");
+    await upgradeCastlePieceToRealModel(box, findCastleStructureType("castle-wall"));
 
     const visual = scene.children.find((c) => c !== box)!;
     expect(visual.position.x).toBe(5);
@@ -124,8 +148,8 @@ describe("upgradeCastlePieceToRealModel", () => {
     const a = bareBoxInScene("castle-wall");
     const b = bareBoxInScene("castle-wall");
     await Promise.all([
-      upgradeCastlePieceToRealModel(a.box, "castle-wall"),
-      upgradeCastlePieceToRealModel(b.box, "castle-wall"),
+      upgradeCastlePieceToRealModel(a.box, findCastleStructureType("castle-wall")),
+      upgradeCastlePieceToRealModel(b.box, findCastleStructureType("castle-wall")),
     ]);
 
     const visualA = a.scene.children.find((c) => c !== a.box);
@@ -140,7 +164,7 @@ describe("upgradeCastlePieceToRealModel", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { box, scene } = bareBoxInScene("castle-wall");
-    await upgradeCastlePieceToRealModel(box, "castle-wall");
+    await upgradeCastlePieceToRealModel(box, findCastleStructureType("castle-wall"));
 
     expect(box.visible).toBe(true);
     expect(scene.children).toEqual([box]); // nothing added
