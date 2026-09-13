@@ -422,8 +422,30 @@ fetch it.
   overlap is rejected), and a realm-supplied `terrainRule`. Land's catalog
   (`src/land/castleStructures.ts`: Keep/Wall/Gate/Tower) and terrain rule
   (`landTerrainPlacementRule` in `src/land/landRealmMap.ts`, trivially
-  true today) are the first realm plugging into that shape; sea/air add
-  their own catalog + rule later without this file changing.
+  true today) are the first realm plugging into that shape.
+- **Sea construction** (`BACKLOG.md`, "sea construction/placement"):
+  sea is the second realm to plug into the same shape, confirming this
+  file genuinely didn't need to change to support it. `src/sea/
+  seaStructures.ts` (catalog — one starter type, `reef-pillar`, same
+  "rough is fine" single-type start land's own Phase 1a once had) and
+  `src/sea/seaPlacement.ts` (mesh factory, mirrors `src/land/placement.ts`'s
+  block-material/procedural-texture pipeline exactly) plug into
+  `validatePlacement` via a real, non-trivial `seaTerrainPlacementRule`
+  (`src/sea/seaRealmMap.ts`) — unlike land's always-true rule, this one
+  actually rejects a placement whose center falls outside the swimmable
+  band (below the floor or above the surface). `main.ts`'s
+  `placeSeaPieceAt` raycasts against the sea floor mesh plus already-placed
+  sea pieces, same shape as `placeCastlePieceAt`'s land raycast, self-
+  guarded on `activeRealm === "sea"` so one shared click/tap handler can
+  call both land's and sea's placement functions unconditionally. Sea also
+  gained real save/load (`src/world/realmMapStorage.ts` needed no changes
+  either — proving out its own "realm-agnostic" claim): `seaMap` and the
+  player's sea position both persist and restore across a reload, the
+  exact same `loadRealmMap`/`saveRealmMap` calls land already used, just
+  keyed by `SEA_MAP_ID`. Air still has no placement/save-load — its own
+  catalog + rule remain a later item, not attempted here (a free-flight
+  volume has no natural raycast surface to click, an open design question
+  land/sea's floor-based approach doesn't answer for free).
 
 ## Modularity
 

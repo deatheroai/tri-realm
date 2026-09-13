@@ -1,5 +1,6 @@
 import type { Vec3 } from "../math/vec3";
 import type { RealmMap } from "../world/realmMap";
+import type { TerrainPlacementRule } from "../world/placementValidation";
 import { SEA_LAND_PORTAL } from "../world/landSeaPortal";
 
 /** Also this sea map's `RealmMap.id`. */
@@ -78,3 +79,22 @@ export function createSeaRealmMap(): RealmMap {
     portals: [SEA_LAND_PORTAL],
   };
 }
+
+/**
+ * Sea's placement terrain rule (`src/world/placementValidation.ts`) — the
+ * "own rule" `ARCHITECTURE.md`'s construction-system section anticipated
+ * ("sea/air add their own catalog + rule later without [that file]
+ * changing"), and genuinely non-trivial unlike land's always-`true` one
+ * (`landRealmMap.ts`): a proposed placement's center must sit within the
+ * swimmable band (between the sea floor and the water surface), not above
+ * or below it. In practice every real placement already lands well inside
+ * this band — click-to-place always raycasts against the floor mesh itself
+ * (`main.ts`), so a piece's base sits right at `floorY` — but the rule
+ * still guards against a hypothetical structure tall enough to poke its own
+ * center out of the water column, and gives sea a real (not just nominal)
+ * terrain rule to plug into the shared `validatePlacement` shape.
+ */
+export const seaTerrainPlacementRule: TerrainPlacementRule = (map, position) => {
+  if (map.terrain.kind !== "sea-floor") return true; // defensive — this rule is only ever wired to a sea map
+  return position.y >= map.terrain.floorY && position.y <= map.terrain.surfaceY;
+};
