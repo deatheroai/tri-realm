@@ -6,6 +6,7 @@ import {
   SEA_SURFACE_Y,
   SEA_WRECKAGE_POSITIONS,
   SEA_SHIPWRECK_POSITION,
+  seaTerrainPlacementRule,
 } from "./seaRealmMap";
 import { SEA_LAND_PORTAL_ID, SEA_PORTAL_POSITION } from "../world/landSeaPortal";
 import { PORTAL_TRIGGER_RADIUS } from "../world/portalTransition";
@@ -75,5 +76,26 @@ describe("SEA_SHIPWRECK_POSITION", () => {
       (w) => w.x === SEA_SHIPWRECK_POSITION.x && w.y === SEA_SHIPWRECK_POSITION.y && w.z === SEA_SHIPWRECK_POSITION.z,
     );
     expect(isDuplicate).toBe(false);
+  });
+});
+
+describe("seaTerrainPlacementRule", () => {
+  const map = createSeaRealmMap();
+
+  it("accepts a position within the swimmable band (floor to surface)", () => {
+    expect(seaTerrainPlacementRule(map, { x: 0, y: SEA_FLOOR_Y + 1, z: 0 })).toBe(true);
+  });
+
+  it("accepts a position exactly at the floor or the surface (inclusive bounds)", () => {
+    expect(seaTerrainPlacementRule(map, { x: 0, y: SEA_FLOOR_Y, z: 0 })).toBe(true);
+    expect(seaTerrainPlacementRule(map, { x: 0, y: SEA_SURFACE_Y, z: 0 })).toBe(true);
+  });
+
+  it("rejects a position below the sea floor", () => {
+    expect(seaTerrainPlacementRule(map, { x: 0, y: SEA_FLOOR_Y - 1, z: 0 })).toBe(false);
+  });
+
+  it("rejects a position above the water surface", () => {
+    expect(seaTerrainPlacementRule(map, { x: 0, y: SEA_SURFACE_Y + 1, z: 0 })).toBe(false);
   });
 });

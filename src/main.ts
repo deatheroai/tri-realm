@@ -22,9 +22,11 @@ import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";
 import { moveInputToAirAnimationState, withFloatAnimationState } from "./air/airAnimation";
 import { createSeaScene } from "./sea/seaScene";
-import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y } from "./sea/seaRealmMap";
+import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y, SEA_MAP_ID, seaTerrainPlacementRule } from "./sea/seaRealmMap";
 import { stepSeaMovement, type SeaMovementState } from "./sea/seaMovement";
 import { moveInputToSeaAnimationState, withSwimAnimationState } from "./sea/seaAnimation";
+import { createSeaStructureMesh, seaStructureGroundOffset } from "./sea/seaPlacement";
+import { SEA_STRUCTURE_TYPES, DEFAULT_SEA_STRUCTURE_TYPE_ID, findSeaStructureType } from "./sea/seaStructures";
 import { lerpVec3, type Vec3 } from "./math/vec3";
 import { AvatarView } from "./skins/avatarView";
 import {
@@ -93,14 +95,31 @@ const airAvatar = airAvatarOrUndefined;
 const airAvatarView = new AvatarView(airAvatar);
 void airAvatarView.setSkin(DEFAULT_AVATAR_SKIN_ID);
 
-// Sea realm (BACKLOG.md Phase 3) — same "own scene/avatar/movement, no
-// placement/save-load yet" shape air's Phase 2 first item started with.
-// `seaMap` holds no portal yet — the land<->sea flavor is still a pending
-// decision (DECISIONS.md), so there's nothing concrete to wire in; this
-// realm is reachable only via the dev realm panel for now, same as air
-// was before its own portal existed.
+// Sea realm (BACKLOG.md Phase 3) — own scene/avatar/movement, plus real
+// construction/placement + save-load (BACKLOG.md, sea construction item):
+// sea now plugs its own catalog (`seaStructures.ts`) and terrain rule
+// (`seaTerrainPlacementRule`) into the same `validatePlacement`/
+// `realmMapStorage.ts` pipeline land's Phase 1b already generalized —
+// `ARCHITECTURE.md`'s construction-system section anticipated exactly this
+// ("sea/air add their own catalog + rule later without [that file]
+// changing"), so neither file needed to change to support it.
 const seaScene = createSeaScene();
-const seaMap = createSeaRealmMap();
+const seaFloorOrUndefined = seaScene.getObjectByName("sea-floor");
+if (!seaFloorOrUndefined) {
+  throw new Error("Missing sea-floor in sea scene");
+}
+const seaFloor = seaFloorOrUndefined;
+
+function loadOrCreateSeaMap(): RealmMap {
+  try {
+    return loadRealmMap(SEA_MAP_ID, window.localStorage) ?? createSeaRealmMap();
+  } catch (err) {
+    console.warn("Failed to load saved sea map, starting fresh:", err);
+    return createSeaRealmMap();
+  }
+}
+
+let seaMap = loadOrCreateSeaMap();
 const seaAvatarOrUndefined = seaScene.getObjectByName("avatar");
 if (!seaAvatarOrUndefined) {
   throw new Error("Missing avatar in sea scene");
@@ -187,6 +206,8 @@ declare global {
     __getSeaAvatarPitch?: () => number;
     __getSeaAvatarMoveState?: () => MoveAnimationState;
     __getAvatarVisualLocalY?: () => number | undefined;
+    __getSeaStructureCount?: () => number;
+    __getLastPlacedSeaType?: () => string | undefined;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -232,6 +253,12 @@ window.__getLastPlacedMapUuid = () => {
   return material?.map?.uuid;
 };
 window.__getLastPlacedType = () => landMap.structures[landMap.structures.length - 1]?.type;
+// Sea has no visible structures HUD yet (see `placeSeaPieceAt`/`persistSeaMap`
+// below) — these mirror `structuresHud`/`__getLastPlacedType` above for E2E
+// coverage without needing a new on-screen element (see AUTONOMY.md's "UI
+// layout convention" — an unclaimed corner isn't free to spend on this).
+window.__getSeaStructureCount = () => seaMap.structures.length;
+window.__getLastPlacedSeaType = () => seaMap.structures[seaMap.structures.length - 1]?.type;
 
 // Click/tap-to-place: raycast against the ground mesh AND every already-
 // placed piece (not the whole scene — avatar/landmarks are deliberately
@@ -278,9 +305,9 @@ function persistLandMap(): void {
 }
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
-  // Placement is land-only for now — the ground/placedMeshes raycast
-  // targets belong to the land scene, which isn't even rendered while
-  // viewing air.
+  // Land-only — the ground/placedMeshes raycast targets belong to the land
+  // scene, which isn't even rendered while viewing air/sea. Sea has its own
+  // equivalent (`placeSeaPieceAt`, below); air has none yet.
   if (activeRealm !== "land") return;
 
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
@@ -326,17 +353,103 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
   persistLandMap();
 }
 
-// The touch-zone (joystick) only becomes pointer-interactive on touch
-// devices (see index.html's `pointer: coarse` rule), so a click here is
-// always a real placement intent — no need to check the event target.
-window.addEventListener("click", (e) => placeCastlePieceAt(e.clientX, e.clientY));
+// Sea's own click/tap-to-place — same raycast-against-floor-plus-existing-
+// pieces shape as land's above, just against the sea floor mesh and sea's
+// own catalog/terrain rule instead of land's. Self-guards on `activeRealm`
+// exactly like `placeCastlePieceAt` does, so both can be called
+// unconditionally from one shared input handler below; only the one
+// matching the active realm ever does anything.
+const seaPlacedMeshes = new Map<string, THREE.Object3D>();
+let currentSeaStructureTypeId = DEFAULT_SEA_STRUCTURE_TYPE_ID;
+const seaStructureFootprintOf = (typeId: string) => findSeaStructureType(typeId).dimensions;
+
+// `seaMap.structures` is data only, same as land's restore loop above — a
+// restored save has no meshes yet, so rebuild one per structure before the
+// first frame renders.
+for (const structure of seaMap.structures) {
+  const restoredPiece = createSeaStructureMesh(structure.type, structure.materialId);
+  restoredPiece.position.set(structure.position.x, structure.position.y, structure.position.z);
+  seaScene.add(restoredPiece);
+  seaPlacedMeshes.set(structure.id, restoredPiece);
+}
+
+function persistSeaMap(): void {
+  try {
+    const mapWithEntities: RealmMap = {
+      ...seaMap,
+      entities: [{ id: PLAYER_ENTITY_ID, position: seaMovement.position }],
+    };
+    saveRealmMap(mapWithEntities, window.localStorage);
+  } catch (err) {
+    console.warn("Failed to save sea map:", err);
+  }
+}
+
+function placeSeaPieceAt(clientX: number, clientY: number): void {
+  if (activeRealm !== "sea") return;
+
+  pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
+  pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointerNdc, camera);
+
+  const hits = raycaster.intersectObjects([seaFloor, ...seaPlacedMeshes.values()], false);
+  if (hits.length === 0) return;
+
+  const hit = hits[0];
+  const groundOffset = seaStructureGroundOffset(currentSeaStructureTypeId);
+
+  let position: Vec3;
+  if (hit.object === seaFloor) {
+    position = { x: hit.point.x, y: hit.point.y + groundOffset, z: hit.point.z };
+  } else {
+    const hitBox = new THREE.Box3().setFromObject(hit.object);
+    position = { x: hit.object.position.x, y: hitBox.max.y + groundOffset, z: hit.object.position.z };
+  }
+
+  const check = validatePlacement(
+    seaMap,
+    currentSeaStructureTypeId,
+    position,
+    seaStructureFootprintOf,
+    seaTerrainPlacementRule,
+  );
+  if (!check.valid) return; // rough pass, matches land: reject silently, no error UI yet
+
+  const piece = createSeaStructureMesh(currentSeaStructureTypeId, currentBlockMaterialId);
+  piece.position.set(position.x, position.y, position.z);
+
+  const { map, structure } = addStructure(seaMap, {
+    type: currentSeaStructureTypeId,
+    position,
+    rotation: 0,
+    materialId: currentBlockMaterialId,
+  });
+  seaMap = map;
+  seaPlacedMeshes.set(structure.id, piece);
+
+  seaScene.add(piece);
+  persistSeaMap();
+}
+
+// One shared input handler dispatches to whichever realm's placement
+// function is actually active — each of `placeCastlePieceAt`/
+// `placeSeaPieceAt` already self-guards on `activeRealm`, so calling both
+// unconditionally is harmless (air has no placement yet, so neither fires
+// there). The touch-zone (joystick) only becomes pointer-interactive on
+// touch devices (see index.html's `pointer: coarse` rule), so a click here
+// is always a real placement intent — no need to check the event target.
+function placeStructureAt(clientX: number, clientY: number): void {
+  placeCastlePieceAt(clientX, clientY);
+  placeSeaPieceAt(clientX, clientY);
+}
+window.addEventListener("click", (e) => placeStructureAt(e.clientX, e.clientY));
 
 const touchZone = document.getElementById("touch-zone");
 const joystickBase = document.getElementById("joystick-base");
 const joystickKnob = document.getElementById("joystick-knob");
 const touchJoystick =
   touchZone && joystickBase && joystickKnob
-    ? new TouchJoystick(touchZone, joystickBase, joystickKnob, { onTap: placeCastlePieceAt })
+    ? new TouchJoystick(touchZone, joystickBase, joystickKnob, { onTap: placeStructureAt })
     : null;
 
 /**
@@ -508,6 +621,24 @@ if (devStructurePanel) {
     structureRow.appendChild(btn);
   }
   devStructurePanel.appendChild(structureRow);
+
+  // Sea's own structure-type row, same shape as land's above (just one type
+  // today — `seaStructures.ts` deliberately started small, same as land's
+  // catalog once did) — a second row within the same dev panel, matching
+  // this panel's existing two-row-style pattern rather than a whole new
+  // panel (see the skin/material rows above, and AUTONOMY.md's "UI layout
+  // convention").
+  const seaStructureRow = document.createElement("div");
+  seaStructureRow.textContent = "Sea structure: ";
+  for (const type of SEA_STRUCTURE_TYPES) {
+    const btn = document.createElement("button");
+    btn.textContent = type.label;
+    btn.addEventListener("click", () => {
+      currentSeaStructureTypeId = type.id;
+    });
+    seaStructureRow.appendChild(btn);
+  }
+  devStructurePanel.appendChild(seaStructureRow);
 }
 
 // Which realm's scene/movement module is currently active. The real
@@ -570,10 +701,17 @@ window.__getAirAvatarPitch = () => airAvatar.rotation.x;
 // real motion instead of idle.
 window.__getAirAvatarMoveState = () => airAvatarView.moveState;
 
-// Sea has no saved state yet either (same "todo" as air) — always spawns
-// fresh at the sea scene's own starting position.
+// Sea now saves/restores the player's position too, same as land
+// (`persistSeaMap` above) — resumes where they left off if a save has one,
+// otherwise the scene's own starting position. Air still has no saved
+// state (todo, same as before).
+const savedSeaPlayerPosition = seaMap.entities.find((e) => e.id === PLAYER_ENTITY_ID)?.position;
 let seaMovement: SeaMovementState = {
-  position: { x: seaAvatar.position.x, y: seaAvatar.position.y, z: seaAvatar.position.z },
+  position: savedSeaPlayerPosition ?? {
+    x: seaAvatar.position.x,
+    y: seaAvatar.position.y,
+    z: seaAvatar.position.z,
+  },
   velocity: { x: 0, y: 0, z: 0 },
 };
 // Test-only hook, mirrors __getAirAltitude — how E2E coverage verifies

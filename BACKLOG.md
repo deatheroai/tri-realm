@@ -48,7 +48,16 @@ human, item 5 still lives outside this track's section), which pulled
 forward "Climbable-slope limit + terrain-face collision" (`Later /
 unscoped` below) instead — a real `src/land/` bug fix/core-system gap
 closed, not new content, but the same "don't manufacture busywork, don't
-stall either" reasoning applies equally to a genuine fix as to new content.
+stall either" reasoning applies equally to a genuine fix as to new content
+— and **2026-09-13's world cycle**, same situation a third time (item 2
+still needs a human, item 5 still lives outside this track's section) and
+now `Later / unscoped` itself had nothing left but out-of-scope
+multiplayer, so this cycle looked past both lists to `ARCHITECTURE.md`'s
+own construction-system section, which had flagged real unbuilt scope
+("sea/air add their own catalog + rule later") that neither list had ever
+turned into a concrete item — built sea's own structure catalog +
+placement (Phase 3 below, 2026-09-13), same "new content on an
+established, data-driven pattern" bar the two prior pulls-forward used.
 
 ## Phase 0 — Get something live
 
@@ -1286,6 +1295,75 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   full broken-hull-plus-mast silhouette clearly visible) — full suite
   green (typecheck, 242 unit tests, build, 64 E2E tests). Same procedural-
   primitives-first approach as everywhere else in this codebase.
+- `done` **(World) Sea construction/placement — the second realm to plug
+  into the shared placement pipeline, plus real save/load.** Picked up
+  2026-09-13: this cycle's own current-priority-order items were all
+  either `done` already or genuinely stuck for this track (dive-suit bug
+  still needs a human with a browser; camera framing lives under "Skins /
+  visual identity"), and `Later / unscoped` had nothing left but
+  out-of-scope multiplayer — so rather than stall, re-read
+  `ARCHITECTURE.md`'s own construction-system section, which had flagged
+  exactly this as anticipated future work ("sea/air add their own catalog
+  + rule later without [`placementValidation.ts`] changing") but nothing
+  had picked it up yet. Squarely this track's own charter (`AUTONOMY.md`:
+  "construction/placement mechanics"), and "new content on an established,
+  data-driven pattern" per its own no-decision-needed bar — the pipeline
+  itself (`validatePlacement`, `addStructure`, `realmMapStorage.ts`) was
+  already fully realm-agnostic, confirmed by needing zero changes to any
+  of those three files.
+  New `src/sea/seaStructures.ts` (a one-type starter catalog, `reef-pillar`
+  — same "rough is fine, one type first" discipline land's own Phase 1a
+  catalog once had before Wall/Gate/Tower were added) and `src/sea/
+  seaPlacement.ts` (`createSeaStructureMesh`, mirrors `src/land/
+  placement.ts`'s block-material/procedural-texture pipeline exactly, so a
+  sea piece can use any block material land's dev panel already offers).
+  `seaTerrainPlacementRule` (`src/sea/seaRealmMap.ts`) is sea's own real
+  rule — genuinely non-trivial unlike land's always-`true` one, rejecting
+  a placement whose center falls outside the swimmable band (below the
+  floor or above the surface).
+  `main.ts`'s `placeSeaPieceAt` raycasts against the sea floor mesh plus
+  already-placed sea pieces, the same shape `placeCastlePieceAt` already
+  used for land's ground — both functions now self-guard on `activeRealm`
+  and are called unconditionally from one shared `placeStructureAt`
+  dispatcher (click listener + touch-joystick tap), so exactly one of them
+  ever actually does anything on a given tap. A new second row in the
+  existing `#dev-structure-panel` ("Sea structure:") picks sea's active
+  type, same two-row pattern the skins panel's Avatar/Blocks rows already
+  established.
+  Sea also gained real save/load "for free," confirming
+  `realmMapStorage.ts`'s own realm-agnostic claim: `seaMap` and the
+  player's sea position both persist and restore across a reload via the
+  exact same `loadRealmMap`/`saveRealmMap` calls land already used, keyed
+  by `SEA_MAP_ID` — no new persistence code needed.
+  No new HUD element — deliberately, per `AUTONOMY.md`'s "UI layout
+  convention" (no free corner to spend on a second structures counter);
+  E2E coverage uses two new debug hooks instead (`__getSeaStructureCount`,
+  `__getLastPlacedSeaType`), mirroring the existing per-realm hook pattern
+  (`__getAirAltitude`, `__getSeaDepth`, etc.).
+  Air still has no placement/save-load — deliberately left alone this
+  cycle: a free-flight open volume has no natural raycast surface to click
+  against the way land's ground and sea's floor both do, which is a real
+  open design question (what would "click to place" even target in open
+  air?) rather than a same-pattern extension, so it wasn't forced through
+  here.
+  14 new unit tests (`seaStructures.test.ts`, `seaPlacement.test.ts` —
+  both direct mirrors of their land equivalents; 4 new tests in
+  `seaRealmMap.test.ts` for `seaTerrainPlacementRule`'s accept/reject
+  bounds, inclusive at both edges); 4 new E2E tests
+  (`e2e/sea-construction.spec.ts`): clicking the sea floor places a piece,
+  placing in sea doesn't touch land's own HUD-backed count, a placed piece
+  plus the player's sea position both survive a reload, and a fresh visit
+  starts clean. The reload test found (and fixed, not just worked around)
+  a real flakiness trap while being written, same discipline this
+  codebase already holds itself to elsewhere: comparing a pre-reload depth
+  reading against a post-reload one via exact-equality was itself
+  intermittently wrong, since sea's own passive buoyancy
+  (`BUOYANCY_DRIFT_SPEED`) keeps drifting the avatar between the moment of
+  placement and the moment either reading is taken — fixed by asserting
+  "resumed meaningfully deeper than spawn" instead of exact equality
+  against a captured value that was itself already stale by a small, real
+  amount. Full suite verified (typecheck, 277 unit tests, build, 68 E2E
+  tests, the new spec re-run several times to confirm it isn't flaky).
 
 ## Later / unscoped
 
