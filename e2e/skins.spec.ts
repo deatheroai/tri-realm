@@ -140,6 +140,8 @@ test("the dev skin panel lists both avatar skins and block materials", async ({ 
   await expect(page.locator("#dev-skin-panel button", { hasText: "Fox" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Robot" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Mannequin" })).toBeVisible();
+  await expect(page.locator("#dev-skin-panel button", { hasText: "Bird" })).toBeVisible();
+  await expect(page.locator("#dev-skin-panel button", { hasText: "Eagle" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Dive Suit" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Sandstone" })).toBeVisible();
   await expect(page.locator("#dev-skin-panel button", { hasText: "Slate" })).toBeVisible();
@@ -196,6 +198,50 @@ test("switching to Robot loads it, then switching back to Fox still works", asyn
   await expect
     .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
     .toBe("fox");
+
+  expect(errors).toEqual([]);
+});
+
+// Bird and Eagle (added 2026-09-10, reworked with a second palette the same
+// day — see DECISIONS.md) had no E2E coverage at all until now: neither name
+// appears anywhere under e2e/, so nothing confirmed their dev-panel buttons
+// actually exist or that clicking them switches cleanly in a real browser —
+// only unit tests (avatarView.test.ts) ever exercised the shape. Deliberately
+// not folded into the "every gltf avatar skin renders within a sane height
+// range" test above: both are a body lying *along* local Z with wide-spread
+// wings, not an upright capsule-ish silhouette, so their real rendered height
+// (~0.44, measured via window.__getAvatarWorldHeight) is well under that
+// test's 0.5x-of-Capsule floor by design, not a bug — asserting a non-zero
+// height here instead of reusing that ratio.
+test("switching to Bird or Eagle (procedural flying shapes) loads them without errors, then switching back to Fox still works", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+
+  await page.goto("/");
+  await expect
+    .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+    .toBe("fox");
+
+  for (const id of ["bird", "eagle"]) {
+    const label = id === "bird" ? "Bird" : "Eagle";
+    await page.locator("#dev-skin-panel button", { hasText: label }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe(id);
+
+    const height = await page.evaluate(() => window.__getAvatarWorldHeight?.());
+    expect(height, `"${label}" rendered at height ${height} — expected a real, non-zero shape`).toBeGreaterThan(0);
+
+    await page.locator("#dev-skin-panel button", { hasText: "Fox" }).click();
+    await expect
+      .poll(() => page.evaluate(() => window.__getAvatarSkinId?.()), { timeout: 5000 })
+      .toBe("fox");
+  }
 
   expect(errors).toEqual([]);
 });
