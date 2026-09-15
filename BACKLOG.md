@@ -756,6 +756,55 @@ browser, but its *visual rework* is well underway elsewhere: rechecked
 future cycle should check whether it's landed on `main` before touching
 `createDiveSuitAvatarMesh` itself.
 
+- `done` **Closed a real E2E coverage gap: Bird and Eagle had zero E2E
+  tests at all.** 2026-09-15: the two usual `todo`s re-checked again first
+  — camera framing's blast-radius reasoning still holds unchanged (the
+  fixed-fraction ground clicks in `castle-placement.spec.ts`/
+  `land-save-load.spec.ts`/`touch-controls.spec.ts` are still there,
+  confirmed by grep, so the risk this track flagged in 2026-09-03/09-09
+  hasn't shrunk); dive-suit auto-equip still needs a human with a real
+  browser (`DECISIONS.md`'s "Needs Your Action", unchanged). Checked
+  in-flight work before building: `claude/dive-suit-auto-equip-zb1qvy` and
+  the open, untouched PR #4 (`claude/garden-implementation-status-g3b8o5`)
+  are both now 4 days stale (last commit 2026-09-11) — neither is this
+  track's own daily branch, so per `AUTONOMY.md`'s merge protocol neither
+  was touched, just re-noted here. Also noticed (not this track's to fix,
+  logging for visibility): `.autonomy-heartbeat.log` has no entry at all
+  for 2026-09-14 on either track, and World's own 2026-09-14 heartbeat
+  commit (`f914f4b`, on `claude/world-daily`) never produced any further
+  commits or a merge to `main` that day — looks like both daily triggers
+  missed firing properly yesterday, worth a human checking the schedule
+  config rather than something either track can fix from inside a cycle.
+  Rather than manufacture busywork with nothing else unblocked, searched
+  for a real gap instead (same pattern as the Mannequin-credit/Tower-roof
+  fixes) and found one: grepping `e2e/` for "Bird" or "Eagle" returned zero
+  matches — both skins (added/reworked 2026-09-10) had never been touched
+  by an E2E test, only unit-tested (`avatarView.test.ts`'s shape checks).
+  Neither their dev-panel buttons' existence nor a real switch-in-a-browser
+  had ever been verified.
+  Considered folding them into the existing "every gltf avatar skin renders
+  within a sane height range of the procedural capsule" test by dropping
+  its `kind === "gltf"` filter, but measured first rather than assuming
+  that was safe (`window.__getAvatarWorldHeight` against a real running
+  dev server): Bird/Eagle render at ~0.44 world units — ~0.24x Capsule's
+  ~1.80, well under that test's 0.5x floor. Not a bug: both are a body
+  lying *along* local Z with wide-spread wings by design (`avatarView.ts`'s
+  own comment — "unlike every other skin's roughly capsule-shaped upright
+  silhouette"), so their real vertical extent is genuinely small; blindly
+  widening the shared ratio bounds to fit them would have weakened the
+  actual regression guard the Robot-scale bug needs. Added a dedicated test
+  instead (`e2e/skins.spec.ts`, mirrors the existing Robot/Princess
+  switch-and-back pattern, looped over both since they share one shape/
+  mechanism): confirms each button exists, clicking it resolves to the
+  right skin id, it renders a real non-zero-height shape, switching back to
+  Fox still works, and no console/page errors occur. Also added both to
+  "the dev skin panel lists both avatar skins and block materials"'s
+  button-visibility assertions, which had the same blind spot. 1 new E2E
+  test (28 in `e2e/skins.spec.ts` now, 69 total); no unit or code changes
+  needed — the underlying feature already worked correctly, this closes a
+  real verification gap, not a bug. Full suite green (typecheck, 278 unit
+  tests, build, 69 E2E tests).
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
