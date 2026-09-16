@@ -18,9 +18,11 @@ import { validatePlacement } from "./world/placementValidation";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
 import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransition";
 import { createAirScene } from "./air/airScene";
-import { createAirRealmMap, AIR_MAP_ID } from "./air/airRealmMap";
+import { createAirRealmMap, AIR_MAP_ID, airTerrainPlacementRule } from "./air/airRealmMap";
 import { stepAirMovement, type AirMovementState } from "./air/airMovement";
 import { moveInputToAirAnimationState, withFloatAnimationState } from "./air/airAnimation";
+import { createAirStructureMesh, airStructureGroundOffset } from "./air/airPlacement";
+import { AIR_STRUCTURE_TYPES, DEFAULT_AIR_STRUCTURE_TYPE_ID, findAirStructureType } from "./air/airStructures";
 import { createSeaScene } from "./sea/seaScene";
 import { createSeaRealmMap, SEA_FLOOR_Y, SEA_SURFACE_Y, SEA_MAP_ID, seaTerrainPlacementRule } from "./sea/seaRealmMap";
 import { stepSeaMovement, type SeaMovementState } from "./sea/seaMovement";
@@ -75,11 +77,22 @@ const ground = groundOrUndefined;
 
 // Air realm (BACKLOG.md Phase 2) — its own scene/avatar/movement, reached
 // either via the dev realm panel below or, now that both ends are scoped,
-// the real land<->air portal (src/world/landAirPortal.ts). Still no
-// placement/save-load in air's scope — `airMap` exists only to hold its
-// portal back to land; structures/entities stay unused for now.
+// the real land<->air portal (src/world/landAirPortal.ts). Now also plugs
+// into the same construction/placement + save-load pipeline land/sea use
+// (BACKLOG.md, "air construction/placement") — `airMap` is reassigned
+// (immutably) as structures are placed, mirroring `landMap`/`seaMap`.
 const airScene = createAirScene();
-const airMap = createAirRealmMap();
+
+function loadOrCreateAirMap(): RealmMap {
+  try {
+    return loadRealmMap(AIR_MAP_ID, window.localStorage) ?? createAirRealmMap();
+  } catch (err) {
+    console.warn("Failed to load saved air map, starting fresh:", err);
+    return createAirRealmMap();
+  }
+}
+
+let airMap = loadOrCreateAirMap();
 const airAvatarOrUndefined = airScene.getObjectByName("avatar");
 if (!airAvatarOrUndefined) {
   throw new Error("Missing avatar in air scene");
@@ -208,6 +221,8 @@ declare global {
     __getAvatarVisualLocalY?: () => number | undefined;
     __getSeaStructureCount?: () => number;
     __getLastPlacedSeaType?: () => string | undefined;
+    __getAirStructureCount?: () => number;
+    __getLastPlacedAirType?: () => string | undefined;
   }
 }
 window.__projectToScreen = (x, y, z) => {
@@ -259,6 +274,10 @@ window.__getLastPlacedType = () => landMap.structures[landMap.structures.length 
 // layout convention" — an unclaimed corner isn't free to spend on this).
 window.__getSeaStructureCount = () => seaMap.structures.length;
 window.__getLastPlacedSeaType = () => seaMap.structures[seaMap.structures.length - 1]?.type;
+// Air has no visible structures HUD either, same reasoning as sea's hooks
+// just above.
+window.__getAirStructureCount = () => airMap.structures.length;
+window.__getLastPlacedAirType = () => airMap.structures[airMap.structures.length - 1]?.type;
 
 // Click/tap-to-place: raycast against the ground mesh AND every already-
 // placed piece (not the whole scene — avatar/landmarks are deliberately
@@ -306,8 +325,9 @@ function persistLandMap(): void {
 
 function placeCastlePieceAt(clientX: number, clientY: number): void {
   // Land-only — the ground/placedMeshes raycast targets belong to the land
-  // scene, which isn't even rendered while viewing air/sea. Sea has its own
-  // equivalent (`placeSeaPieceAt`, below); air has none yet.
+  // scene, which isn't even rendered while viewing air/sea. Sea and air
+  // each have their own equivalent (`placeSeaPieceAt`/`placeAirPieceAt`,
+  // below).
   if (activeRealm !== "land") return;
 
   pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
@@ -431,18 +451,133 @@ function placeSeaPieceAt(clientX: number, clientY: number): void {
   persistSeaMap();
 }
 
+// Air's own click/tap-to-place — the third realm to plug into the shared
+// construction pipeline (BACKLOG.md, "air construction/placement";
+// `ARCHITECTURE.md`'s construction-system section flagged this as the one
+// remaining gap once sea's own catalog/rule landed). Unlike land's ground
+// mesh or sea's floor mesh, air has no natural raycast surface at all — a
+// free-flight open volume, not a bounded surface — so clicks instead
+// raycast against an invisible horizontal plane through the avatar's
+// current altitude, standing in for the missing ground/floor mesh. Reuses
+// the exact same "closest hit wins" semantics land/sea's own
+// ground-plus-placed-pieces raycast already has: a placed piece under the
+// cursor still wins over the plane behind it, so stacking works here too.
+const airPlacedMeshes = new Map<string, THREE.Object3D>();
+let currentAirStructureTypeId = DEFAULT_AIR_STRUCTURE_TYPE_ID;
+const airStructureFootprintOf = (typeId: string) => findAirStructureType(typeId).dimensions;
+const AIR_PLACEMENT_PLANE_NORMAL = new THREE.Vector3(0, 1, 0);
+const airPlacementPlane = new THREE.Plane();
+const airPlaneIntersection = new THREE.Vector3();
+
+// `airMap.structures` is data only, same as land's/sea's restore loops
+// above — a restored save has no meshes yet, so rebuild one per structure
+// before the first frame renders.
+for (const structure of airMap.structures) {
+  const restoredPiece = createAirStructureMesh(structure.type, structure.materialId);
+  restoredPiece.position.set(structure.position.x, structure.position.y, structure.position.z);
+  airScene.add(restoredPiece);
+  airPlacedMeshes.set(structure.id, restoredPiece);
+}
+
+function persistAirMap(): void {
+  try {
+    const mapWithEntities: RealmMap = {
+      ...airMap,
+      entities: [{ id: PLAYER_ENTITY_ID, position: airMovement.position }],
+    };
+    saveRealmMap(mapWithEntities, window.localStorage);
+  } catch (err) {
+    console.warn("Failed to save air map:", err);
+  }
+}
+
+function placeAirPieceAt(clientX: number, clientY: number): void {
+  if (activeRealm !== "air") return;
+
+  pointerNdc.x = (clientX / window.innerWidth) * 2 - 1;
+  pointerNdc.y = -(clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointerNdc, camera);
+
+  const groundOffset = airStructureGroundOffset(currentAirStructureTypeId);
+
+  airPlacementPlane.setFromNormalAndCoplanarPoint(AIR_PLACEMENT_PLANE_NORMAL, airAvatar.position);
+  const planeHit = raycaster.ray.intersectPlane(airPlacementPlane, airPlaneIntersection);
+  const pieceHits = raycaster.intersectObjects([...airPlacedMeshes.values()], false);
+  const closestPieceHit = pieceHits[0];
+  const pieceIsCloser =
+    closestPieceHit && (!planeHit || closestPieceHit.distance < raycaster.ray.origin.distanceTo(planeHit));
+
+  let position: Vec3;
+  if (pieceIsCloser) {
+    // Stack centered on the hit piece, same convention land/sea's own
+    // stacking already uses.
+    const hitBox = new THREE.Box3().setFromObject(closestPieceHit.object);
+    position = {
+      x: closestPieceHit.object.position.x,
+      y: hitBox.max.y + groundOffset,
+      z: closestPieceHit.object.position.z,
+    };
+  } else if (planeHit) {
+    position = { x: planeHit.x, y: planeHit.y + groundOffset, z: planeHit.z };
+  } else {
+    return; // looking dead parallel to the plane (straight up/down) — no sensible point to place at
+  }
+
+  const check = validatePlacement(airMap, currentAirStructureTypeId, position, airStructureFootprintOf, airTerrainPlacementRule);
+  if (!check.valid) return; // rough pass, matches land/sea: reject silently, no error UI yet
+
+  const piece = createAirStructureMesh(currentAirStructureTypeId, currentBlockMaterialId);
+  piece.position.set(position.x, position.y, position.z);
+
+  const { map, structure } = addStructure(airMap, {
+    type: currentAirStructureTypeId,
+    position,
+    rotation: 0,
+    materialId: currentBlockMaterialId,
+  });
+  airMap = map;
+  airPlacedMeshes.set(structure.id, piece);
+
+  airScene.add(piece);
+  persistAirMap();
+}
+
 // One shared input handler dispatches to whichever realm's placement
 // function is actually active — each of `placeCastlePieceAt`/
-// `placeSeaPieceAt` already self-guards on `activeRealm`, so calling both
-// unconditionally is harmless (air has no placement yet, so neither fires
-// there). The touch-zone (joystick) only becomes pointer-interactive on
-// touch devices (see index.html's `pointer: coarse` rule), so a click here
-// is always a real placement intent — no need to check the event target.
+// `placeSeaPieceAt`/`placeAirPieceAt` already self-guards on `activeRealm`,
+// so calling all three unconditionally is harmless — only the one matching
+// the active realm ever does anything. The touch-zone (joystick) only
+// becomes pointer-interactive on touch devices (see index.html's
+// `pointer: coarse` rule), so a click reaching here from it is always a
+// real placement intent.
 function placeStructureAt(clientX: number, clientY: number): void {
   placeCastlePieceAt(clientX, clientY);
   placeSeaPieceAt(clientX, clientY);
+  placeAirPieceAt(clientX, clientY);
 }
-window.addEventListener("click", (e) => placeStructureAt(e.clientX, e.clientY));
+// Found while building air's own placement (below): every click anywhere on
+// the page bubbles up to this window-level listener, including a click on a
+// dev-panel button — e.g. clicking "Air" in `#dev-realm-panel` to switch
+// realms fires the button's own handler first (activeRealm flips to "air"),
+// then bubbles here with activeRealm already "air", attempting a placement
+// at the *button's* screen position. Land/sea's finite ground/floor meshes
+// happened to make this rare (a ray from a corner UI element's screen
+// position usually misses their bounded extent), which is why it went
+// unnoticed until now — but air's placement plane (`placeAirPieceAt`) is
+// mathematically infinite, so nearly any ray hits it, turning "switch to
+// Air" into "switch to Air, and also place a structure" every time.
+//
+// The fix excludes real overlay UI (`#dev-panels`, `#credits`) specifically,
+// rather than requiring the click land exactly on the WebGL canvas: several
+// E2E tests (castle-placement.spec.ts, skins.spec.ts) deliberately click at
+// world coordinates that project outside the visible viewport, for footprint
+// separation wide enough that two placements' 3D bounds can't accidentally
+// overlap — a real click there would target `<html>`, not the canvas, so an
+// exact-canvas check would have rejected those too.
+window.addEventListener("click", (e) => {
+  if (e.target instanceof Element && e.target.closest("#dev-panels, #credits")) return;
+  placeStructureAt(e.clientX, e.clientY);
+});
 
 const touchZone = document.getElementById("touch-zone");
 const joystickBase = document.getElementById("joystick-base");
@@ -639,6 +774,20 @@ if (devStructurePanel) {
     seaStructureRow.appendChild(btn);
   }
   devStructurePanel.appendChild(seaStructureRow);
+
+  // Air's own structure-type row — same one-type-so-far shape as sea's row
+  // above (`airStructures.ts` deliberately started small too).
+  const airStructureRow = document.createElement("div");
+  airStructureRow.textContent = "Air structure: ";
+  for (const type of AIR_STRUCTURE_TYPES) {
+    const btn = document.createElement("button");
+    btn.textContent = type.label;
+    btn.addEventListener("click", () => {
+      currentAirStructureTypeId = type.id;
+    });
+    airStructureRow.appendChild(btn);
+  }
+  devStructurePanel.appendChild(airStructureRow);
 }
 
 // Which realm's scene/movement module is currently active. The real
@@ -681,11 +830,16 @@ let movement: LandMovementState = {
   velocityY: 0,
 };
 
-// Air has no saved state yet (todo, once air's own Phase 2b hardening
-// wires in the RealmMap/save-load path land already has) — always spawns
-// fresh at the air scene's own starting position.
+// Air now saves/restores the player's position too, same as land/sea
+// (`persistAirMap` above) — resumes where they left off if a save has one,
+// otherwise the air scene's own starting position.
+const savedAirPlayerPosition = airMap.entities.find((e) => e.id === PLAYER_ENTITY_ID)?.position;
 let airMovement: AirMovementState = {
-  position: { x: airAvatar.position.x, y: airAvatar.position.y, z: airAvatar.position.z },
+  position: savedAirPlayerPosition ?? {
+    x: airAvatar.position.x,
+    y: airAvatar.position.y,
+    z: airAvatar.position.z,
+  },
   velocity: { x: 0, y: 0, z: 0 },
 };
 // Test-only hook: #hud-position only ever displays x/z (land has no

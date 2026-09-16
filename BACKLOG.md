@@ -57,7 +57,15 @@ own construction-system section, which had flagged real unbuilt scope
 ("sea/air add their own catalog + rule later") that neither list had ever
 turned into a concrete item — built sea's own structure catalog +
 placement (Phase 3 below, 2026-09-13), same "new content on an
-established, data-driven pattern" bar the two prior pulls-forward used.
+established, data-driven pattern" bar the two prior pulls-forward used —
+and **2026-09-16's world cycle**, same situation again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer), which found
+`ARCHITECTURE.md`'s own construction-system section still had one more
+flagged gap sea's own item didn't close — "air still has no placement/
+save-load" — and closed that one too: air's own structure catalog +
+placement (Phase 2 below, 2026-09-16), the third and final realm to plug
+into the shared pipeline.
 
 ## Phase 0 — Get something live
 
@@ -1107,6 +1115,70 @@ without a fresh check-in.
   full suite green (typecheck, 242 unit tests, build, 64 E2E tests). A
   real cloud skybox/atmosphere pass stays a further layer, not required
   here.
+- `done` **(World) Air construction/placement — the third and final realm
+  to plug into the shared placement pipeline, plus real save/load.**
+  Picked up 2026-09-16: this cycle's own priority-order items were both
+  either genuinely stuck for this track (dive-suit bug still needs a human
+  with a browser) or outside this track's own section (camera framing lives
+  under "Skins / visual identity") — so rather than stall, re-read
+  `ARCHITECTURE.md`'s own construction-system section, which explicitly
+  flagged this as the one remaining gap once sea's own catalog/rule landed
+  ("air still has no placement/save-load... an open design question
+  land/sea's floor-based approach doesn't answer for free"). Squarely this
+  track's own charter (`AUTONOMY.md`: "construction/placement mechanics"),
+  same "new content on an established, data-driven pattern" bar the sea
+  construction item (2026-09-13) used — the pipeline itself (`validatePlacement`,
+  `addStructure`, `realmMapStorage.ts`) needed zero changes, confirming it's
+  genuinely realm-agnostic across all three realms now, not just two.
+  New `src/air/airStructures.ts` (a one-type starter catalog, `sky-platform`
+  — a flat landing pad, same "rough is fine" discipline sea's own single
+  starter type used) and `src/air/airPlacement.ts` (mesh factory, mirrors
+  `src/sea/seaPlacement.ts` exactly). `airTerrainPlacementRule`
+  (`src/air/airRealmMap.ts`) is trivially true, same reasoning land's rule
+  uses — air's "mostly open volume" terrain has no natural bound to reject
+  a placement against, unlike sea's real swimmable-band check.
+  The open design question itself — air has no ground/floor mesh to
+  raycast a click against — is resolved by raycasting against an invisible
+  horizontal plane through the avatar's own current altitude instead
+  (`main.ts`'s `placeAirPieceAt`), standing in for the missing surface; a
+  placed piece under the cursor still wins over the plane behind it (the
+  same "closest hit wins" distance comparison land/sea's own
+  ground-plus-placed-pieces raycast already uses), so stacking works in air
+  too. Air also gained real save/load the same way sea did — no changes
+  needed to `realmMapStorage.ts` either: `airMap` and the player's air
+  position both persist and restore across a reload, keyed by `AIR_MAP_ID`.
+  A new "Air structure:" row joins the existing `#dev-structure-panel`,
+  same two-row pattern the Sea row already established. No new HUD element,
+  per `AUTONOMY.md`'s "UI layout convention" — two new debug hooks instead
+  (`__getAirStructureCount`, `__getLastPlacedAirType`), mirroring sea's own.
+  **Found and fixed a real latent bug while building this, not just guessed
+  at**: the shared `window`-level click listener that dispatches placement
+  to all three realms had no check on the click's actual target, so a click
+  on *any* on-screen button (e.g. `#dev-realm-panel`'s own "Air" button)
+  bubbled up and attempted a placement at that button's screen position too
+  — land/sea's finite ground/floor meshes made this rare in practice (a ray
+  from a corner UI element's screen position usually misses their bounded
+  extent), but air's placement plane is mathematically infinite, so nearly
+  any ray hits it, turning "switch to Air" into "switch to Air, and also
+  place a structure" every time. Caught by a failing E2E assertion (2
+  structures placed after 1 real click), not guessed at. Fixed by excluding
+  the real overlay UI (`#dev-panels`, `#credits`) from the listener, rather
+  than requiring the click land exactly on the canvas — several existing
+  E2E tests (`castle-placement.spec.ts`, `skins.spec.ts`) deliberately click
+  at world coordinates that project outside the visible viewport for
+  footprint separation, which target `<html>`, not the canvas, so an
+  exact-canvas check would have broken those legitimate clicks too (caught
+  by running the full suite before considering this done, not just the new
+  spec file).
+  8 new unit tests (`airStructures.test.ts`, `airPlacement.test.ts` — both
+  direct mirrors of their sea equivalents; 1 new test in
+  `airRealmMap.test.ts` for `airTerrainPlacementRule`); 4 new E2E tests
+  (`e2e/air-construction.spec.ts`, mirroring `sea-construction.spec.ts`):
+  clicking in open air places a piece, placing in air doesn't touch land's
+  own HUD-backed count, a placed piece plus the player's air position both
+  survive a reload, and a fresh visit starts clean. Full suite verified
+  (typecheck, 289 unit tests, build, 73 E2E tests, all green including the
+  3 pre-existing tests the click-listener fix's first draft had broken).
 - `todo` **Verify: dive-suit auto-equip not triggering via the diving-house
   portal.** Reported in a review session on 2026-09-08: swam through the
   diving house on land into Sea and the dive suit did not auto-equip

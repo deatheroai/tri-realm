@@ -442,10 +442,45 @@ fetch it.
   either — proving out its own "realm-agnostic" claim): `seaMap` and the
   player's sea position both persist and restore across a reload, the
   exact same `loadRealmMap`/`saveRealmMap` calls land already used, just
-  keyed by `SEA_MAP_ID`. Air still has no placement/save-load — its own
-  catalog + rule remain a later item, not attempted here (a free-flight
-  volume has no natural raycast surface to click, an open design question
-  land/sea's floor-based approach doesn't answer for free).
+  keyed by `SEA_MAP_ID`.
+- **Air construction** (`BACKLOG.md`, "air construction/placement"): the
+  third and final realm to plug into the same shape. `src/air/
+  airStructures.ts` (catalog — one starter type, `sky-platform`, same
+  "rough is fine" discipline sea's own catalog started under) and
+  `src/air/airPlacement.ts` (mesh factory, mirrors `seaPlacement.ts`
+  exactly) plug into `validatePlacement` via `airTerrainPlacementRule`
+  (`src/air/airRealmMap.ts`) — trivially true, same reasoning land's own
+  rule uses: air's "mostly open volume" terrain has no natural bound to
+  reject a placement against, unlike sea's real swimmable-band check.
+  The open design question the earlier note here raised — air has no
+  ground/floor mesh to raycast a click against — is resolved by raycasting
+  against an invisible horizontal plane through the avatar's own current
+  altitude instead (`main.ts`'s `placeAirPieceAt`), standing in for the
+  missing surface; a placed piece under the cursor still wins over the
+  plane behind it (same "closest hit wins" semantics land/sea's own
+  ground-plus-placed-pieces raycast already has), so stacking works in air
+  too. Air also gained real save/load the same way sea did — no changes
+  needed to `realmMapStorage.ts` — confirming the pipeline is genuinely
+  realm-agnostic across all three realms now, not just two.
+  **Found and fixed a real latent bug while building this**: the shared
+  `window`-level click listener that dispatches to all three realms'
+  placement functions had no check on the click's actual target, so a
+  click on *any* on-screen button (e.g. `#dev-realm-panel`'s own "Air"
+  button, switching into the realm) bubbled up and attempted a placement
+  at that button's screen position too. Land/sea's finite ground/floor
+  meshes made this rare in practice (a ray from a corner UI element's
+  screen position usually misses their bounded extent), but air's
+  placement plane is mathematically infinite, so nearly any ray hits it —
+  turning "switch to Air" into "switch to Air, and also place a
+  structure" every time, caught by a failing E2E assertion (2 structures
+  placed after 1 real click) rather than guessed at. Fixed by excluding
+  the real overlay UI (`#dev-panels`, `#credits`) from the shared click
+  listener, rather than requiring the click land exactly on the WebGL
+  canvas — several existing E2E tests deliberately click at world
+  coordinates that project outside the visible viewport (for footprint
+  separation wide enough two placements can't accidentally overlap),
+  which target `<html>`, not the canvas, so an exact-canvas check would
+  have rejected those legitimate clicks too.
 
 ## Modularity
 

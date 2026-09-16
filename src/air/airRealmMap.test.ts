@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createAirRealmMap, AIR_MAP_SIZE, AIR_FLOATING_PLATFORM_POSITIONS } from "./airRealmMap";
+import {
+  createAirRealmMap,
+  AIR_MAP_SIZE,
+  AIR_FLOATING_PLATFORM_POSITIONS,
+  airTerrainPlacementRule,
+} from "./airRealmMap";
 import { AIR_LAND_PORTAL_ID } from "../world/landAirPortal";
 
 describe("createAirRealmMap", () => {
@@ -37,5 +42,15 @@ describe("createAirRealmMap", () => {
 
     expect(a).not.toBe(b);
     expect(a.structures).not.toBe(b.structures);
+  });
+});
+
+describe("airTerrainPlacementRule", () => {
+  it("accepts any position, same as land's — open volume has no bound to reject against", () => {
+    const map = createAirRealmMap();
+
+    expect(airTerrainPlacementRule(map, { x: 0, y: 0, z: 0 })).toBe(true);
+    expect(airTerrainPlacementRule(map, { x: 20, y: 50, z: -20 })).toBe(true);
+    expect(airTerrainPlacementRule(map, { x: 0, y: -50, z: 0 })).toBe(true);
   });
 });
