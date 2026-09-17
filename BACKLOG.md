@@ -820,6 +820,57 @@ future cycle should check whether it's landed on `main` before touching
   needed — the underlying feature already worked correctly, this closes a
   real verification gap, not a bug. Full suite green (typecheck, 278 unit
   tests, build, 69 E2E tests).
+- `done` **Land jump now tilts the avatar into its own vertical velocity —
+  closes the exact gap air/sea each had before their own pitch-parity
+  fixes.** 2026-09-17: the one remaining `todo` (camera framing) re-checked
+  first — its blast-radius reasoning still holds unchanged (grepped
+  `castle-placement.spec.ts`/`land-save-load.spec.ts`/`touch-controls.spec.ts`,
+  the same fixed-fraction ground clicks are still there). Checked in-flight
+  branches before building: `claude/dive-suit-auto-equip-zb1qvy` and
+  `claude/garden-implementation-status-g3b8o5` are both 6 days stale (last
+  commit 2026-09-11) — neither is this track's own daily branch, so per
+  `AUTONOMY.md`'s merge protocol neither was touched.
+  Rather than manufacture busywork, this cycle's own merge from `main`
+  brought in World's brand-new land jump (`stepLandMovement` gained an
+  optional `jumpPressed` impulse, landed the same morning) — and that
+  surfaced a real, immediately-checkable gap in this track's own
+  territory: `AvatarView.setVerticalPitch` (`src/skins/avatarView.ts`) was
+  never called from land's branch in `main.ts` at all, its own doc comment
+  explicitly noting land "has no meaningful vertical velocity" — true when
+  written, false the moment jump landed. Exactly the same latent bug
+  air/sea each shipped with before their own "flying/swimming reads as
+  walking on land" pitch-parity fixes (`BACKLOG.md`'s Phase 2/3 history
+  above) — jumping left the avatar perfectly level through the whole arc.
+  One-line fix: land's branch now calls `avatarView.setVerticalPitch(movement.velocityY,
+  dt)`, exactly like air/sea's own calls — `setVerticalPitch` itself is
+  already fully generic, needing no changes, same as air's own reuse
+  needed none.
+  **Verified visually before landing it, not just wired up and assumed
+  good** (same "render and look" discipline as the Robot-scale/
+  Gold-metalness/sea-pitch-sign fixes elsewhere in this codebase): screenshotted
+  Fox, Robot, and Capsule mid-jump via a real running dev-server session.
+  Fox and Robot both read well — a clear, not-overdone nose-up lean on
+  launch and nose-down lean into the landing, reading like real jump
+  momentum rather than a glitch; Capsule (rotationally symmetric, no
+  "front" to read a lean off of) shows no visible difference either way,
+  confirming the change is harmless even for skins with no orientation
+  cues. Existing `PITCH_VELOCITY_FOR_MAX_ANGLE` (tuned against sea's ~2 m/s
+  active range) saturates almost immediately against jump's 7 m/s launch —
+  same as air's wider range already does, not a new problem this needed to
+  solve.
+  New `window.__getLandAvatarPitch` debug hook (`src/main.ts`, mirrors
+  `__getAirAvatarPitch`/`__getSeaAvatarPitch`) plus 1 new E2E test
+  (`e2e/skins.spec.ts`'s new "land avatar vertical pitch" suite): confirms
+  the ascend-then-descend sign flip across one real jump arc, then that
+  pitch eases back to level once landed — mirrors sea's own "opposite
+  directions"/"settles back toward level" pair, adapted to a one-shot jump
+  impulse instead of a held key. No new unit tests needed —
+  `setVerticalPitch` itself was already fully covered generically by
+  `avatarView.test.ts`, unchanged by this. Both the stale "land never
+  calls this" comment in `avatarView.ts` and `ARCHITECTURE.md`'s matching
+  note updated to describe the actual current behavior instead of asserting
+  land will never need it. Full suite green (typecheck, 298 unit tests,
+  build, 76 E2E tests).
 
 ## Phase 1b — Harden into the real architecture
 

@@ -215,6 +215,7 @@ declare global {
     __getLandAltitude?: () => number;
     __getAirAltitude?: () => number;
     __getSeaDepth?: () => number;
+    __getLandAvatarPitch?: () => number;
     __getAirAvatarPitch?: () => number;
     __getAirAvatarMoveState?: () => MoveAnimationState;
     __getSeaAvatarPitch?: () => number;
@@ -834,6 +835,10 @@ let movement: LandMovementState = {
 // verifies jumping (Space) actually lifts the avatar off the ground, since
 // #hud-position only ever displays x/z.
 window.__getLandAltitude = () => movement.position.y;
+// Test-only hook, mirrors __getAirAvatarPitch/__getSeaAvatarPitch — how
+// E2E coverage verifies a jump leans the avatar into its own vertical
+// velocity, the same way flying/swimming already do.
+window.__getLandAvatarPitch = () => avatar.rotation.x;
 
 // Air now saves/restores the player's position too, same as land/sea
 // (`persistAirMap` above) — resumes where they left off if a save has one,
@@ -981,6 +986,14 @@ function animate(): void {
     // movement.position or stepLandMovement's inputs, only what's rendered.
     avatarView.faceDirection(moveInput.moveX, moveInput.moveZ, dt);
     avatarView.setMoveState(moveInputToAnimationState(moveInput.moveX, moveInput.moveZ, moveInput.run));
+    // Land previously never leaned into vertical velocity at all — the
+    // same "reads as walking on land" gap air/sea each had before their
+    // own pitch-parity fixes, just latent until jump (BACKLOG.md, 2026-09-17)
+    // gave land a real, if brief, vertical velocity to react to.
+    // `setVerticalPitch` is already realm-agnostic (src/skins/avatarView.ts
+    // — no changes needed there beyond its own doc comment), same as air's
+    // own reuse needed none.
+    avatarView.setVerticalPitch(movement.velocityY, dt);
     avatarView.update(dt);
 
     targetPosition = movement.position;

@@ -575,12 +575,63 @@ test.describe("dev panel active-state highlighting", () => {
   });
 });
 
+// Land's own vertical velocity used to only ever be 0 (no jump existed),
+// so AvatarView.setVerticalPitch was never called for it at all — the
+// same "reads as walking on land" gap air/sea each had before their own
+// pitch-parity fixes, just latent until land jump (BACKLOG.md, 2026-09-17)
+// gave it a real, if brief, vertical velocity to react to. Exercised
+// through a single jump (Space, a one-shot impulse) rather than a held
+// key the way air/sea's continuous vertical axis is, since that's the
+// only vertical input land actually has.
+test.describe("land avatar vertical pitch", () => {
+  test("a jump tilts the avatar nose-up while ascending, then nose-down while descending, before settling level again on landing", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const idlePitch = await page.evaluate(() => window.__getLandAvatarPitch?.());
+    if (idlePitch === undefined) throw new Error("__getLandAvatarPitch not available");
+    expect(idlePitch).toBeCloseTo(0, 2);
+
+    const base = (await page.evaluate(() => window.__getLandAltitude?.())) as number;
+    await page.keyboard.press("Space");
+
+    // Ascending: velocityY is positive right after the jump impulse, which
+    // should nose the model up — negative rotation.x for this model's axis
+    // convention (verified against a real side-on render, see
+    // setVerticalPitch's own comment in src/skins/avatarView.ts).
+    await expect
+      .poll(() => page.evaluate(() => window.__getLandAvatarPitch?.()))
+      .toBeLessThan(-0.05);
+
+    // Descending: past the arc's peak, velocityY has gone negative, which
+    // should nose the model back down the other way (positive rotation.x)
+    // well before it ever touches the ground again.
+    await expect
+      .poll(() => page.evaluate(() => window.__getLandAvatarPitch?.()), { timeout: 3000 })
+      .toBeGreaterThan(0.05);
+
+    // Landed — same "settles back to the ground" shape the existing
+    // altitude-only jump test (e2e/land-walk.spec.ts) already confirms —
+    // and, extending that here, pitch eases back level shortly after too,
+    // not left pinned at the descending angle.
+    await expect
+      .poll(() => page.evaluate(() => window.__getLandAltitude?.()), { timeout: 3000 })
+      .toBeCloseTo(base, 1);
+    await page.waitForTimeout(300);
+    const landedPitch = await page.evaluate(() => window.__getLandAvatarPitch?.());
+    expect(Math.abs(landedPitch!)).toBeLessThan(0.1);
+  });
+});
+
 // Sea's own visual, distinct from land/air: AvatarView.setVerticalPitch
 // leans the model into its actual vertical velocity (dive nose-down,
-// surface nose-up) instead of staying perfectly level like land/air's
-// yaw-only faceDirection. Exercised through the Sea realm since that's
-// the only realm with meaningful vertical velocity, same as the
-// AvatarView-in-Air tests above are exercised through the Air realm.
+// surface nose-up) instead of staying perfectly level like air's yaw-only
+// faceDirection used to be before its own pitch-parity fix, and unlike
+// land's brief jump-only case above. Exercised through the Sea realm
+// since that's the realm with continuous, held-key-driven vertical
+// velocity, same as the AvatarView-in-Air tests above are exercised
+// through the Air realm.
 test.describe("sea avatar vertical pitch", () => {
   test("diving and surfacing tilt the avatar in opposite directions", async ({ page }) => {
     await page.goto("/");

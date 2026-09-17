@@ -19,17 +19,22 @@ const ANIMATION_CROSSFADE_SECONDS = 0.2;
 
 // Sea's and (as of the Phase 2 pitch-parity fix) air's use of pitch (dive/
 // descend nose-down, surface/ascend nose-up) — see setVerticalPitch below.
-// Land never calls this method at all (pure yaw via faceDirection is
-// enough for it — it has no meaningful vertical velocity). A vertical
-// velocity at or beyond this magnitude (m/s) maps to the full
-// MAX_PITCH_ANGLE; tuned against sea's own vertical range
-// (src/sea/seaMovement.ts: +/-2 m/s active dive/surface, +0.5 m/s idle
-// buoyancy drift). Air's own vertical range is wider (+/-4 m/s,
-// src/air/airMovement.ts) so it reaches the same max pitch partway into
-// full ascend/descend speed rather than only at the very top — still
-// reads as a sensible "nose tilts into the climb/dive" cue, not
-// distinctly wrong, so this shares the one constant rather than adding a
-// second knob neither realm's caller needs to reach in from outside.
+// Land now calls it too (jump's own launch, src/land/landMovement.ts): a
+// one-shot vertical impulse is exactly the same "lean into your own
+// vertical velocity" case sea/air already established, not a reason to
+// carve out a third policy. A vertical velocity at or beyond this
+// magnitude (m/s) maps to the full MAX_PITCH_ANGLE; tuned against sea's
+// own vertical range (src/sea/seaMovement.ts: +/-2 m/s active dive/
+// surface, +0.5 m/s idle buoyancy drift). Air's own vertical range is
+// wider (+/-4 m/s, src/air/airMovement.ts) so it reaches the same max
+// pitch partway into full ascend/descend speed rather than only at the
+// very top — still reads as a sensible "nose tilts into the climb/dive"
+// cue, not distinctly wrong, so this shares the one constant rather than
+// adding a second knob neither realm's caller needs to reach in from
+// outside. Land's jump (7 m/s launch, src/land/landMovement.ts) saturates
+// the same way air already does — confirmed by rendering it, not assumed:
+// a real screenshot mid-jump shows a clear, not-overdone lean, easing back
+// to level well before landing rather than snapping.
 const MAX_PITCH_ANGLE = THREE.MathUtils.degToRad(30);
 const PITCH_VELOCITY_FOR_MAX_ANGLE = 2;
 
