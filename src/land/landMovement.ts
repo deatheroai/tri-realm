@@ -10,6 +10,7 @@ export interface LandMovementState {
 const WALK_SPEED = 4; // m/s
 const RUN_SPEED = 7.5; // m/s
 const GRAVITY = -18; // m/s^2
+const JUMP_SPEED = 7; // m/s upward impulse — peaks ~1.36 units, a modest hop
 
 /**
  * Max climbable grade (rise/run) before a slope reads as "a wall," not
@@ -32,12 +33,21 @@ const MAX_CLIMB_GRADE = 1.0;
  * avatar's new position. `groundHeightAt` is intentionally a callback rather
  * than a flat constant — Phase 1a's next item swaps a real heightfield in
  * here without this function changing.
+ *
+ * `jumpPressed` (defaults to false so every pre-existing caller/test is
+ * unaffected) only takes effect while grounded (`velocityY === 0`, the exact
+ * value the ground clamp below always leaves it at) — holding the key does
+ * nothing further mid-air, no double-jump or hover, matching
+ * `ARCHITECTURE.md`'s "walk/run, gravity, ground collision, jump" summary
+ * for the land module, which this closes (that line predated any actual
+ * jump implementation).
  */
 export function stepLandMovement(
   state: LandMovementState,
   input: MoveInput,
   groundHeightAt: (x: number, z: number) => number,
   dt: number,
+  jumpPressed: boolean = false,
 ): LandMovementState {
   const speed = input.run ? RUN_SPEED : WALK_SPEED;
 
@@ -65,7 +75,9 @@ export function stepLandMovement(
   const nextZ = blocked ? state.position.z : candidateZ;
   const groundY = blocked ? currentGroundY : candidateGroundY;
 
-  let velocityY = state.velocityY + GRAVITY * dt;
+  const isGrounded = state.velocityY === 0;
+  let velocityY =
+    jumpPressed && isGrounded ? JUMP_SPEED : state.velocityY + GRAVITY * dt;
   let nextY = state.position.y + velocityY * dt;
 
   if (nextY <= groundY) {

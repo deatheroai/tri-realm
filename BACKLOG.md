@@ -65,7 +65,15 @@ unscoped` has nothing left but out-of-scope multiplayer), which found
 flagged gap sea's own item didn't close — "air still has no placement/
 save-load" — and closed that one too: air's own structure catalog +
 placement (Phase 2 below, 2026-09-16), the third and final realm to plug
-into the shared pipeline.
+into the shared pipeline — and **2026-09-17's world cycle**, same
+situation again (item 2 still needs a human, item 5 still lives outside
+this track's section, `Later / unscoped` has nothing left but out-of-scope
+multiplayer, and construction-system's own gaps are now all closed), which
+re-read `ARCHITECTURE.md`'s Avatar controller section instead and found a
+different kind of gap: its "Land module" summary has claimed "walk/run,
+gravity, ground collision, jump" since the section was first written, but
+jump was never actually implemented — closed in `Later / unscoped` below
+("Land jump," 2026-09-17).
 
 ## Phase 0 — Get something live
 
@@ -1618,5 +1626,67 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   `ARCHITECTURE.md`'s "Known gap" note replaced with a description of the
   actual fix. Full suite verified (typecheck, 262 unit tests, build, 64
   E2E tests).
+- `done` **Land jump — closed a real doc-vs-code gap, not new content.**
+  Picked up 2026-09-17: the current priority order's own items were both
+  still stuck for this track (dive-suit bug needs a human with a browser;
+  camera framing lives under "Skins / visual identity", outside this
+  track's own section) and `Later / unscoped` had nothing left but
+  out-of-scope multiplayer, so rather than stall, re-read `ARCHITECTURE.md`'s
+  own Avatar controller section for a flagged gap the way the last several
+  cycles have — found one, but a different kind than usual: its "Land
+  module" summary line has said "walk/run, gravity, ground collision,
+  jump" since the section was first written, but no jump had ever actually
+  been implemented (confirmed by grepping the whole repo for "jump" —
+  the only hit was a test comment noting it *doesn't* exist yet). A real
+  gap between documented and actual behavior, same "found a real thing to
+  fix, not manufactured busywork" bar the Mannequin-credits and Tower-roof
+  fixes elsewhere in this file used, just in this track's own territory
+  instead of Skins'.
+  `stepLandMovement` (`src/land/landMovement.ts`) gained a `jumpPressed`
+  parameter (defaults to `false`, so every pre-existing caller/test is
+  unaffected): a one-shot `JUMP_SPEED` upward velocity impulse, applied
+  only while grounded (`velocityY === 0`, the exact value the existing
+  ground clamp always leaves it at) — holding the key does nothing further
+  mid-air, no double-jump or hover. `KeyboardInput.consumeJumpPressed()`
+  (`src/input/keyboardInput.ts`) queues a trigger only on the rising edge
+  of a fresh Space press (guards against the browser's own keydown
+  auto-repeat while held) and resets to `false` the instant it's read;
+  `main.ts`'s per-frame loop consumes it unconditionally every frame
+  (not just while land is active) so a Space press while flying/swimming —
+  where it already drives air/sea's own ascend axis — can't queue up and
+  fire a surprise jump the next time the player is back on land. Space is
+  deliberately the same physical key as air/sea's ascend
+  (`verticalInput.ts`); safe to share since only one realm's movement
+  module is ever active at once, and land itself never reads
+  `getVerticalInput()`.
+  **Measured, not guessed, same "render and look" discipline this codebase
+  holds itself to elsewhere**: a live-browser probe (temporary, removed
+  before landing) traced real altitude over time to confirm a single press
+  produces exactly one clean parabola (~1.4–1.6 units peak, land settles
+  back to exact spawn height) and that holding the key for 1.5s — long
+  enough for several jump arcs back-to-back if it were wrongly retriggering
+  every frame — produces no re-triggering at all, settling and staying
+  flat instead. This caught two bad test assumptions before they landed:
+  spawn altitude isn't 0 on the rolling-hill terrain (it's whatever
+  `terrainHeightAt` gives at the spawn point), and discrete-Euler
+  integration at real frame rates overshoots the textbook
+  `v²/(2·|g|)` peak-height formula by a real, non-trivial margin — both
+  E2E assertions were written against the actual measured numbers instead.
+  A new debug hook, `window.__getLandAltitude` (`src/main.ts`, mirrors the
+  existing `__getAirAltitude`/`__getSeaDepth` pattern), makes this
+  checkable at all — `#hud-position` only ever displays x/z since land had
+  no vertical movement worth showing before now.
+  Touch has no jump control yet — deliberately out of scope this cycle
+  (keyboard-only closes the documented gap; a touch jump button would be a
+  separate, additive UI item, not required to make the doc claim true).
+  5 new unit tests (`landMovement.test.ts`: jumps from the ground, rises
+  then falls back to rest, ignores a second jumpPressed while still
+  airborne, doesn't change horizontal speed while jumping;
+  `keyboardInput.test.ts`: `consumeJumpPressed` fires once per fresh press,
+  not on repeat-while-held, re-arms after a release+press, ignores
+  non-jump keys). 2 new E2E tests (`e2e/land-walk.spec.ts`): a press
+  produces a real rise-then-settle, and holding the key doesn't keep
+  climbing. Full suite verified (typecheck, 298 unit tests, build, 75 E2E
+  tests, all green).
 - Multiplayer or shared persistent world — explicitly out of scope until
   raised, per `AUTONOMY.md`.

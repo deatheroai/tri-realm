@@ -212,6 +212,7 @@ declare global {
     __getLastPlacedMapUuid?: () => string | undefined;
     __getLastPlacedType?: () => string | undefined;
     __getActiveRealm?: () => "land" | "air" | "sea";
+    __getLandAltitude?: () => number;
     __getAirAltitude?: () => number;
     __getSeaDepth?: () => number;
     __getAirAvatarPitch?: () => number;
@@ -829,6 +830,10 @@ let movement: LandMovementState = {
   position: savedPlayerPosition ?? { x: 0, y: sampleTerrainHeight(landMap.terrain, 0, 0), z: 0 },
   velocityY: 0,
 };
+// Test-only hook, mirrors __getAirAltitude/__getSeaDepth — how E2E coverage
+// verifies jumping (Space) actually lifts the avatar off the ground, since
+// #hud-position only ever displays x/z.
+window.__getLandAltitude = () => movement.position.y;
 
 // Air now saves/restores the player's position too, same as land/sea
 // (`persistAirMap` above) — resumes where they left off if a save has one,
@@ -953,13 +958,19 @@ function animate(): void {
     touchJoystick?.getMoveInput() ?? ZERO_INPUT,
   );
 
+  // Consumed every frame regardless of realm (not just while land is
+  // active) so a Space press while flying/swimming — where it drives
+  // air/sea's own vertical axis instead — can't queue up and fire an
+  // unexpected jump the next time the player is back on land.
+  const jumpPressed = input.consumeJumpPressed();
+
   // Only the active realm's movement module runs each frame — a realm
   // transition swaps which one, no continuous blending (ARCHITECTURE.md).
   let targetPosition: Vec3;
   let cameraLookAtY: number;
 
   if (activeRealm === "land") {
-    movement = stepLandMovement(movement, moveInput, groundHeightAt, dt);
+    movement = stepLandMovement(movement, moveInput, groundHeightAt, dt, jumpPressed);
     avatar.position.set(
       movement.position.x,
       movement.position.y + AVATAR_GROUND_OFFSET,

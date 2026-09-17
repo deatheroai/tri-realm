@@ -97,6 +97,58 @@ describe("stepLandMovement", () => {
     expect(end.position.y).toBeCloseTo(0);
   });
 
+  it("jumps upward from the ground when jumpPressed is true", () => {
+    const start: LandMovementState = { position: { x: 0, y: 0, z: 0 }, velocityY: 0 };
+    const afterOneFrame = stepLandMovement(start, noInput, flatGround, 1 / 60, true);
+
+    expect(afterOneFrame.velocityY).toBeGreaterThan(0);
+    expect(afterOneFrame.position.y).toBeGreaterThan(0);
+  });
+
+  it("rises then falls back to the ground, ending the jump arc", () => {
+    const start: LandMovementState = { position: { x: 0, y: 0, z: 0 }, velocityY: 0 };
+    let s = stepLandMovement(start, noInput, flatGround, 1 / 60, true);
+
+    let peak = s.position.y;
+    for (let i = 0; i < 120; i++) {
+      s = stepLandMovement(s, noInput, flatGround, 1 / 60, false);
+      peak = Math.max(peak, s.position.y);
+    }
+
+    expect(peak).toBeGreaterThan(0.5);
+    expect(s.position.y).toBeCloseTo(0);
+    expect(s.velocityY).toBe(0);
+  });
+
+  it("ignores jumpPressed while already airborne — no double-jump or hover", () => {
+    const start: LandMovementState = { position: { x: 0, y: 0, z: 0 }, velocityY: 0 };
+    let s = stepLandMovement(start, noInput, flatGround, 1 / 60, true);
+    const velocityAfterFirstJump = s.velocityY;
+
+    // Held/pressed again on the very next frame, while still rising.
+    s = stepLandMovement(s, noInput, flatGround, 1 / 60, true);
+
+    expect(s.velocityY).toBeLessThan(velocityAfterFirstJump);
+  });
+
+  it("does not change horizontal speed while jumping — same forward distance with or without it", () => {
+    const start: LandMovementState = { position: { x: 0, y: 0, z: 0 }, velocityY: 0 };
+    const walkedOnly = simulate(start, { moveX: 0, moveZ: -1, run: false }, flatGround, 1 / 60, 30);
+
+    let jumped: LandMovementState = start;
+    for (let i = 0; i < 30; i++) {
+      jumped = stepLandMovement(
+        jumped,
+        { moveX: 0, moveZ: -1, run: false },
+        flatGround,
+        1 / 60,
+        i === 0,
+      );
+    }
+
+    expect(jumped.position.z).toBeCloseTo(walkedOnly.position.z);
+  });
+
   it("does not block walking off a ledge into a steep drop — gravity handles the fall", () => {
     // The mirror image of the wall case: flat, then a sheer drop. Approaching
     // from the high side should walk right up to the edge (and, once past

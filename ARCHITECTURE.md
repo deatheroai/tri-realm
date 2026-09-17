@@ -152,7 +152,18 @@ realm's map the avatar currently occupies:
   before movement logic ever sees them. A movement module never knows or
   cares which device produced its input — mobile support was added without
   touching `stepLandMovement` at all.
-- **Land module:** walk/run, gravity, ground collision, jump.
+- **Land module:** walk/run, gravity, ground collision, jump. Jump
+  (`stepLandMovement`, `src/land/landMovement.ts`) is a one-shot upward
+  velocity impulse (`JUMP_SPEED`) applied only while grounded
+  (`velocityY === 0`, the exact value the existing ground clamp always
+  leaves it at) — no double-jump or hover from holding the key, since
+  `KeyboardInput.consumeJumpPressed()` (`src/input/keyboardInput.ts`) only
+  queues a fresh trigger on the rising edge of a Space press, reset back to
+  `false` the moment `main.ts`'s per-frame loop reads it. Shares its
+  physical key with air/sea's own ascend axis (`verticalInput.ts`) safely,
+  since only one realm's movement module is ever active at a time. This
+  closes what had been a documentation-only claim here with no actual
+  implementation behind it until now.
 - **Air module** (`src/air/airMovement.ts`, `BACKLOG.md` Phase 2): free 3D
   flight, no gravity or ground collision (air is "mostly open volume").
   Horizontal movement reuses land's `MoveInput` (`moveX`/`moveZ`, `run`
