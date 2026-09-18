@@ -884,6 +884,41 @@ future cycle should check whether it's landed on `main` before touching
   land will never need it. Full suite green (typecheck, 298 unit tests,
   build, 76 E2E tests).
 
+**2026-09-18 (this cycle) — the one remaining `todo` re-checked, still not
+solo-actionable; genuinely nothing else unblocked this time.** Camera
+framing: unchanged, same blast-radius reasoning as every prior re-check
+holds (grepped `castle-placement.spec.ts`/`land-save-load.spec.ts`/
+`touch-controls.spec.ts` again — the same fixed-viewport-fraction ground
+clicks are still there). Checked in-flight work before concluding there was
+nothing to build: `claude/dive-suit-auto-equip-zb1qvy` and
+`claude/garden-implementation-status-g3b8o5` (the latter's open PR #4,
+"Trees: more organic canopy shape + gentle wind sway") are both still 7
+days stale (last commit 2026-09-11) — neither is this track's own daily
+branch, so per `AUTONOMY.md`'s merge protocol neither was touched, just
+re-noted here again. This cycle's own sync from `main` brought in World's
+new touch-only vertical-movement buttons (`#vertical-controls`,
+`src/input/touchVerticalInput.ts` — ascend/descend plus land's jump, now
+reachable on a phone) — checked for a Skins-relevant regression the way
+the original dev-panel-overlap bug was found (real screenshots, not just
+trusting the merge was clean): collapsed and expanded `#dev-panels` at a
+real Pixel-5 viewport, both look correct, `#vertical-controls` sits clear
+of `#hud-structures` and the dev-panels column in both states — no overlap
+bug, so `e2e/skins.spec.ts`'s regression guard didn't need extending (it
+also wouldn't have seen the buttons anyway — they're `display: none`
+outside `@media (pointer: coarse)`, which the desktop-project test that
+guard runs under never triggers). Searched for a real gap the way the
+Mannequin-credits/Tower-roof/Bird-Eagle-E2E fixes earlier in this section
+did — `ARCHITECTURE.md`'s Skins section, `DECISIONS.md`'s Pending (empty),
+and a grep for stray `TODO`s in `src/skins/` all came up empty this time;
+unlike those prior cycles, no real gap turned up. Full suite verified after
+the sync merge (typecheck, 314 unit tests, build, 79 E2E tests — one
+`skins.spec.ts` height-ratio-guard failure on the first parallel run
+reproduced neither in isolation nor on a clean full re-run, confirmed
+flaky under load, not a regression, same disposition as the
+`sea-construction.spec.ts` flake noted in the 2026-09-13 entry above).
+Heartbeat commit + this cycle's sync fast-forwarded onto `main` as usual;
+no other code changes to land.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
