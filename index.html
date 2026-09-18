@@ -96,6 +96,43 @@
         background: rgba(217, 130, 43, 0.85);
       }
       /*
+       * Vertical-movement touch buttons (ascend/descend), mirroring the
+       * keyboard's Space/Control axis (verticalInput.ts) — air/sea's
+       * vertical movement, and land's jump (sharing Space's rising edge),
+       * had no touch equivalent at all before this: a phone has no
+       * keyboard to press Space/Control on. Bottom-right, opposite the
+       * joystick's bottom-left, so the two never compete for the same
+       * screen area. `display: none` by default (not just pointer-events,
+       * since these are visible buttons rather than an invisible zone) —
+       * only a coarse-pointer/touch device shows them, same idiom
+       * `#dev-panels-toggle` already uses.
+       */
+      #vertical-controls {
+        position: fixed;
+        right: 16px;
+        bottom: 70px;
+        z-index: 6;
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+      }
+      @media (pointer: coarse) {
+        #vertical-controls {
+          display: flex;
+        }
+      }
+      #vertical-controls button {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        font-size: 18px;
+        line-height: 1;
+        color: #d9822b;
+        background: rgba(217, 130, 43, 0.12);
+        border: 2px solid rgba(217, 130, 43, 0.4);
+        touch-action: none;
+      }
+      /*
        * Dev-only panels (skin/material switcher, castle structure-type
        * switcher — not child-facing UI, see DECISIONS.md). Both stack in
        * one shared column instead of opposite corners: two independently
@@ -261,6 +298,10 @@
     <div id="app"></div>
     <div id="touch-zone"></div>
     <div id="joystick-base"><div id="joystick-knob"></div></div>
+    <div id="vertical-controls">
+      <button id="vertical-up" type="button" aria-label="Ascend / jump">&#9650;</button>
+      <button id="vertical-down" type="button" aria-label="Descend">&#9660;</button>
+    </div>
     <div id="hud-controls">
       Move: WASD / Arrows or touch-drag (left side) &middot; Run: Shift or drag further out
       &middot; Click / tap elsewhere to place a castle piece

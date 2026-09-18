@@ -73,7 +73,19 @@ re-read `ARCHITECTURE.md`'s Avatar controller section instead and found a
 different kind of gap: its "Land module" summary has claimed "walk/run,
 gravity, ground collision, jump" since the section was first written, but
 jump was never actually implemented — closed in `Later / unscoped` below
-("Land jump," 2026-09-17).
+("Land jump," 2026-09-17) — and **2026-09-18's world cycle**, same
+situation again (item 2 still needs a human, item 5 still lives outside
+this track's section, `Later / unscoped` has nothing left but out-of-scope
+multiplayer), which found a real gap of its own kind while tracing
+2026-09-17's own "Land jump" item: land's jump and air/sea's vertical axis
+both read `input.getVerticalInput()`/`consumeJumpPressed()` off
+`KeyboardInput` alone — `main.ts` never merged in a touch source for
+either, the way horizontal move input already merges keyboard with
+`TouchJoystick` (`combineMoveInputs`). A touch device has no keyboard at
+all, so this meant Space/Control were completely unreachable on a phone:
+no way to jump on land, and no way to ascend/descend in Air or dive/
+surface in Sea — closed in `Later / unscoped` below ("Touch vertical
+controls," 2026-09-18).
 
 ## Phase 0 — Get something live
 
@@ -1739,5 +1751,67 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   produces a real rise-then-settle, and holding the key doesn't keep
   climbing. Full suite verified (typecheck, 298 unit tests, build, 75 E2E
   tests, all green).
+- `done` **Touch vertical controls — closed a real, previously-unflagged
+  mobile-input gap, not new content.** Picked up 2026-09-18: the current
+  priority order's own items were both still stuck for this track
+  (dive-suit bug needs a human with a browser; camera framing lives under
+  "Skins / visual identity", outside this track's own section), and `Later
+  / unscoped` had nothing left but out-of-scope multiplayer, so rather than
+  stall, re-read `ARCHITECTURE.md`'s Avatar controller section again the
+  way the last several cycles have. Land jump (2026-09-17) itself was fine,
+  but tracing how its `jumpPressed`/vertical axis actually reaches
+  `stepLandMovement`/`stepAirMovement`/`stepSeaMovement` in `main.ts`
+  turned up a real, different-shaped gap: every one of those three calls
+  read `input.getVerticalInput()`/`input.consumeJumpPressed()` off the
+  single `KeyboardInput` instance only — unlike horizontal move input,
+  which has merged keyboard with `TouchJoystick` since mobile support first
+  landed (`combineMoveInputs`), nothing ever added a touch source for the
+  vertical axis. A real phone has no keyboard at all, so this meant Space/
+  Control — land's jump, air's ascend/descend, sea's dive/surface — were
+  completely unreachable by a touch-only player: three-quarters of this
+  project's own movement surface (jump plus two of the three realms'
+  entire vertical range) had no mobile control whatsoever, not spotted
+  until now because every prior touch-controls review focused on the
+  horizontal joystick alone.
+  New `src/input/touchVerticalInput.ts` (`TouchVerticalInput`, two buttons
+  — ascend/descend — mirroring `KeyboardInput`'s own
+  `getVerticalInput()`/`consumeJumpPressed()` shape exactly, ascend's
+  rising edge queuing a jump the same way Space's does) and
+  `src/input/combineVerticalInputs.ts` (`combineVerticalInputs`, a
+  `Math.max(-1, Math.min(1, a + b))` clamp mirroring `combineMoveInputs`'s
+  role for the horizontal axis). `main.ts`'s three call sites
+  (`jumpPressed`, air's `vertical`, sea's `vertical`) now merge
+  `KeyboardInput` with a new `TouchVerticalInput` instance the same way
+  `moveInput` already merges `KeyboardInput` with `TouchJoystick`. Two new
+  on-screen buttons (`#vertical-up`/`#vertical-down`, `index.html`)
+  bottom-right — mirroring the joystick's bottom-left placement so the two
+  never compete for the same screen area — `display: none` by default,
+  shown only under `@media (pointer: coarse)`, same idiom
+  `#dev-panels-toggle` already established (not `#touch-zone`'s
+  pointer-events-only gating, since these are visible buttons rather than
+  an invisible drag zone).
+  Unlike `TouchJoystick`, `TouchVerticalInput` has no drag geometry — each
+  button only ever tracks its own held/not-held state — so it stays
+  DOM-light enough to unit test with a fake target, the same way
+  `KeyboardInput` already is (`keyboardInput.test.ts`'s `FakeKeyTarget`
+  pattern, reused here as `FakeTouchTarget`). 16 new unit tests
+  (`touchVerticalInput.test.ts`: the pure `computeTouchVerticalInput`
+  mapping, plus the class's held-state/jump-rising-edge behavior, mirroring
+  `keyboardInput.test.ts`'s own jump coverage; `combineVerticalInputs.test.ts`:
+  pass-through, cancellation, clamping, mirroring `combineMoveInputs.test.ts`).
+  4 new E2E tests (`e2e/touch-controls.spec.ts`, the one project that
+  actually renders under real `pointer: coarse`/`hasTouch`): tapping the
+  ascend button jumps on land (mirrors `land-walk.spec.ts`'s own keyboard
+  jump test), holding ascend/descend changes altitude in Air (mirrors
+  `air-flight.spec.ts`), and holding descend dives despite buoyancy in Sea
+  (mirrors `sea-swim.spec.ts`) — switching realm on this project needed the
+  collapsed `#dev-panels-toggle` opened first, same as the existing
+  "dev panels stay collapsed..." test already does.
+  No changes needed to `placementValidation.ts`/`realmMapStorage.ts`/any
+  movement module — purely an input-source addition, same "movement module
+  never knows which device produced its input" boundary
+  `ARCHITECTURE.md`'s Avatar controller section already documents. Full
+  suite verified (typecheck, 314 unit tests, build, 79 E2E tests, all
+  green).
 - Multiplayer or shared persistent world — explicitly out of scope until
   raised, per `AUTONOMY.md`.

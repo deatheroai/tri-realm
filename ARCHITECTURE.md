@@ -151,7 +151,17 @@ realm's map the avatar currently occupies:
   independently; sources are merged into one intent (`combineMoveInputs`)
   before movement logic ever sees them. A movement module never knows or
   cares which device produced its input — mobile support was added without
-  touching `stepLandMovement` at all.
+  touching `stepLandMovement` at all. The vertical axis (jump/ascend/
+  descend) follows the identical pattern: `KeyboardInput` and touch's own
+  `TouchVerticalInput` (`src/input/touchVerticalInput.ts` — two on-screen
+  buttons, `#vertical-up`/`#vertical-down`, mirroring `KeyboardInput`'s
+  `getVerticalInput()`/`consumeJumpPressed()` shape exactly) merge via
+  `combineVerticalInputs` the same way `combineMoveInputs` merges the
+  horizontal sources. This closed a real gap (`BACKLOG.md`, 2026-09-18): a
+  phone has no keyboard, so Space/Control — land's jump, air's ascend/
+  descend, sea's dive/surface — were unreachable by touch at all until the
+  vertical axis got the same keyboard+touch merge the horizontal axis
+  already had.
 - **Land module:** walk/run, gravity, ground collision, jump. Jump
   (`stepLandMovement`, `src/land/landMovement.ts`) is a one-shot upward
   velocity impulse (`JUMP_SPEED`) applied only while grounded
