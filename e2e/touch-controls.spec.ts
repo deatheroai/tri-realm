@@ -97,6 +97,66 @@ async function tapInsideZone(page: Page): Promise<void> {
   });
 }
 
+// Ascend/descend touch buttons (#vertical-controls) have no drag geometry —
+// just held/not-held, like a key held down — so a plain touchstart/touchend
+// pair at the button's own center is enough, unlike the joystick's drag.
+async function pressVerticalButton(page: Page, elementId: string): Promise<void> {
+  await page.evaluate((elementId) => {
+    const el = document.getElementById(elementId);
+    if (!el) throw new Error(`${elementId} not found`);
+    const rect = el.getBoundingClientRect();
+    const touch = new Touch({
+      identifier: 3,
+      target: el,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+    });
+    el.dispatchEvent(
+      new TouchEvent("touchstart", {
+        touches: [touch],
+        changedTouches: [touch],
+        targetTouches: [touch],
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, elementId);
+}
+
+async function releaseVerticalButton(page: Page, elementId: string): Promise<void> {
+  await page.evaluate((elementId) => {
+    const el = document.getElementById(elementId);
+    if (!el) throw new Error(`${elementId} not found`);
+    const rect = el.getBoundingClientRect();
+    const touch = new Touch({
+      identifier: 3,
+      target: el,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+    });
+    el.dispatchEvent(
+      new TouchEvent("touchend", {
+        touches: [],
+        changedTouches: [touch],
+        targetTouches: [],
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, elementId);
+}
+
+// The dev-panels column starts collapsed on a real touch device (see the
+// "dev panels stay collapsed..." test below) — switching realm via
+// #dev-realm-panel on this project needs the toggle opened first.
+async function switchToRealm(page: Page, label: "Air" | "Sea"): Promise<void> {
+  await page.locator("#dev-panels-toggle").tap();
+  await page.getByRole("button", { name: label, exact: true }).tap();
+  await expect
+    .poll(async () => page.evaluate(() => window.__getActiveRealm?.()))
+    .toBe(label.toLowerCase());
+}
+
 test("dragging the touch joystick up moves the avatar forward", async ({ page }) => {
   await page.goto("/");
   const hud = page.locator("#hud-position");
@@ -216,4 +276,63 @@ test("dev panels stay collapsed by default on a touch device, expand on tap", as
   await toggle.tap();
   await expect(content).toBeHidden();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
+});
+
+// A real phone has no keyboard, so KeyboardInput's Space/Control vertical
+// axis (air/sea flight, land's jump) was completely unreachable on touch
+// before #vertical-controls existed — these tests are this project's only
+// coverage of that, mirroring land-walk.spec.ts's/air-flight.spec.ts's/
+// sea-swim.spec.ts's own keyboard-driven equivalents.
+test("tapping the ascend button jumps the avatar on land", async ({ page }) => {
+  await page.goto("/");
+
+  const base = (await page.evaluate(() => window.__getLandAltitude?.())) as number;
+
+  await pressVerticalButton(page, "vertical-up");
+  await releaseVerticalButton(page, "vertical-up");
+
+  await expect
+    .poll(() => page.evaluate(() => window.__getLandAltitude?.()))
+    .toBeGreaterThan(base + 0.3);
+
+  await expect
+    .poll(() => page.evaluate(() => window.__getLandAltitude?.()), { timeout: 3000 })
+    .toBeCloseTo(base, 1);
+});
+
+test("holding the ascend button ascends, and the descend button descends, in the air realm", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await switchToRealm(page, "Air");
+
+  const startY = await page.evaluate(() => window.__getAirAltitude?.());
+  if (startY === undefined) throw new Error("__getAirAltitude not available");
+
+  await pressVerticalButton(page, "vertical-up");
+  await page.waitForTimeout(500);
+  await releaseVerticalButton(page, "vertical-up");
+  const ascendedY = await page.evaluate(() => window.__getAirAltitude?.());
+  expect(ascendedY!).toBeGreaterThan(startY);
+
+  await pressVerticalButton(page, "vertical-down");
+  await page.waitForTimeout(800); // long enough to net back below the ascended height
+  await releaseVerticalButton(page, "vertical-down");
+  const descendedY = await page.evaluate(() => window.__getAirAltitude?.());
+  expect(descendedY!).toBeLessThan(ascendedY!);
+});
+
+test("holding the descend button dives despite buoyancy, in the sea realm", async ({ page }) => {
+  await page.goto("/");
+  await switchToRealm(page, "Sea");
+
+  const startDepth = await page.evaluate(() => window.__getSeaDepth?.());
+  if (startDepth === undefined) throw new Error("__getSeaDepth not available");
+
+  await pressVerticalButton(page, "vertical-down");
+  await page.waitForTimeout(500);
+  await releaseVerticalButton(page, "vertical-down");
+  const divedDepth = await page.evaluate(() => window.__getSeaDepth?.());
+
+  expect(divedDepth!).toBeLessThan(startDepth);
 });

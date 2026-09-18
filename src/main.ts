@@ -4,6 +4,8 @@ import { createCamera } from "./camera";
 import { KeyboardInput, type MoveInput } from "./input/keyboardInput";
 import { TouchJoystick } from "./input/touchJoystick";
 import { combineMoveInputs } from "./input/combineMoveInputs";
+import { TouchVerticalInput } from "./input/touchVerticalInput";
+import { combineVerticalInputs } from "./input/combineVerticalInputs";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { createLandRealmMap, landTerrainPlacementRule, LAND_MAP_ID } from "./land/landRealmMap";
@@ -589,6 +591,16 @@ const touchJoystick =
     ? new TouchJoystick(touchZone, joystickBase, joystickKnob, { onTap: placeStructureAt })
     : null;
 
+// Touch equivalent of KeyboardInput's Space/Control vertical axis — a real
+// phone has no keyboard, so air/sea's ascend/descend (and land's jump,
+// which shares Space's rising edge) were completely unreachable on touch
+// until now. Same "always constructed, CSS/pointer-coarse gates visibility"
+// pattern touchJoystick above already uses.
+const verticalUpButton = document.getElementById("vertical-up");
+const verticalDownButton = document.getElementById("vertical-down");
+const touchVertical =
+  verticalUpButton && verticalDownButton ? new TouchVerticalInput(verticalUpButton, verticalDownButton) : null;
+
 /**
  * Marks exactly one button in a dev panel row as the currently-selected
  * option (adds the shared `.active` class, removes it from siblings) —
@@ -966,8 +978,10 @@ function animate(): void {
   // Consumed every frame regardless of realm (not just while land is
   // active) so a Space press while flying/swimming — where it drives
   // air/sea's own vertical axis instead — can't queue up and fire an
-  // unexpected jump the next time the player is back on land.
-  const jumpPressed = input.consumeJumpPressed();
+  // unexpected jump the next time the player is back on land. Merges in
+  // the touch ascend button's own rising edge the same way (its
+  // consumeJumpPressed has the identical reset-on-read shape).
+  const jumpPressed = input.consumeJumpPressed() || (touchVertical?.consumeJumpPressed() ?? false);
 
   // Only the active realm's movement module runs each frame — a realm
   // transition swaps which one, no continuous blending (ARCHITECTURE.md).
@@ -999,7 +1013,7 @@ function animate(): void {
     targetPosition = movement.position;
     cameraLookAtY = movement.position.y + 1;
   } else if (activeRealm === "air") {
-    const vertical = input.getVerticalInput();
+    const vertical = combineVerticalInputs(input.getVerticalInput(), touchVertical?.getVerticalInput() ?? 0);
     airMovement = stepAirMovement(airMovement, moveInput, vertical, dt);
     airAvatar.position.set(airMovement.position.x, airMovement.position.y, airMovement.position.z);
 
@@ -1048,7 +1062,7 @@ function animate(): void {
     targetPosition = airMovement.position;
     cameraLookAtY = airMovement.position.y;
   } else {
-    const vertical = input.getVerticalInput();
+    const vertical = combineVerticalInputs(input.getVerticalInput(), touchVertical?.getVerticalInput() ?? 0);
     seaMovement = stepSeaMovement(seaMovement, moveInput, vertical, dt, SEA_FLOOR_Y, SEA_SURFACE_Y);
     seaAvatar.position.set(seaMovement.position.x, seaMovement.position.y, seaMovement.position.z);
 
