@@ -85,7 +85,13 @@ either, the way horizontal move input already merges keyboard with
 all, so this meant Space/Control were completely unreachable on a phone:
 no way to jump on land, and no way to ascend/descend in Air or dive/
 surface in Sea — closed in `Later / unscoped` below ("Touch vertical
-controls," 2026-09-18).
+controls," 2026-09-18) — and **2026-09-19's world cycle**, same situation
+again (item 2 still needs a human, item 5 still lives outside this
+track's section, `Later / unscoped` has nothing left but out-of-scope
+multiplayer), which found the last gap in this same thread: jump and the
+vertical axis both worked correctly by now, but the on-screen controls
+hint never told a player either existed — closed in `Later / unscoped`
+below ("On-screen controls hint," 2026-09-19).
 
 ## Phase 0 — Get something live
 
@@ -1848,5 +1854,45 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   `ARCHITECTURE.md`'s Avatar controller section already documents. Full
   suite verified (typecheck, 314 unit tests, build, 79 E2E tests, all
   green).
+- `done` **On-screen controls hint never mentioned jump or the vertical
+  axis — closed a real player-facing gap, not new content.** Picked up
+  2026-09-19: the two priority-order items were both still stuck for this
+  track (dive-suit bug needs a human with a real browser, unchanged since
+  `DECISIONS.md`'s "Needs Your Action"; camera framing lives under "Skins
+  / visual identity", outside this track's own section), and `Later /
+  unscoped` had nothing left but out-of-scope multiplayer, so — same
+  pattern as every recent cycle — re-checked `ARCHITECTURE.md` for a real
+  gap rather than stall. This time the gap wasn't in the movement code
+  itself (jump and touch vertical controls both landed cleanly the last
+  two cycles) but in whether a player could ever *discover* them:
+  `#hud-controls` (`index.html`), the only on-screen text telling a player
+  what the controls are, still read "Move ... Run ... Click / tap
+  elsewhere to place a castle piece" — exactly what it said before jump or
+  the vertical axis existed. Space/Control (or the touch ascend/descend
+  buttons) are land's entire jump and air/sea's entire vertical range —
+  without this line, a player has no in-app way to learn those keys exist
+  at all, worst in air/sea where vertical movement isn't optional flavor,
+  it's most of the realm's own movement.
+  Added "Jump/Ascend: Space or ▲ · Descend: Ctrl or ▼" to the hint,
+  trimming other wording to keep the total length close to the original
+  (the narrow-viewport overlap-regression E2E test caught the first,
+  too-long draft immediately — it pushed `#hud-controls` to a fourth
+  wrapped line and collided with `#dev-panels-content` at a 390px
+  viewport, exactly the class of bug that test exists to catch — fixed by
+  shortening the wording, not by touching the shared panel's own
+  position). `#hud-controls` is genuinely shared `index.html` territory
+  per `AUTONOMY.md` (not one of World's own dev-panel ids), same as the
+  original dev-panel-overlap fix was — safe to touch here since it's a
+  real gap in already-shipped World functionality (jump, ascend/descend)
+  being under-documented, not a Skins-owned concern.
+  No test asserts `#hud-controls`'s exact text (only its bounding box, via
+  the existing overlap-regression check), so no test needed updating
+  beyond re-verifying that check passes with the new wording. Verified
+  visually with real screenshots at both desktop (1280px, one line) and
+  narrow (390px, three lines, no overlap with the skins/structures/realm
+  panels) viewports. Full suite green (typecheck, 314 unit tests, build,
+  79 E2E tests, no new tests needed since this is copy-only with an
+  existing generic regression guard already covering the risk it
+  introduced).
 - Multiplayer or shared persistent world — explicitly out of scope until
   raised, per `AUTONOMY.md`.
