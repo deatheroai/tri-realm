@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, devices, type Page } from "@playwright/test";
 import { AVATAR_SKINS } from "../src/skins/avatarSkins";
 
 /**
@@ -16,9 +16,24 @@ import { AVATAR_SKINS } from "../src/skins/avatarSkins";
  * always runs fine-pointer/desktop, where that collapse never triggers
  * (`@media (pointer: coarse)`), so `#dev-panels-content` renders exactly
  * as `#dev-panels` itself used to.
+ *
+ * `#vertical-controls` (World's touch ascend/descend/jump buttons,
+ * 2026-09-18) is included in the selector list below too, but this
+ * desktop-project run never actually sees it: it's `display: none`
+ * outside `@media (pointer: coarse)`, which fine-pointer/desktop never
+ * triggers regardless of viewport width, so `boundingBox()` returns null
+ * for it here and it's skipped. The "fixed overlay layout (real touch
+ * device)" suite further down is what actually exercises it.
  */
 async function boundingBoxesOverlap(page: Page): Promise<Array<{ a: string; b: string }>> {
-  const selectors = ["#hud-controls", "#hud-position", "#hud-structures", "#dev-panels-content > *", "#credits"];
+  const selectors = [
+    "#hud-controls",
+    "#hud-position",
+    "#hud-structures",
+    "#dev-panels-content > *",
+    "#credits",
+    "#vertical-controls",
+  ];
   const boxes: Array<{ label: string; box: { x: number; y: number; width: number; height: number } }> = [];
 
   for (const selector of selectors) {
@@ -50,6 +65,45 @@ test.describe("fixed overlay layout", () => {
 
   test("no two fixed HUD/panel elements overlap on a narrow viewport", async ({ page }) => {
     await page.goto("/");
+    const panelCount = await page.locator("#dev-panels-content > *").count();
+    expect(panelCount).toBeGreaterThan(0); // sanity: the check actually covered something
+
+    const overlaps = await boundingBoxesOverlap(page);
+    expect(overlaps).toEqual([]);
+  });
+});
+
+/**
+ * The suite above never actually exercises `#vertical-controls`: it's
+ * `display: none` outside `@media (pointer: coarse)`, which the
+ * "desktop" Playwright project doesn't trigger no matter the viewport
+ * width (confirmed 2026-09-18, `BACKLOG.md`) — that cycle verified no
+ * overlap by hand with real screenshots on a Pixel 5, but never turned it
+ * into an automated check, so a future regression there would only be
+ * caught by another manual screenshot review, not this generic guard.
+ * Force real touch/coarse-pointer emulation here (`devices["Pixel 5"]`,
+ * same device `playwright.config.ts`'s "mobile" project already uses for
+ * `touch-controls.spec.ts`) so this file's own overlap guard actually
+ * covers every element the "UI layout convention" in AUTONOMY.md
+ * describes, not just the ones visible on desktop.
+ */
+test.describe("fixed overlay layout (real touch device)", () => {
+  // `defaultBrowserType` is deliberately dropped from the spread below —
+  // `test.use()` inside a describe block can't set it (it forces a new
+  // worker, only allowed top-level/in config); the "desktop" project this
+  // file already runs under is Chromium anyway, which is all this device
+  // preset would have picked.
+  const { defaultBrowserType: _defaultBrowserType, ...pixel5 } = devices["Pixel 5"];
+  test.use({ ...pixel5 });
+
+  test("no two fixed HUD/panel elements overlap on a real touch device, panels expanded", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("#vertical-controls")).toBeVisible();
+
+    // Dev panels start collapsed on a coarse-pointer device (2026-09-08
+    // fix) — expand them first so their buttons are actually part of the
+    // layout being checked, same as touch-controls.spec.ts already does.
+    await page.locator("#dev-panels-toggle").tap();
     const panelCount = await page.locator("#dev-panels-content > *").count();
     expect(panelCount).toBeGreaterThan(0); // sanity: the check actually covered something
 

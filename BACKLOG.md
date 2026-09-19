@@ -925,6 +925,60 @@ flaky under load, not a regression, same disposition as the
 Heartbeat commit + this cycle's sync fast-forwarded onto `main` as usual;
 no other code changes to land.
 
+- `done` **The dev-panel overlap regression guard had a structural blind
+  spot: it never actually saw `#vertical-controls`.** Picked up 2026-09-19:
+  the one remaining `todo` (camera framing) re-checked first, same
+  blast-radius reasoning as every prior re-check still holding (grepped
+  `castle-placement.spec.ts`/`land-save-load.spec.ts`/`touch-controls.spec.ts`
+  again — the fixed-fraction ground clicks are still there); dive-suit
+  auto-equip still needs a human with a real browser
+  (`DECISIONS.md`'s "Needs Your Action", unchanged). Checked in-flight
+  branches before building: `claude/dive-suit-auto-equip-zb1qvy` and
+  `claude/garden-implementation-status-g3b8o5` are both now 8 days stale
+  (last commit 2026-09-11) — neither is this track's own daily branch, so
+  per `AUTONOMY.md`'s merge protocol neither was touched, just re-noted
+  here again.
+  This cycle's own sync from `main` (already current — a concurrent World
+  cycle had just fast-forwarded it to `#hud-controls`'s new jump/ascend/
+  descend wording) prompted a closer look at the 2026-09-18 entry's own
+  finding, rather than re-running the same "grep for a TODO" search that
+  came up empty last time: that cycle noted `e2e/skins.spec.ts`'s generic
+  overlap guard "wouldn't have seen [`#vertical-controls`] anyway" since
+  it's `display: none` outside `@media (pointer: coarse)`, which the
+  guard's own "desktop" Playwright project never triggers — and left it
+  there as a fact about the test, not a gap in it. Looked closer: that's
+  not a narrow one-off limitation, it's the *whole class* of bug
+  `AUTONOMY.md`'s "UI layout convention" describes this guard as existing
+  to catch, silently unable to see any future `pointer: coarse`-gated
+  element at all — the only verification `#vertical-controls` itself ever
+  got was a manual Pixel-5 screenshot review, not an automated check, so a
+  future regression there (or in any later touch-only overlay) would only
+  be caught by another manual review, not this guard.
+  Fixed by adding a second suite to `e2e/skins.spec.ts` — "fixed overlay
+  layout (real touch device)" — that overrides the file's own tests to
+  force real touch/coarse-pointer emulation via `test.use({ ...devices["Pixel
+  5"] })` (the same device `playwright.config.ts`'s "mobile" project
+  already uses for `touch-controls.spec.ts`, but scoped here to just this
+  one describe block rather than moving the whole file to that project,
+  since every other test in it assumes mouse clicks). `defaultBrowserType`
+  is deliberately excluded from that spread — `test.use()` inside a
+  `describe` can't set it (Playwright forces that field to be top-level/
+  in config, since changing it forces a new worker) — harmless here since
+  the "desktop" project this file already runs under is Chromium anyway,
+  the only thing that preset would have picked. The new test taps
+  `#dev-panels-toggle` open first (dev panels start collapsed on a
+  coarse-pointer device, 2026-09-08) so its buttons are actually part of
+  the layout being checked, then reuses the exact same
+  `boundingBoxesOverlap` helper the desktop suite already has — which
+  needed `#vertical-controls` added to its own selector list (harmless
+  for the existing desktop test: the element is invisible there, so
+  `boundingBox()` returns null and it's skipped, same as it already was).
+  1 new E2E test (30 in `e2e/skins.spec.ts` now, 80 total) — genuinely
+  exercises the element for the first time; it passed immediately (no bug
+  found, closing a coverage gap rather than fixing a regression), so the
+  2026-09-18 manual verification was correct, just never automated. Full
+  suite green (typecheck, 314 unit tests, build, 80 E2E tests).
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
