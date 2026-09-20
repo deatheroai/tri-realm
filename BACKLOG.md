@@ -99,7 +99,16 @@ but out-of-scope multiplayer), which moved the gap search to
 explicitly-wanted, never-built piece of scope: the land↔air stairway,
 the portal's second flavor `DECISIONS.md` (2026-09-02) always intended as
 "a second catalog entry, not new plumbing" once the balloon proved the
-mechanism — built in Phase 2 below, 2026-09-20.
+mechanism — built in Phase 2 below, 2026-09-20 — and **2026-09-20's skins
+cycle**, same situation yet again for this track specifically (item 2
+still needs a human, item 5 is this track's own but still genuinely
+blocked by the E2E blast-radius reasoning below), which merged in that
+same stairway work from `main`, found and closed one real stale-doc gap
+it left behind (`ARCHITECTURE.md`'s "Realm connections" section still
+said "a stairway is still wanted" after the stairway had already shipped
+that same morning), and found no further unblocked Skins-track gap this
+time — see the "Skins / visual identity" section's own 2026-09-20 note
+for the full account of what was checked.
 
 ## Phase 0 — Get something live
 
@@ -986,6 +995,40 @@ no other code changes to land.
   found, closing a coverage gap rather than fixing a regression), so the
   2026-09-18 manual verification was correct, just never automated. Full
   suite green (typecheck, 314 unit tests, build, 80 E2E tests).
+
+**2026-09-20 (this cycle) — both remaining `todo`s re-checked, still not
+solo-actionable; one real stale-doc gap found and closed instead of
+manufacturing busywork.** Camera framing: unchanged, same blast-radius
+reasoning as every prior re-check holds (grepped
+`castle-placement.spec.ts`/`land-save-load.spec.ts`/`touch-controls.spec.ts`
+again — the same fixed-viewport-fraction ground clicks are still there;
+`e2e/skins.spec.ts` itself has none left, already fully migrated to
+world-coordinate clicks in the 2026-09-09 pass). Dive-suit auto-equip
+still needs a human with a real browser (`DECISIONS.md`'s "Needs Your
+Action", unchanged). Checked in-flight branches before concluding there
+was nothing else to build: `claude/dive-suit-auto-equip-zb1qvy` and
+`claude/garden-implementation-status-g3b8o5` (the latter's open PR #4,
+still untouched) are both now 9 days stale (last commit 2026-09-11) —
+neither is this track's own daily branch, so per `AUTONOMY.md`'s merge
+protocol neither was touched, just re-noted here again.
+This cycle's own sync from `main` was a clean fast-forward (World's own
+same-day cycle had just landed the land↔air stairway — the portal's long-
+planned second flavor, `DECISIONS.md`'s 2026-09-02 entry). Searched for a
+real gap the way recent cycles have (`ARCHITECTURE.md`'s Skins/
+Construction sections re-read in full, a repo-wide grep for stray `TODO`/
+`FIXME` in `src/`/`e2e/`, `ATTRIBUTIONS.md` vs. `attributions.ts` re-
+compared) — nothing new turned up in this track's own territory, but the
+stairway merge itself left one real doc-vs-code gap in genuinely-shared
+`ARCHITECTURE.md`: its "Realm connections" section still read "a stairway
+is still wanted as a second flavor later" the same morning the stairway
+had already shipped. Small, safe, and about already-landed World
+functionality rather than a Skins-owned concern, so fixed here rather
+than left for another cycle to trip over — reworded to describe the
+stairway as built, matching the "On-screen controls hint" precedent
+(2026-09-19) for touching genuinely-shared doc/text describing the other
+track's already-shipped work. No behavior change, so no new tests; full
+suite re-verified after the merge and the edit (typecheck, 324 unit
+tests, build, 82 E2E tests, all green).
 
 ## Phase 1b — Harden into the real architecture
 

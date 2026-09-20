@@ -109,12 +109,14 @@ that operate on it are written **once** and reused by all three realms:
 Realms connect via **portals** — explicit, named transition points stored
 in the map data, not a seamless walk/fly/swim between physical spaces:
 
-- **Land ↔ Air:** a hot-air-balloon launch point, built first
-  (`src/world/landAirPortal.ts`) — a stairway is still wanted as a second
-  flavor later (`DECISIONS.md`, 2026-09-02). Both portals' shared
-  coordinates/ids live in one neutral module rather than land's and air's
-  `RealmMap` files importing each other (which would be circular, since
-  each portal needs the other realm's map id and arrival spot).
+- **Land ↔ Air:** a hot-air-balloon launch point, built first, plus a
+  stairway as the second flavor (`src/world/landAirPortal.ts`,
+  `src/world/stairwayMarker.ts`, 2026-09-20) — both flavors wanted per
+  `DECISIONS.md`, 2026-09-02, and the stairway needed no changes to the
+  transition logic itself, just a second catalog entry. Both pairs'
+  shared coordinates/ids live in one neutral module rather than land's and
+  air's `RealmMap` files importing each other (which would be circular,
+  since each portal needs the other realm's map id and arrival spot).
 - **Land ↔ Sea:** a diving house — a small stone structure on the land
   side, with a dive-suit costume change (Skins-owned) and the actual
   transition through a basement pothole
