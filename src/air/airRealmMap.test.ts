@@ -5,7 +5,7 @@ import {
   AIR_FLOATING_PLATFORM_POSITIONS,
   airTerrainPlacementRule,
 } from "./airRealmMap";
-import { AIR_LAND_PORTAL_ID } from "../world/landAirPortal";
+import { AIR_LAND_PORTAL_ID, AIR_LAND_STAIRWAY_PORTAL_ID } from "../world/landAirPortal";
 
 describe("createAirRealmMap", () => {
   it("returns an air RealmMap with the expected shape", () => {
@@ -28,12 +28,14 @@ describe("createAirRealmMap", () => {
     }
   });
 
-  it("includes the air-land portal", () => {
+  it("includes the air-land balloon and stairway portals", () => {
     const map = createAirRealmMap();
 
-    expect(map.portals).toHaveLength(1);
+    expect(map.portals).toHaveLength(2);
     expect(map.portals[0]?.id).toBe(AIR_LAND_PORTAL_ID);
     expect(map.portals[0]?.targetRealmMapId).toBe("land-01");
+    expect(map.portals[1]?.id).toBe(AIR_LAND_STAIRWAY_PORTAL_ID);
+    expect(map.portals[1]?.targetRealmMapId).toBe("land-01");
   });
 
   it("returns a fresh, independent map each call", () => {

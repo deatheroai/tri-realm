@@ -1,6 +1,6 @@
 import type { RealmMap } from "../world/realmMap";
 import type { TerrainPlacementRule } from "../world/placementValidation";
-import { LAND_AIR_PORTAL } from "../world/landAirPortal";
+import { LAND_AIR_PORTAL, LAND_AIR_STAIRWAY_PORTAL } from "../world/landAirPortal";
 import { LAND_SEA_PORTAL } from "../world/landSeaPortal";
 
 /** Also this land map's `RealmMap.id`, and the key `saveRealmMap`/
@@ -19,9 +19,10 @@ export const LAND_MAP_SIZE = 50;
  * `entities` starts empty too but now has a real consumer:
  * `main.ts` fills it with the player's current position right before
  * saving (`src/world/realmMapStorage.ts`), so a reload can restore where
- * they were, not just what they built. `portals` now has two real ones —
- * the land↔air hot-air-balloon (`src/world/landAirPortal.ts`,
- * `BACKLOG.md` Phase 2) and the land↔sea diving house
+ * they were, not just what they built. `portals` now has three real
+ * ones — the land↔air hot-air-balloon (`src/world/landAirPortal.ts`,
+ * `BACKLOG.md` Phase 2), the land↔air stairway (same module, second
+ * flavor, `DECISIONS.md` 2026-09-02), and the land↔sea diving house
  * (`src/world/landSeaPortal.ts`, `BACKLOG.md` Phase 3, flavor decided
  * `DECISIONS.md` 2026-09-07).
  */
@@ -33,7 +34,7 @@ export function createLandRealmMap(): RealmMap {
     terrain: { kind: "land-heightfield" },
     structures: [],
     entities: [],
-    portals: [LAND_AIR_PORTAL, LAND_SEA_PORTAL],
+    portals: [LAND_AIR_PORTAL, LAND_AIR_STAIRWAY_PORTAL, LAND_SEA_PORTAL],
   };
 }
 

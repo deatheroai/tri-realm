@@ -91,7 +91,15 @@ track's section, `Later / unscoped` has nothing left but out-of-scope
 multiplayer), which found the last gap in this same thread: jump and the
 vertical axis both worked correctly by now, but the on-screen controls
 hint never told a player either existed — closed in `Later / unscoped`
-below ("On-screen controls hint," 2026-09-19).
+below ("On-screen controls hint," 2026-09-19) — and **2026-09-20's world
+cycle**, same situation again (item 2 still needs a human, item 5 still
+lives outside this track's section, `Later / unscoped` has nothing left
+but out-of-scope multiplayer), which moved the gap search to
+`ARCHITECTURE.md`'s "Realm connections" section instead and found a real,
+explicitly-wanted, never-built piece of scope: the land↔air stairway,
+the portal's second flavor `DECISIONS.md` (2026-09-02) always intended as
+"a second catalog entry, not new plumbing" once the balloon proved the
+mechanism — built in Phase 2 below, 2026-09-20.
 
 ## Phase 0 — Get something live
 
@@ -1183,6 +1191,54 @@ without a fresh check-in.
   3 new E2E tests (`e2e/land-air-portal.spec.ts`) cover both directions
   and the anti-bounce-back cooldown. Land↔sea's flavor is still a
   separate pending decision — sea isn't scoped yet.
+- `done` **Land↔air portal — stairway, the second flavor.** Picked up
+  2026-09-20: the current priority order's own items were both still
+  stuck for this track (dive-suit bug needs a human with a browser;
+  camera framing lives under "Skins / visual identity", outside this
+  track's own section), and `Later / unscoped` had nothing left but
+  out-of-scope multiplayer, so — same pattern as every recent cycle — the
+  gap search moved to `ARCHITECTURE.md`'s "Realm connections" section
+  instead of re-checking the two priority items again. It still read "a
+  stairway is still wanted as a second flavor later" exactly as written
+  2026-09-02 (`DECISIONS.md`: both flavors wanted eventually, balloon
+  built first for being the more visually distinctive of the two,
+  "adding the stairway later is a second catalog entry, not new
+  plumbing") — a real, explicitly-wanted, never-built piece of scope, not
+  manufactured busywork, and squarely "new content on an established,
+  data-driven pattern" per `AUTONOMY.md`'s own bar for not needing a
+  fresh decision.
+  Confirmed the plumbing claim was accurate before building anything:
+  `portalTransition.ts`'s `findNearbyPortal` already iterates every
+  `Portal` in a map's `portals` array and `main.ts`'s `maybeTriggerPortal`
+  already branches purely on `targetRealmMapId` (the diving-house-specific
+  dive-suit swap is the only kind-gated behavior, untouched here) — so
+  really was just a second catalog entry. Added
+  `LAND_AIR_STAIRWAY_PORTAL`/`AIR_LAND_STAIRWAY_PORTAL` to the existing
+  `src/world/landAirPortal.ts` (same neutral-module reasoning as the
+  balloon pair — avoids land/air `RealmMap` files importing each other),
+  on a straight -z line from each realm's own spawn (the shared "forward"
+  key, W) — clear of the balloon's +x line, land-sea's -x line, land's
+  parkland dressing, and every `AIR_FLOATING_PLATFORM_POSITIONS` entry
+  (checked distances against all of them before picking coordinates, not
+  just the obvious neighbors). `createLandRealmMap`/`createAirRealmMap`
+  now each carry three/two portals respectively. Visual: a new
+  `src/world/stairwayMarker.ts` (`createStairwayMarkerMesh`) — same
+  "one shared shape at both ends" convention the balloon uses, a plain
+  ascending run of 8 stone steps, rough primitives per `AUTONOMY.md`'s
+  visual-first guardrail — placed in `scene.ts`/`airScene.ts` at the same
+  shared constants the trigger logic uses. 10 new unit tests
+  (`stairwayMarker.test.ts`, plus updated `landAirPortal.test.ts`,
+  `landRealmMap.test.ts`, `airRealmMap.test.ts`, `scene.test.ts`,
+  `airScene.test.ts`); 2 new E2E tests (`e2e/land-air-portal.spec.ts`)
+  cover both directions, reusing the existing file's bounce-back-cooldown
+  coverage rather than duplicating it for a second portal pair. Verified
+  visually with real screenshots from both realms (the land-side stairway
+  climbing away from spawn; the air-side top standing clear of both the
+  balloon and the cloud platforms) — a live round-trip screenshot also
+  incidentally confirmed the full transition works end to end (flew to
+  the air-side stairway, it auto-transitioned back to land, landing at
+  the expected arrival spot). Full suite green (typecheck, 324 unit
+  tests, build, 82 E2E tests).
 - `done` **(World) Air-specific animation/pitch parity with Sea.** Reported
   in a review session on 2026-09-08: flying in Air still read as "walking
   on land" — there's no sense of floating/hovering. Root cause: `main.ts`'s

@@ -1,6 +1,7 @@
 import * as THREE from "three";
-import { AIR_PORTAL_POSITION } from "../world/landAirPortal";
+import { AIR_PORTAL_POSITION, STAIRWAY_AIR_PORTAL_POSITION } from "../world/landAirPortal";
 import { createPortalMarkerMesh } from "../world/portalMarker";
+import { createStairwayMarkerMesh } from "../world/stairwayMarker";
 import { createProceduralAvatarMesh } from "../skins/avatarView";
 import { AIR_FLOATING_PLATFORM_POSITIONS } from "./airRealmMap";
 import { createCloudPlatformMesh } from "./cloudMeshes";
@@ -59,6 +60,18 @@ export function createAirScene(): THREE.Scene {
   const portalMarker = createPortalMarkerMesh();
   portalMarker.position.set(AIR_PORTAL_POSITION.x, AIR_PORTAL_POSITION.y, AIR_PORTAL_POSITION.z);
   scene.add(portalMarker);
+
+  // The air-side end of the land<->air stairway, the portal's second
+  // flavor (src/world/landAirPortal.ts, src/world/stairwayMarker.ts,
+  // DECISIONS.md 2026-09-02) — same "purely visual here" relationship as
+  // the balloon above.
+  const stairwayMarker = createStairwayMarkerMesh();
+  stairwayMarker.position.set(
+    STAIRWAY_AIR_PORTAL_POSITION.x,
+    STAIRWAY_AIR_PORTAL_POSITION.y,
+    STAIRWAY_AIR_PORTAL_POSITION.z,
+  );
+  scene.add(stairwayMarker);
 
   return scene;
 }

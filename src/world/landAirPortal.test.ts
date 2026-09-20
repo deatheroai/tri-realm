@@ -6,6 +6,12 @@ import {
   LAND_ARRIVAL_POSITION,
   AIR_PORTAL_POSITION,
   AIR_ARRIVAL_POSITION,
+  LAND_AIR_STAIRWAY_PORTAL,
+  AIR_LAND_STAIRWAY_PORTAL,
+  STAIRWAY_LAND_PORTAL_POSITION,
+  STAIRWAY_LAND_ARRIVAL_POSITION,
+  STAIRWAY_AIR_PORTAL_POSITION,
+  STAIRWAY_AIR_ARRIVAL_POSITION,
   PORTAL_TRIGGER_RADIUS,
 } from "./landAirPortal";
 
@@ -37,5 +43,44 @@ describe("LAND_AIR_PORTAL / AIR_LAND_PORTAL", () => {
 
   it("shares the same portal kind on both ends (one consistent landmark)", () => {
     expect(LAND_AIR_PORTAL.kind).toBe(AIR_LAND_PORTAL.kind);
+  });
+});
+
+describe("LAND_AIR_STAIRWAY_PORTAL / AIR_LAND_STAIRWAY_PORTAL", () => {
+  it("point at each other's realm", () => {
+    expect(LAND_AIR_STAIRWAY_PORTAL.targetRealmMapId).toBe("air-01");
+    expect(AIR_LAND_STAIRWAY_PORTAL.targetRealmMapId).toBe("land-01");
+  });
+
+  it("each portal's target spawn is clear of that side's own trigger radius", () => {
+    expect(
+      distance(LAND_AIR_STAIRWAY_PORTAL.targetSpawnPosition, STAIRWAY_AIR_PORTAL_POSITION),
+    ).toBeGreaterThan(PORTAL_TRIGGER_RADIUS);
+    expect(
+      distance(AIR_LAND_STAIRWAY_PORTAL.targetSpawnPosition, STAIRWAY_LAND_PORTAL_POSITION),
+    ).toBeGreaterThan(PORTAL_TRIGGER_RADIUS);
+  });
+
+  it("each side's own arrival position is clear of its own portal too", () => {
+    expect(distance(STAIRWAY_LAND_ARRIVAL_POSITION, STAIRWAY_LAND_PORTAL_POSITION)).toBeGreaterThan(
+      PORTAL_TRIGGER_RADIUS,
+    );
+    expect(distance(STAIRWAY_AIR_ARRIVAL_POSITION, STAIRWAY_AIR_PORTAL_POSITION)).toBeGreaterThan(
+      PORTAL_TRIGGER_RADIUS,
+    );
+  });
+
+  it("shares the same stairway kind on both ends, distinct from the balloon's", () => {
+    expect(LAND_AIR_STAIRWAY_PORTAL.kind).toBe(AIR_LAND_STAIRWAY_PORTAL.kind);
+    expect(LAND_AIR_STAIRWAY_PORTAL.kind).not.toBe(LAND_AIR_PORTAL.kind);
+  });
+
+  it("sits clear of the balloon pair's own trigger radius on both realms", () => {
+    expect(distance(STAIRWAY_LAND_PORTAL_POSITION, LAND_PORTAL_POSITION)).toBeGreaterThan(
+      PORTAL_TRIGGER_RADIUS,
+    );
+    expect(distance(STAIRWAY_AIR_PORTAL_POSITION, AIR_PORTAL_POSITION)).toBeGreaterThan(
+      PORTAL_TRIGGER_RADIUS,
+    );
   });
 });

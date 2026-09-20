@@ -85,4 +85,10 @@ describe("createScene", () => {
 
     expect(scene.getObjectByName("portal-marker")).toBeInstanceOf(THREE.Group);
   });
+
+  it("includes the land-air stairway marker (the portal's second flavor)", () => {
+    const scene = createScene();
+
+    expect(scene.getObjectByName("stairway-marker")).toBeInstanceOf(THREE.Group);
+  });
 });

@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { terrainHeightAt } from "./land/terrain";
 import { LAND_MAP_SIZE } from "./land/landRealmMap";
-import { LAND_PORTAL_POSITION } from "./world/landAirPortal";
+import { LAND_PORTAL_POSITION, STAIRWAY_LAND_PORTAL_POSITION } from "./world/landAirPortal";
 import { LAND_PORTAL_POSITION as LAND_SEA_PORTAL_POSITION } from "./world/landSeaPortal";
 import { createPortalMarkerMesh } from "./world/portalMarker";
+import { createStairwayMarkerMesh } from "./world/stairwayMarker";
 import { createDivingHouseMesh } from "./world/divingHouseMarker";
 import { LAND_DECORATION_POSITIONS, createLandDecorationMesh } from "./land/landDecorations";
 import { AVATAR_GROUND_OFFSET, createProceduralAvatarMesh } from "./skins/avatarView";
@@ -92,6 +93,18 @@ export function createScene(): THREE.Scene {
   const portalMarker = createPortalMarkerMesh();
   portalMarker.position.set(LAND_PORTAL_POSITION.x, LAND_PORTAL_POSITION.y, LAND_PORTAL_POSITION.z);
   scene.add(portalMarker);
+
+  // The land<->air portal's second flavor (src/world/landAirPortal.ts,
+  // src/world/stairwayMarker.ts) — a stairway, same "purely visual here,
+  // real trigger is proximity checked in main.ts" relationship as the
+  // balloon above (DECISIONS.md, 2026-09-02).
+  const stairwayMarker = createStairwayMarkerMesh();
+  stairwayMarker.position.set(
+    STAIRWAY_LAND_PORTAL_POSITION.x,
+    STAIRWAY_LAND_PORTAL_POSITION.y,
+    STAIRWAY_LAND_PORTAL_POSITION.z,
+  );
+  scene.add(stairwayMarker);
 
   // The land<->sea portal (src/world/landSeaPortal.ts) — a diving house,
   // same "purely visual here, real trigger is proximity checked in

@@ -1,7 +1,7 @@
 import type { Vec3 } from "../math/vec3";
 import type { RealmMap } from "../world/realmMap";
 import type { TerrainPlacementRule } from "../world/placementValidation";
-import { AIR_LAND_PORTAL } from "../world/landAirPortal";
+import { AIR_LAND_PORTAL, AIR_LAND_STAIRWAY_PORTAL } from "../world/landAirPortal";
 
 /** Also this air map's `RealmMap.id`. */
 export const AIR_MAP_ID = "air-01";
@@ -31,13 +31,14 @@ export const AIR_FLOATING_PLATFORM_POSITIONS: Vec3[] = [
 
 /**
  * The hardcoded Phase 2 air map — this realm's equivalent of
- * `createLandRealmMap`'s first pass: real `RealmMap` shape, a real portal
- * back to land now that both ends are scoped (`src/world/landAirPortal.ts`),
- * and real floating-platform data instead of the visual-only hardcoded
- * array this replaced. `structures`/`entities` start empty, same as every
- * other realm's map before anything's been saved — air now plugs into the
- * same `addStructure`/`realmMapStorage.ts` pipeline land/sea already use
- * (`BACKLOG.md`, "air construction/placement").
+ * `createLandRealmMap`'s first pass: real `RealmMap` shape, real portals
+ * back to land now that both ends are scoped (`src/world/landAirPortal.ts`
+ * — the original balloon plus its stairway second flavor, `DECISIONS.md`
+ * 2026-09-02), and real floating-platform data instead of the visual-only
+ * hardcoded array this replaced. `structures`/`entities` start empty,
+ * same as every other realm's map before anything's been saved — air now
+ * plugs into the same `addStructure`/`realmMapStorage.ts` pipeline
+ * land/sea already use (`BACKLOG.md`, "air construction/placement").
  */
 export function createAirRealmMap(): RealmMap {
   return {
@@ -47,7 +48,7 @@ export function createAirRealmMap(): RealmMap {
     terrain: { kind: "air-open-volume", platforms: AIR_FLOATING_PLATFORM_POSITIONS },
     structures: [],
     entities: [],
-    portals: [AIR_LAND_PORTAL],
+    portals: [AIR_LAND_PORTAL, AIR_LAND_STAIRWAY_PORTAL],
   };
 }
 
