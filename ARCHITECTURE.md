@@ -272,20 +272,35 @@ to game logic.
   The dev skin panel drives all three together on every click, so the
   player's chosen skin is one shared identity, not a separate choice per
   realm; each `AvatarView.setSkin` no-ops when already on that skin, so
-  this is safe regardless of which realm happens to be active. Air reuses
-  the same `moveInputToAnimationState`/`faceDirection` calls land does,
-  against its own horizontal `MoveInput`. Sea reuses `faceDirection` but
-  has its own `moveInputToSeaAnimationState` (`src/sea/seaAnimation.ts`)
-  for *state selection*: land/air's horizontal-only intent would score an
-  active dive/surface hold with zero horizontal input as "idle," which is
-  wrong for sea specifically — that's real player-driven swimming — so
-  sea's version also counts active vertical input (but not its own
-  passive buoyancy drift, which leaves `vertical` at exactly 0) as motion.
-  Both still resolve to the same shared `idle`/`walk`/`run` clip names; a
-  real air/sea-specific animation *clip* mapping (e.g. a distinct
-  swim-stroke) remains future refinement, genuinely gated on sourcing a
-  skin with one, not required for the skin system itself to work
-  correctly in a third realm (`BACKLOG.md`).
+  this is safe regardless of which realm happens to be active. Land keeps
+  using the generic `moveInputToAnimationState`/`faceDirection`
+  (`src/skins/avatarSkins.ts`) — its only vertical motion is jump's brief
+  arc, handled by pitch, not by a distinct animation *state*. Air and sea
+  each have their own *state-selection* function instead of reusing
+  land's, because both have meaningful vertical input that land doesn't:
+  `moveInputToAirAnimationState`/`moveInputToSeaAnimationState`
+  (`src/air/airAnimation.ts`/`src/sea/seaAnimation.ts`) both score an
+  active vertical hold with zero horizontal input as real motion, not
+  "idle" the way the generic land-shaped mapping would score it — sea's
+  version additionally excludes its own passive buoyancy drift
+  (`BUOYANCY_DRIFT_SPEED`, which leaves `vertical` at exactly 0) from
+  counting as motion, a distinction air doesn't need since
+  `stepAirMovement` never moves the avatar vertically except from direct
+  input.
+  That state (`idle`/`walk`/`run`) then goes through a second,
+  *clip-selection* step — `withFloatAnimationState`/`withSwimAnimationState`
+  — which routes it to the dedicated `swimIdle`/`swimActive` states
+  instead when the active skin actually has them
+  (`AvatarView.hasAnimation("swimIdle")`, currently `mannequin`/`female`
+  only); every other skin keeps exactly the shared `idle`/`walk`/`run`
+  clip names, unaffected. The two policies deliberately differ over the
+  same clip pair: sea distinguishes `swimActive` (kicking) from
+  `swimIdle` (floating), reading as genuine swimming, while air always
+  resolves to the calm `swimIdle` clip regardless of speed or input —
+  reviewed live and picked over reusing sea's policy directly, which read
+  as "a fish" instead of the drifting "balloon" feel actually wanted
+  (`BACKLOG.md`). A skin with no swim clips at all flies/swims on the
+  same walk/run clips it uses on land, on both realms.
 - **Vertical pitch: sea first, air matched to it, land last once it had a
   vertical velocity worth reacting to.**
   `AvatarView.setVerticalPitch(verticalVelocity, dt)` leans the model

@@ -120,7 +120,36 @@ were each still exactly the single starter type they shipped with
 (2026-09-13/09-16) — a real, lopsided gap, not manufactured busywork, and
 squarely "new content on an established, data-driven pattern within an
 already-chosen realm," `AUTONOMY.md`'s own bar for not needing a decision.
-Gave sea and air each a second type (Phase 2/3 below, 2026-09-21).
+Gave sea and air each a second type (Phase 2/3 below, 2026-09-21) — and
+**2026-09-21's skins cycle**, same situation yet again for this track
+(item 2 still needs a human, item 5 is this track's own but still
+genuinely blocked by the same E2E blast-radius reasoning below). This
+cycle's own sync from `main` was a clean fast-forward (World's same-day
+"Sea and air structure catalogs" cycle above, no Skins-territory
+overlap). Checked in-flight branches before searching for a gap:
+`claude/dive-suit-auto-equip-zb1qvy` and
+`claude/garden-implementation-status-g3b8o5` are both now 10 days stale
+(last commit 2026-09-11) — neither is this track's own daily branch, so
+per `AUTONOMY.md`'s merge protocol neither was touched, just re-noted
+here again. Re-confirmed the live deployment is still unreachable from
+this session (`curl` against `tri-realm.vercel.app` still returns the
+same 403 policy denial, same as every prior check) — item 2 stays
+genuinely not-solo-actionable. Searched for a real gap the way recent
+cycles have (stray `TODO`/`FIXME` grep across `src/`/`e2e/`: none;
+`ATTRIBUTIONS.md` vs. `attributions.ts` re-compared: still in sync) and
+found one in genuinely-shared `ARCHITECTURE.md`'s own Skins section: its
+"Realm-agnostic by construction" bullet still claimed air reuses land's
+generic `moveInputToAnimationState` and that "both still resolve to the
+same shared idle/walk/run clip names; a real air/sea-specific animation
+*clip* mapping (e.g. a distinct swim-stroke) remains future refinement" —
+both false since `withSwimAnimationState`/`withFloatAnimationState` and
+air's own `moveInputToAirAnimationState` shipped (`BACKLOG.md`'s Phase
+2/3 history), the exact stale-doc-describing-already-shipped-code shape
+the 2026-09-20 stairway-doc fix closed for World's territory, this time
+in this track's own. Reworded to describe the real two-step state-then-
+clip pipeline (`ARCHITECTURE.md`'s Skins section). No behavior change, so
+no new tests; full suite re-verified after the merge and the edit
+(typecheck, 324 unit tests, build, 84 E2E tests, all green).
 
 ## Phase 0 — Get something live
 
@@ -1041,6 +1070,50 @@ stairway as built, matching the "On-screen controls hint" precedent
 track's already-shipped work. No behavior change, so no new tests; full
 suite re-verified after the merge and the edit (typecheck, 324 unit
 tests, build, 82 E2E tests, all green).
+
+**2026-09-21 (this cycle) — both remaining `todo`s re-checked, still not
+solo-actionable; one real stale-doc gap found in this track's own
+territory this time.** Camera framing: unchanged, same blast-radius
+reasoning as every prior re-check holds (the same fixed-viewport-fraction
+ground clicks in `castle-placement.spec.ts`/`land-save-load.spec.ts`/
+`touch-controls.spec.ts` are still there). Dive-suit auto-equip: still
+needs a human with a real browser — re-tried `curl` against
+`tri-realm.vercel.app` directly from this session rather than just
+trusting the prior finding, still the same 403 policy denial
+(`DECISIONS.md`'s "Needs Your Action", unchanged). Checked in-flight
+branches before searching for a gap: `claude/dive-suit-auto-equip-zb1qvy`
+and `claude/garden-implementation-status-g3b8o5` are both now 10 days
+stale (last commit 2026-09-11) — neither is this track's own daily
+branch, so per `AUTONOMY.md`'s merge protocol neither was touched, just
+re-noted here again. This cycle's own sync from `main` was a clean
+fast-forward (World's same-day "Sea and air structure catalogs" cycle —
+no Skins-territory overlap).
+Searched for a real gap the same way recent cycles have (repo-wide grep
+for stray `TODO`/`FIXME` in `src/`/`e2e/`: none; `ATTRIBUTIONS.md` vs.
+`attributions.ts` re-compared: still in sync) and found one in
+`ARCHITECTURE.md`'s own Skins section this time, not a World-owned one:
+its "Realm-agnostic by construction" bullet still claimed air reuses
+land's generic `moveInputToAnimationState`/`faceDirection` directly, and
+that "both still resolve to the same shared idle/walk/run clip names; a
+real air/sea-specific animation *clip* mapping (e.g. a distinct
+swim-stroke) remains future refinement, genuinely gated on sourcing a
+skin with one" — both false against current code, confirmed by reading
+`src/air/airAnimation.ts`/`src/sea/seaAnimation.ts`/`main.ts` directly
+rather than trusting the doc's own wording: air has had its own
+`moveInputToAirAnimationState` since the 2026-09-08 pitch-parity fix, and
+the dedicated `swimIdle`/`swimActive` clip states
+(`withSwimAnimationState`/`withFloatAnimationState`, gated on
+`AvatarView.hasAnimation("swimIdle")`) shipped with Mannequin's swim clips
+(2026-09-09) and Female's (later) — genuinely-shipped functionality the
+doc never caught up to describing, the same stale-doc-describing-
+already-shipped-code shape the 2026-09-20 stairway-doc fix closed for
+World's own territory, this time in this track's. Reworded the bullet to
+describe the real two-step pipeline (state selection per realm, then a
+separate clip-selection pass that only two skins currently have clips
+for) instead of the outdated single-step, no-clip-mapping description.
+No behavior change, so no new tests; full suite re-verified after the
+merge and the edit (typecheck, 324 unit tests, build, 84 E2E tests, all
+green).
 
 ## Phase 1b — Harden into the real architecture
 
