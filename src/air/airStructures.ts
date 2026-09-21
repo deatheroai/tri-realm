@@ -22,6 +22,22 @@ export const AIR_STRUCTURE_TYPES: AirStructureType[] = [
     label: "Platform",
     dimensions: { width: 2.4, height: 0.4, depth: 2.4 },
   },
+  // Second type (mirrors land's own single-type-to-Wall/Gate/Tower growth,
+  // `castleStructures.ts`, and sea's matching pillar-to-ridge growth,
+  // `seaStructures.ts`) — a narrow, tall sky spire, a distinct
+  // narrow/tall silhouette next to the platform's flat/wide one, same
+  // "rough box, contrast in shape" discipline the platform itself used.
+  // No `realModel` yet either, same reasoning the platform's own entry
+  // gives. Named "Spire", not "Tower" — land's own catalog already has a
+  // "Tower" button in the same shared `#dev-structure-panel`
+  // (`castleStructures.ts`), and a label with no shared substring avoids
+  // both a confusing dev-panel near-duplicate and any risk of an
+  // ambiguous E2E button lookup.
+  {
+    id: "sky-spire",
+    label: "Sky Spire",
+    dimensions: { width: 0.7, height: 3.0, depth: 0.7 },
+  },
 ];
 
 export const DEFAULT_AIR_STRUCTURE_TYPE_ID = "sky-platform";

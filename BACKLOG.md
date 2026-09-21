@@ -108,7 +108,19 @@ it left behind (`ARCHITECTURE.md`'s "Realm connections" section still
 said "a stairway is still wanted" after the stairway had already shipped
 that same morning), and found no further unblocked Skins-track gap this
 time — see the "Skins / visual identity" section's own 2026-09-20 note
-for the full account of what was checked.
+for the full account of what was checked — and **2026-09-21's world
+cycle**, same situation again (item 2 still needs a human, item 5 still
+lives outside this track's section, `Later / unscoped` has nothing left
+but out-of-scope multiplayer, and `ARCHITECTURE.md` had no further
+flagged-but-unbuilt gap left after the stairway closed the last one), so
+this cycle looked at the construction catalogs themselves instead: land's
+own (`castleStructures.ts`) had grown to four types (Keep/Wall/Gate/Tower)
+since Phase 1b, while sea's and air's (`seaStructures.ts`/`airStructures.ts`)
+were each still exactly the single starter type they shipped with
+(2026-09-13/09-16) — a real, lopsided gap, not manufactured busywork, and
+squarely "new content on an established, data-driven pattern within an
+already-chosen realm," `AUTONOMY.md`'s own bar for not needing a decision.
+Gave sea and air each a second type (Phase 2/3 below, 2026-09-21).
 
 ## Phase 0 — Get something live
 
@@ -1444,6 +1456,44 @@ without a fresh check-in.
   survive a reload, and a fresh visit starts clean. Full suite verified
   (typecheck, 289 unit tests, build, 73 E2E tests, all green including the
   3 pre-existing tests the click-listener fix's first draft had broken).
+- `done` **Air's second structure type: Sky Spire.** Picked up 2026-09-21:
+  air's catalog (`src/air/airStructures.ts`) had stayed at its single
+  2026-09-16 starter type (`sky-platform`) ever since, unlike land's own
+  four-type catalog — a real gap in catalog variety, not a structural one
+  (the placement pipeline needed zero changes, same as every prior
+  same-pattern addition). New `sky-tower`-shaped entry (id `sky-spire`,
+  label "Sky Spire"): narrow and tall (0.7 x 3.0 x 0.7) — a deliberate
+  contrast to the platform's flat/wide shape (2.4 x 0.4 x 2.4), same "rough
+  box, contrast in silhouette" discipline the platform's own entry and
+  land's Tower entry both used. No `realModel` yet, same reasoning every
+  other rough-box entry in this codebase gives. Labeled "Sky Spire," not
+  "Tower" — land's own catalog already has a "Tower" button in the same
+  shared `#dev-structure-panel`, and a label sharing no substring with it
+  avoids both a confusing near-duplicate in the dev panel and any risk of
+  an ambiguous E2E button lookup (sea's matching new type is named "Reef
+  Ridge" for the identical reason, not "Wall").
+  1 new E2E test (`e2e/air-construction.spec.ts`, mirroring
+  `castle-placement.spec.ts`'s/`sea-construction.spec.ts`'s own
+  type-switching tests): defaults to Platform, switching to Sky Spire
+  changes new placements. **Found and fixed a real E2E-placement trap
+  while writing it, not just guessed at**: the test's first draft placed
+  the second piece at world `x = 8` (matching land/sea's own wide
+  type-switching separations) — this silently placed *nothing* (the type
+  after "switching" still read back as the first piece's), traced to a
+  real cause via `window.__projectToScreen` rather than assumed: at air's
+  higher, positive spawn altitude specifically, `(8, AIR_SPAWN_Y, -3)`
+  projects to a screen point *inside* `#dev-panels`' own bounding box
+  (confirmed directly by querying it), which the shared click listener
+  deliberately excludes from placement (`ARCHITECTURE.md`'s construction-
+  system section) — so the click silently did nothing rather than place a
+  structure. Fixed by using a closer `x = 3` separation for air's own test
+  specifically (still clears both types' footprints with margin) rather
+  than blindly reusing land/sea's wider spread, which only happens to stay
+  clear of the panel at their own, lower/zero altitudes.
+  The generic unit tests already covering both catalogs automatically
+  covered the new entry with no changes needed (`airStructures.test.ts`,
+  `airPlacement.test.ts` both iterate `AIR_STRUCTURE_TYPES`). Full suite
+  verified (typecheck, 324 unit tests, build, 84 E2E tests).
 - `todo` **Verify: dive-suit auto-equip not triggering via the diving-house
   portal.** Reported in a review session on 2026-09-08: swam through the
   diving house on land into Sea and the dive suit did not auto-equip
@@ -1814,6 +1864,51 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   against a captured value that was itself already stale by a small, real
   amount. Full suite verified (typecheck, 277 unit tests, build, 68 E2E
   tests, the new spec re-run several times to confirm it isn't flaky).
+- `done` **Sea's second structure type: Reef Ridge.** Picked up 2026-09-21,
+  alongside air's own matching addition above (same finding: land's
+  four-type catalog vs. sea/air's still-single starter types each). New
+  `reef-ridge` entry (`src/sea/seaStructures.ts`, label "Reef Ridge"): wide
+  and low (1.8 x 1.2 x 0.4) — a deliberate contrast to the pillar's
+  narrow/tall shape (1.0 x 2.0 x 1.0), same "rough box, contrast in
+  silhouette" discipline the pillar's own entry used. No `realModel` yet,
+  same reasoning the pillar's own entry gives. Labeled "Reef Ridge," not
+  "Wall" — land's own catalog already has a "Wall" button in the same
+  shared `#dev-structure-panel`, and a label sharing no substring with it
+  avoids a confusing near-duplicate and any risk of an ambiguous E2E
+  button lookup (see air's matching "Sky Spire," not "Tower," reasoning
+  above).
+  1 new E2E test (`e2e/sea-construction.spec.ts`, mirroring
+  `castle-placement.spec.ts`'s own type-switching test): defaults to
+  Pillar, switching to Reef Ridge changes new placements — an 8-unit `x`
+  separation (matching land's own wide spread) worked fine here, unlike
+  air's own equivalent test above, since sea's floor sits at a fixed
+  negative `y` far from the dev panel's own screen region regardless of
+  `x`. The generic unit tests already covering the catalog automatically
+  covered the new entry with no changes needed (`seaStructures.test.ts`,
+  `seaPlacement.test.ts` both iterate `SEA_STRUCTURE_TYPES`).
+  **Also found and fixed a real, reproducible-under-load flakiness bug in
+  this same file while verifying, unrelated to the new type itself**: the
+  existing "survives a reload" test (`BACKLOG.md`, 2026-09-13's own
+  writeup above) failed consistently — not a one-off — whenever run
+  alongside the rest of the suite under real parallel-worker CPU
+  contention (reproduced identically across multiple full clean
+  `npx playwright test` runs and a 4x `--repeat-each` run of the file
+  alone; passed every time run in total isolation as a single test). Root
+  cause, confirmed rather than assumed: the assertion's margin (dive for
+  800ms, then require the post-reload depth below `-4.3`, only 0.3 units
+  past the `-4` spawn depth) was too tight against realistic latency
+  between releasing the dive key and actually reading depth after
+  `page.reload()` — under contention that gap grows enough for passive
+  buoyancy (`BUOYANCY_DRIFT_SPEED`, 0.5 m/s upward) to erase the thin
+  margin, landing at the same reproducible shortfall (`-4.21...`) every
+  time. Fixed by lengthening the dive hold to 1500ms, banking enough extra
+  depth that realistic reload-latency drift can't reach the threshold —
+  verified against the actual failure mode, not guessed: 20/20 passes
+  across a 4x-repeated full-file run after the fix, versus consistent
+  failure before it. `e2e/sea-construction.spec.ts`'s own module comment
+  now records why the hold is this long.
+  Full suite verified (typecheck, 324 unit tests, build, 84 E2E tests, the
+  full E2E suite re-run twice clean end to end).
 
 ## Later / unscoped
 

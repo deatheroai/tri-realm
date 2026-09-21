@@ -92,3 +92,33 @@ test("a fresh visit with nothing saved in air still starts clean", async ({ page
   await page.goto("/");
   expect(await page.evaluate(() => window.__getAirStructureCount?.())).toBe(0);
 });
+
+test("defaults to the Platform structure type, and switching type changes new placements", async ({ page }) => {
+  await page.goto("/");
+  await switchToAir(page);
+
+  // Separated *world* X coordinates (via the app's own world-to-screen
+  // projection, same reasoning castle-placement.spec.ts's/
+  // sea-construction.spec.ts's own type-switching tests give) — clears
+  // both catalog types' widths regardless of height. Air's own points stay
+  // closer together than those two files' wide (8-16 unit) spreads: at
+  // this realm's higher, positive spawn altitude a wide spread projects
+  // into the top-right dev panel's own screen region (confirmed directly
+  // — (8, AIR_SPAWN_Y, -3) lands inside `#dev-panels`' bounding box, which
+  // the shared click listener deliberately excludes, so that click would
+  // silently do nothing rather than place anything). 3 units still clears
+  // Platform's 2.4 width plus Spire's 0.7 one with margin.
+  const projectToScreen = (x: number) =>
+    page.evaluate((p) => window.__projectToScreen?.(p.x, p.y, -3), { x, y: AIR_SPAWN_Y });
+
+  const platformPoint = await projectToScreen(0);
+  if (!platformPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(platformPoint.x, platformPoint.y);
+  expect(await page.evaluate(() => window.__getLastPlacedAirType?.())).toBe("sky-platform");
+
+  await page.getByRole("button", { name: "Sky Spire", exact: true }).click();
+  const spirePoint = await projectToScreen(3);
+  if (!spirePoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(spirePoint.x, spirePoint.y);
+  expect(await page.evaluate(() => window.__getLastPlacedAirType?.())).toBe("sky-spire");
+});

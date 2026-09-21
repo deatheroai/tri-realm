@@ -62,9 +62,18 @@ test("a placed sea structure and the player's sea position survive a reload", as
   await switchToSea(page);
 
   // Swim somewhere first, so there's a real (non-spawn) depth to verify
-  // survives the reload too, not just the structure.
+  // survives the reload too, not just the structure. A deliberately long
+  // hold (was 800ms) — found this cycle, not guessed at: under real
+  // parallel-worker CPU contention (a full `npx playwright test` run, not
+  // an isolated single-test run), the gap between releasing the dive key
+  // and actually reading depth after `page.reload()` grows enough for
+  // passive buoyancy (`BUOYANCY_DRIFT_SPEED`) to eat past an 800ms dive's
+  // shallow margin — reproduced consistently (not a one-off) at the exact
+  // same shortfall across repeated full-suite runs. A longer dive banks
+  // enough extra depth that realistic reload-latency drift can't reach
+  // the assertion's threshold below.
   await page.keyboard.down("ControlLeft");
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(1500);
   await page.keyboard.up("ControlLeft");
 
   const floorPoint = await page.evaluate(
@@ -99,4 +108,27 @@ test("a placed sea structure and the player's sea position survive a reload", as
 test("a fresh visit with nothing saved in sea still starts clean", async ({ page }) => {
   await page.goto("/");
   expect(await page.evaluate(() => window.__getSeaStructureCount?.())).toBe(0);
+});
+
+test("defaults to the Pillar structure type, and switching type changes new placements", async ({ page }) => {
+  await page.goto("/");
+  await switchToSea(page);
+
+  // Deliberately far-apart *world* X coordinates (via the app's own
+  // world-to-screen projection), same reasoning
+  // castle-placement.spec.ts's own type-switching test gives — clears
+  // both catalog types' widths by a wide margin regardless of height.
+  const projectToScreen = (x: number) =>
+    page.evaluate((p) => window.__projectToScreen?.(p.x, p.y, -3), { x, y: SEA_FLOOR_Y });
+
+  const pillarPoint = await projectToScreen(0);
+  if (!pillarPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(pillarPoint.x, pillarPoint.y);
+  expect(await page.evaluate(() => window.__getLastPlacedSeaType?.())).toBe("reef-pillar");
+
+  await page.getByRole("button", { name: "Reef Ridge", exact: true }).click();
+  const ridgePoint = await projectToScreen(8);
+  if (!ridgePoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(ridgePoint.x, ridgePoint.y);
+  expect(await page.evaluate(() => window.__getLastPlacedSeaType?.())).toBe("reef-ridge");
 });

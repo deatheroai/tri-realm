@@ -24,6 +24,20 @@ export const SEA_STRUCTURE_TYPES: SeaStructureType[] = [
     label: "Pillar",
     dimensions: { width: 1.0, height: 2.0, depth: 1.0 },
   },
+  // Second type (mirrors land's own single-type-to-Wall/Gate/Tower growth,
+  // `castleStructures.ts`) — a wide, low reef ridge, a distinct flat/wide
+  // silhouette next to the pillar's narrow/tall one, same "rough box,
+  // contrast in shape" discipline the pillar itself used. No `realModel`
+  // yet either, same reasoning the pillar's own entry gives. Named "Ridge",
+  // not "Wall" — land's own catalog already has a "Wall" button in the
+  // same shared `#dev-structure-panel` (`castleStructures.ts`), and a
+  // label with no shared substring avoids both a confusing dev-panel
+  // near-duplicate and any risk of an ambiguous E2E button lookup.
+  {
+    id: "reef-ridge",
+    label: "Reef Ridge",
+    dimensions: { width: 1.8, height: 1.2, depth: 0.4 },
+  },
 ];
 
 export const DEFAULT_SEA_STRUCTURE_TYPE_ID = "reef-pillar";
