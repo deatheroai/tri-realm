@@ -151,6 +151,85 @@ clip pipeline (`ARCHITECTURE.md`'s Skins section). No behavior change, so
 no new tests; full suite re-verified after the merge and the edit
 (typecheck, 324 unit tests, build, 84 E2E tests, all green).
 
+**2026-09-22's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer, and
+`ARCHITECTURE.md` had no further flagged-but-unbuilt gap after the prior
+cycle's doc fix). This cycle's own sync from `main` was a clean
+fast-forward (the prior day's skins-cycle doc fix, no World-territory
+overlap). Rather than reach for another catalog-symmetry pass (sea/air
+just got a second type each the day before — doing that again purely to
+chase land's count would start to look like manufactured busywork, not a
+found gap), looked at the construction system's own mechanics instead and
+found a real, load-bearing one missing: **there was no way to remove a
+placed structure at all, in any realm, once placed.** `PlacedStructure`s
+only ever accumulate (`addStructure`) — a misclick (land's own "clicking
+an existing piece stacks on top of it" behavior means an overshoot lands a
+piece somewhere unwanted) was permanent for the rest of the session, no
+recourse short of clearing localStorage and losing everything else built
+too. Squarely this track's own charter (`AUTONOMY.md`: "construction/
+placement mechanics") and core-system completeness in the same vein as
+"Land jump"/"Climbable-slope limit" below, not new content and not a
+data-model change (removing an entry from `structures` is already
+save-format-compatible, no schema change needed).
+Built "undo last placement," keyboard-only first — same staged approach
+"Land jump" (2026-09-17) then "Touch vertical controls" (2026-09-18) used,
+rather than trying to design a click-to-select-and-delete interaction (a
+much larger, riskier UI surface, and a bigger blast radius across every
+realm's raycast/stacking logic) in one pass:
+`removeLastStructure(map)` (`src/world/realmMap.ts`) is `addStructure`'s
+mirror image — immutable, pops the last entry, a genuine no-op (`removed:
+undefined`, same map reference) on an already-empty map rather than
+throwing. `KeyboardInput.consumeUndoPressed()` (`src/input/keyboardInput.ts`)
+is a dedicated `KeyX` binding with the identical reset-on-read/rising-edge
+shape `consumeJumpPressed()` already established (holding the key doesn't
+undo repeatedly). `main.ts` gained `removeLastLandStructure`/
+`removeLastSeaStructure`/`removeLastAirStructure` — each self-guards on
+`activeRealm` exactly like `placeCastlePieceAt`/`placeSeaPieceAt`/
+`placeAirPieceAt` already do, dispatched from one shared
+`removeLastPlacedStructure()` the same "call all three unconditionally,
+only the active one does anything" shape `placeStructureAt` uses — so a
+press while flying/swimming can't reach back and undo something on land
+later, and consuming the key every frame regardless of realm (mirroring
+how `jumpPressed` is always consumed) means a stray press can't queue up
+across a realm switch either. Each removal also deletes the piece's actual
+rendered mesh from its realm's scene (`placedMeshes`/`seaPlacedMeshes`/
+`airPlacedMeshes`, keyed by the same `PlacedStructure.id` the placement
+functions already use) and re-persists that realm's map, so an undone
+piece is really gone, not just hidden, and doesn't come back on reload.
+Land's HUD (`#hud-structures`) updates immediately via the existing
+`updateStructuresHud`; sea/air have no visible HUD counter (unchanged, per
+`AUTONOMY.md`'s "UI layout convention"), same as their own placement
+already works — covered by their existing debug-hook pattern instead.
+`#hud-controls` gained "Undo: X" — same "an unreachable-without-a-hint
+control is a real player-facing gap" reasoning the 2026-09-19 "On-screen
+controls hint" item already used for jump/vertical, checked directly
+against the narrow-viewport overlap-regression test rather than assumed
+safe.
+Touch has no undo button yet — deliberately out of scope this cycle, same
+"keyboard first, a future cycle can add touch parity" reasoning "Land
+jump" used; unlike jump (which blocked an entire *input axis* from ever
+being reachable on a phone), a misplaced structure without a touch undo
+is inconvenient, not a completely missing capability, so it doesn't carry
+the same urgency "Touch vertical controls" (2026-09-18) had.
+5 new unit tests (`realmMap.test.ts`: no-op on empty, removes the actual
+last-added structure without mutating the input, stays a no-op on a
+second call once already empty) plus 5 new (`keyboardInput.test.ts`:
+`consumeUndoPressed` mirrors every one of `consumeJumpPressed`'s own
+cases — false when idle, true once per fresh press, no re-queue while
+held, re-arms after release, independent of the jump queue). 4 new E2E
+tests: land (`castle-placement.spec.ts`) confirms undo removes the actual
+most-recent piece (checked via the HUD's own "last placed position"
+reverting to the first piece's, not just the count dropping) and that
+undo with nothing placed is a silent no-op; sea (`sea-construction.spec.ts`)
+confirms undo removes a sea piece but pressing it while switched back to
+land does nothing to sea's own count (each realm's self-guard actually
+holds, not just assumed from reading the code); air
+(`air-construction.spec.ts`) confirms the same removal shape there. Full
+suite verified (typecheck, 332 unit tests, build, 88 E2E tests, all
+green, including the narrow-viewport overlay-regression check with the
+updated `#hud-controls` wording).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

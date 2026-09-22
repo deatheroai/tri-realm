@@ -14,6 +14,11 @@ const RUN_KEYS = new Set(["ShiftLeft", "ShiftRight"]);
 // Same physical key as air/sea's ascend (verticalInput.ts) — safe to share
 // since only one realm's movement module ever reads either signal at once.
 const JUMP_KEYS = new Set(["Space"]);
+// Undo the most recently placed structure in whichever realm is active
+// (main.ts's removeLastPlacedStructure) — a dedicated key, not shared with
+// anything movement-related, so there's no cross-realm ambiguity to reason
+// about the way Space's dual jump/ascend role needs.
+const UNDO_KEYS = new Set(["KeyX"]);
 
 /** Pure mapping from the set of currently-held key codes to a move intent. */
 export function computeMoveInput(pressedKeys: ReadonlySet<string>): MoveInput {
@@ -36,6 +41,7 @@ export function computeMoveInput(pressedKeys: ReadonlySet<string>): MoveInput {
 export class KeyboardInput {
   private readonly pressed = new Set<string>();
   private jumpQueued = false;
+  private undoQueued = false;
 
   constructor(target: Pick<Window, "addEventListener"> = window) {
     target.addEventListener("keydown", (e) => {
@@ -45,6 +51,11 @@ export class KeyboardInput {
       // otherwise re-fire this every frame the key stays held).
       if (JUMP_KEYS.has(code) && !this.pressed.has(code)) {
         this.jumpQueued = true;
+      }
+      // Same rising-edge-only shape as jump — holding X shouldn't undo every
+      // placed piece in one long keydown-repeat burst.
+      if (UNDO_KEYS.has(code) && !this.pressed.has(code)) {
+        this.undoQueued = true;
       }
       this.pressed.add(code);
     });
@@ -71,5 +82,17 @@ export class KeyboardInput {
     const jumped = this.jumpQueued;
     this.jumpQueued = false;
     return jumped;
+  }
+
+  /**
+   * Undo trigger: true at most once per fresh KeyX press, reset back to
+   * false as soon as it's read — same reset-on-read shape as
+   * `consumeJumpPressed`, so a caller polling every frame gets exactly one
+   * `true` per press, not one per frame held.
+   */
+  consumeUndoPressed(): boolean {
+    const undone = this.undoQueued;
+    this.undoQueued = false;
+    return undone;
   }
 }

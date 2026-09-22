@@ -126,3 +126,23 @@ export function addStructure(
     structure: placed,
   };
 }
+
+/**
+ * Removes the most recently placed structure from a map, immutably — an
+ * "undo last placement" (`BACKLOG.md`: construction/placement mechanics had
+ * no way to remove a piece at all once placed, a real gap for a
+ * player-driven building system). Same reassign-don't-mutate style as
+ * `addStructure`. A no-op (returns the same map, `removed: undefined`) on an
+ * empty map, mirroring how `main.ts`'s callers already treat "nothing to do"
+ * as silent rather than an error (e.g. `validatePlacement`'s own rejections).
+ */
+export function removeLastStructure(map: RealmMap): { map: RealmMap; removed: PlacedStructure | undefined } {
+  if (map.structures.length === 0) {
+    return { map, removed: undefined };
+  }
+  const removed = map.structures[map.structures.length - 1];
+  return {
+    map: { ...map, structures: map.structures.slice(0, -1) },
+    removed,
+  };
+}

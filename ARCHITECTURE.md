@@ -524,6 +524,26 @@ fetch it.
   separation wide enough two placements can't accidentally overlap),
   which target `<html>`, not the canvas, so an exact-canvas check would
   have rejected those legitimate clicks too.
+- **Undo** (`BACKLOG.md`, 2026-09-22): `removeLastStructure(map)`
+  (`src/world/realmMap.ts`) is `addStructure`'s mirror — immutable, pops
+  the most recent `PlacedStructure`, a genuine no-op on an already-empty
+  map. Bound to a dedicated `KeyX` press (`KeyboardInput.consumeUndoPressed()`,
+  same reset-on-read/rising-edge shape as `consumeJumpPressed()`) rather
+  than a click-to-select interaction — removing *the last thing placed*
+  needs no target selection or new raycast surface, so it reuses the
+  existing per-realm `PlacedStructure` ordering instead of adding one.
+  `main.ts`'s `removeLastLandStructure`/`removeLastSeaStructure`/
+  `removeLastAirStructure` each self-guard on `activeRealm`, dispatched
+  from `removeLastPlacedStructure()` the same "call all three
+  unconditionally, only the active one does anything" shape
+  `placeStructureAt` already uses for placing — and also delete the
+  piece's actual mesh from that realm's scene (keyed by the same
+  `PlacedStructure.id` the placement functions already track meshes by)
+  and re-persist the map, so an undone piece doesn't reappear on reload.
+  Keyboard-only for now, same staged rollout "Land jump" (2026-09-17) then
+  "Touch vertical controls" (2026-09-18) used — a touch undo button is a
+  smaller, additive follow-on, not required to make undo usable at all the
+  way touch's missing vertical axis was.
 
 ## Modularity
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { terrainHeightAt } from "../land/terrain";
-import { addStructure, sampleTerrainHeight, type RealmMap } from "./realmMap";
+import { addStructure, removeLastStructure, sampleTerrainHeight, type RealmMap } from "./realmMap";
 
 function emptyLandMap(): RealmMap {
   return {
@@ -77,5 +77,54 @@ describe("addStructure", () => {
 
     expect(second.structure.id).not.toBe(first.structure.id);
     expect(second.map.structures.map((s) => s.id)).toEqual([first.structure.id, second.structure.id]);
+  });
+});
+
+describe("removeLastStructure", () => {
+  it("is a no-op on an empty map — returns the same map, removed undefined", () => {
+    const map = emptyLandMap();
+
+    const { map: nextMap, removed } = removeLastStructure(map);
+
+    expect(nextMap).toBe(map); // same reference, not just equal
+    expect(removed).toBeUndefined();
+  });
+
+  it("removes the most recently added structure, not mutating the input", () => {
+    const map = emptyLandMap();
+    const { map: withOne, structure: first } = addStructure(map, {
+      type: "a",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: 0,
+      materialId: "stone",
+    });
+    const { map: withTwo, structure: second } = addStructure(withOne, {
+      type: "b",
+      position: { x: 1, y: 0, z: 1 },
+      rotation: 0,
+      materialId: "wood",
+    });
+
+    const { map: nextMap, removed } = removeLastStructure(withTwo);
+
+    expect(withTwo.structures).toHaveLength(2); // original untouched
+    expect(removed).toBe(second);
+    expect(nextMap.structures).toEqual([first]);
+  });
+
+  it("leaves an already-empty-after-removal map alone on a second call", () => {
+    const map = emptyLandMap();
+    const { map: withOne } = addStructure(map, {
+      type: "a",
+      position: { x: 0, y: 0, z: 0 },
+      rotation: 0,
+      materialId: "stone",
+    });
+
+    const { map: emptiedAgain } = removeLastStructure(withOne);
+    const { map: stillEmpty, removed } = removeLastStructure(emptiedAgain);
+
+    expect(stillEmpty.structures).toHaveLength(0);
+    expect(removed).toBeUndefined();
   });
 });

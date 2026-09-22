@@ -95,3 +95,43 @@ test("defaults to the Keep structure type, and switching type changes new placem
   await page.mouse.click(towerPoint.x, towerPoint.y);
   expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-tower");
 });
+
+test("pressing X undoes the most recently placed piece", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  const groundX = viewport.width / 2;
+  const groundY = viewport.height * 0.75;
+
+  await page.mouse.click(groundX, groundY);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  const firstPos = {
+    x: Number(await structuresHud.getAttribute("data-last-x")),
+    y: Number(await structuresHud.getAttribute("data-last-y")),
+    z: Number(await structuresHud.getAttribute("data-last-z")),
+  };
+
+  await page.mouse.click(groundX + 60, groundY);
+  await expect(structuresHud).toHaveAttribute("data-count", "2");
+
+  await page.keyboard.press("KeyX");
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  // The HUD's "last placed" position reverts to the first piece's, not the
+  // undone second one's — confirms the actual structure removed was the
+  // most recent, not an arbitrary one.
+  expect(Number(await structuresHud.getAttribute("data-last-x"))).toBeCloseTo(firstPos.x, 5);
+  expect(Number(await structuresHud.getAttribute("data-last-y"))).toBeCloseTo(firstPos.y, 5);
+  expect(Number(await structuresHud.getAttribute("data-last-z"))).toBeCloseTo(firstPos.z, 5);
+});
+
+test("pressing X with nothing placed does nothing (no error, count stays 0)", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+
+  await page.keyboard.press("KeyX");
+
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+});

@@ -15,7 +15,7 @@ import {
   DEFAULT_CASTLE_STRUCTURE_TYPE_ID,
   findCastleStructureType,
 } from "./land/castleStructures";
-import { addStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
+import { addStructure, removeLastStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
 import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransition";
@@ -377,6 +377,26 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
   persistLandMap();
 }
 
+// Undo: removes the most recently placed land piece, mirroring
+// `placeCastlePieceAt`'s own self-guard-on-`activeRealm` shape so
+// `removeLastPlacedStructure` below can call all three realms'
+// equivalents unconditionally, the same way `placeStructureAt` already
+// does for placing. A no-op with nothing placed (`removeLastStructure`'s
+// own no-op path).
+function removeLastLandStructure(): void {
+  if (activeRealm !== "land") return;
+  const { map, removed } = removeLastStructure(landMap);
+  if (!removed) return;
+  landMap = map;
+  const mesh = placedMeshes.get(removed.id);
+  if (mesh) {
+    scene.remove(mesh);
+    placedMeshes.delete(removed.id);
+  }
+  updateStructuresHud(landMap.structures[landMap.structures.length - 1]?.position);
+  persistLandMap();
+}
+
 // Sea's own click/tap-to-place — same raycast-against-floor-plus-existing-
 // pieces shape as land's above, just against the sea floor mesh and sea's
 // own catalog/terrain rule instead of land's. Self-guards on `activeRealm`
@@ -452,6 +472,20 @@ function placeSeaPieceAt(clientX: number, clientY: number): void {
   seaPlacedMeshes.set(structure.id, piece);
 
   seaScene.add(piece);
+  persistSeaMap();
+}
+
+// Undo, sea's own equivalent of `removeLastLandStructure` above.
+function removeLastSeaStructure(): void {
+  if (activeRealm !== "sea") return;
+  const { map, removed } = removeLastStructure(seaMap);
+  if (!removed) return;
+  seaMap = map;
+  const mesh = seaPlacedMeshes.get(removed.id);
+  if (mesh) {
+    seaScene.remove(mesh);
+    seaPlacedMeshes.delete(removed.id);
+  }
   persistSeaMap();
 }
 
@@ -546,6 +580,20 @@ function placeAirPieceAt(clientX: number, clientY: number): void {
   persistAirMap();
 }
 
+// Undo, air's own equivalent of `removeLastLandStructure` above.
+function removeLastAirStructure(): void {
+  if (activeRealm !== "air") return;
+  const { map, removed } = removeLastStructure(airMap);
+  if (!removed) return;
+  airMap = map;
+  const mesh = airPlacedMeshes.get(removed.id);
+  if (mesh) {
+    airScene.remove(mesh);
+    airPlacedMeshes.delete(removed.id);
+  }
+  persistAirMap();
+}
+
 // One shared input handler dispatches to whichever realm's placement
 // function is actually active — each of `placeCastlePieceAt`/
 // `placeSeaPieceAt`/`placeAirPieceAt` already self-guards on `activeRealm`,
@@ -558,6 +606,16 @@ function placeStructureAt(clientX: number, clientY: number): void {
   placeCastlePieceAt(clientX, clientY);
   placeSeaPieceAt(clientX, clientY);
   placeAirPieceAt(clientX, clientY);
+}
+
+// Same "call all three, each self-guards on activeRealm" dispatch shape as
+// placeStructureAt above — exactly one of these actually removes anything
+// on a given trigger, matching whichever realm is active at the moment the
+// undo key was pressed.
+function removeLastPlacedStructure(): void {
+  removeLastLandStructure();
+  removeLastSeaStructure();
+  removeLastAirStructure();
 }
 // Found while building air's own placement (below): every click anywhere on
 // the page bubbles up to this window-level listener, including a click on a
@@ -982,6 +1040,15 @@ function animate(): void {
   // the touch ascend button's own rising edge the same way (its
   // consumeJumpPressed has the identical reset-on-read shape).
   const jumpPressed = input.consumeJumpPressed() || (touchVertical?.consumeJumpPressed() ?? false);
+
+  // Undo (KeyX): consumed every frame the same reset-on-read way jump is,
+  // so a stray press can't carry over and fire against the wrong realm's
+  // map later — removeLastPlacedStructure's own per-realm self-guards
+  // decide which realm's last piece (if any) actually gets removed, based
+  // on whichever realm is active in the same frame the press is read.
+  if (input.consumeUndoPressed()) {
+    removeLastPlacedStructure();
+  }
 
   // Only the active realm's movement module runs each frame — a realm
   // transition swaps which one, no continuous blending (ARCHITECTURE.md).

@@ -132,3 +132,34 @@ test("defaults to the Pillar structure type, and switching type changes new plac
   await page.mouse.click(ridgePoint.x, ridgePoint.y);
   expect(await page.evaluate(() => window.__getLastPlacedSeaType?.())).toBe("reef-ridge");
 });
+
+test("pressing X undoes the most recently placed sea structure, but not while on land", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+
+  await switchToSea(page);
+  const floorPoint = await page.evaluate(
+    (y) => window.__projectToScreen?.(0, y, -3),
+    SEA_FLOOR_Y,
+  );
+  if (!floorPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(floorPoint.x, floorPoint.y);
+  await expect
+    .poll(async () => page.evaluate(() => window.__getSeaStructureCount?.()))
+    .toBe(1);
+
+  // Switching back to land first and pressing undo there shouldn't touch
+  // sea's own piece — each realm's undo self-guards on `activeRealm`, the
+  // same way each realm's own placement function already does.
+  await page.getByRole("button", { name: "Land", exact: true }).click();
+  await expect.poll(async () => page.evaluate(() => window.__getActiveRealm?.())).toBe("land");
+  await page.keyboard.press("KeyX");
+  expect(await page.evaluate(() => window.__getSeaStructureCount?.())).toBe(1);
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+
+  await switchToSea(page);
+  await page.keyboard.press("KeyX");
+  await expect
+    .poll(async () => page.evaluate(() => window.__getSeaStructureCount?.()))
+    .toBe(0);
+});

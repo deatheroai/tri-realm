@@ -122,3 +122,21 @@ test("defaults to the Platform structure type, and switching type changes new pl
   await page.mouse.click(spirePoint.x, spirePoint.y);
   expect(await page.evaluate(() => window.__getLastPlacedAirType?.())).toBe("sky-spire");
 });
+
+test("pressing X undoes the most recently placed air structure", async ({ page }) => {
+  await page.goto("/");
+  await switchToAir(page);
+
+  const airPoint = await page.evaluate((y) => window.__projectToScreen?.(0, y, -3), AIR_SPAWN_Y);
+  if (!airPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(airPoint.x, airPoint.y);
+  await expect
+    .poll(async () => page.evaluate(() => window.__getAirStructureCount?.()))
+    .toBe(1);
+
+  await page.keyboard.press("KeyX");
+
+  await expect
+    .poll(async () => page.evaluate(() => window.__getAirStructureCount?.()))
+    .toBe(0);
+});

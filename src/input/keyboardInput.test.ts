@@ -102,3 +102,53 @@ describe("KeyboardInput.consumeJumpPressed", () => {
     expect(input.consumeJumpPressed()).toBe(false);
   });
 });
+
+describe("KeyboardInput.consumeUndoPressed", () => {
+  it("is false when nothing has been pressed", () => {
+    const input = new KeyboardInput(new FakeKeyTarget());
+    expect(input.consumeUndoPressed()).toBe(false);
+  });
+
+  it("is true exactly once after a fresh KeyX press", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "KeyX");
+
+    expect(input.consumeUndoPressed()).toBe(true);
+    expect(input.consumeUndoPressed()).toBe(false);
+  });
+
+  it("does not re-queue while X is held (repeated keydown, no keyup between)", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "KeyX");
+    input.consumeUndoPressed();
+    target.fire("keydown", "KeyX");
+
+    expect(input.consumeUndoPressed()).toBe(false);
+  });
+
+  it("queues a new undo after releasing and pressing X again", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "KeyX");
+    input.consumeUndoPressed();
+    target.fire("keyup", "KeyX");
+    target.fire("keydown", "KeyX");
+
+    expect(input.consumeUndoPressed()).toBe(true);
+  });
+
+  it("ignores non-undo keys, and is independent of the jump queue", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "Space");
+
+    expect(input.consumeUndoPressed()).toBe(false);
+    expect(input.consumeJumpPressed()).toBe(true); // untouched by the undo check above
+  });
+});
