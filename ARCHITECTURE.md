@@ -331,7 +331,7 @@ to game logic.
   walking or running — and `AvatarView.update` applies it to the visual's
   *local* y (never the root `main.ts` repositions every frame) only when
   `hasAnimation(currentState)` is false. Today that's every procedural
-  skin (Capsule, Dive Suit, Bird — none have a rig to animate) and
+  skin (Capsule, Dive Suit, Bird, Eagle — none have a rig to animate) and
   Princess (a gltf model with no clips in the source at all) — Fox/
   Robot/Mannequin/Female always have a real clip for every state they're
   asked for, so this never fires for them and their own clip's motion is

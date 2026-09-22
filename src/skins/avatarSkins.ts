@@ -197,8 +197,8 @@ const BOB_PARAMS: Record<MoveAnimationState, { amplitude: number; period: number
  * visual — never the avatar root main.ts repositions every frame — to
  * keep a skin with no animation clip for the current state from reading
  * as visually "dead" while it stands or moves. Today that's every
- * `kind: "procedural"` skin (Capsule, Dive Suit, Bird — none have a rig
- * to animate) plus Princess (a `kind: "gltf"` model with no clips in the
+ * `kind: "procedural"` skin (Capsule, Dive Suit, Bird, Eagle — none have a
+ * rig to animate) plus Princess (a `kind: "gltf"` model with no clips in the
  * source at all, see ATTRIBUTIONS.md); Fox/Robot/Mannequin/Female always
  * have a real clip for idle/walk/run so `AvatarView` never calls this for
  * them (only used when `hasAnimation(state)` is false — that check, not

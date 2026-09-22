@@ -1194,6 +1194,42 @@ No behavior change, so no new tests; full suite re-verified after the
 merge and the edit (typecheck, 324 unit tests, build, 84 E2E tests, all
 green).
 
+**2026-09-22 (this cycle) — the one remaining `todo` re-checked, still not
+solo-actionable; another small stale-doc gap found and closed.** Camera
+framing: unchanged, same blast-radius reasoning as every prior re-check
+holds (the same fixed-viewport-fraction ground clicks in
+`castle-placement.spec.ts`/`land-save-load.spec.ts`/`touch-controls.spec.ts`
+are still there, re-grepped this cycle). Dive-suit auto-equip bug itself
+lives under World's Phase 2 section, not this track's — re-confirmed
+`DECISIONS.md`'s "Needs Your Action" entry is unchanged, still needs a
+human with a real browser. Checked in-flight branches before searching for
+a gap: `claude/dive-suit-auto-equip-zb1qvy` and
+`claude/garden-implementation-status-g3b8o5` are both now 11 days stale
+(last commit 2026-09-11) — neither is this track's own daily branch, so
+per `AUTONOMY.md`'s merge protocol neither was touched, just re-noted here
+again. This cycle's own sync from `main` was a clean fast-forward (World's
+same-day cycle, which added "undo last placement" — `KeyX` removes the most
+recently placed structure in any realm — no Skins-territory overlap).
+Searched for a real gap the same way recent cycles have (repo-wide grep for
+stray `TODO`/`FIXME` in `src/`/`e2e/`: none; `ATTRIBUTIONS.md` vs.
+`attributions.ts` re-compared: still in sync; `ARCHITECTURE.md`'s Skins
+section re-read in full against current code) and found one small one:
+`src/skins/avatarSkins.ts`'s `bobOffset` doc comment and
+`ARCHITECTURE.md`'s matching "Procedural idle/movement bob" bullet both
+still listed the no-animation procedural skins as "Capsule, Dive Suit,
+Bird" — true the moment it was last worded (2026-09-10, earlier the same
+day Eagle shipped), false since: Eagle (`proceduralVariant: "eagle"`,
+confirmed via `avatarSkins.ts` itself) is exactly as no-animation as Bird,
+same shape/mechanism, and was simply never folded into this enumeration
+comment once it existed. Same stale-doc-describing-already-shipped-code
+shape the 2026-09-20/09-21 cycles closed elsewhere in this project, just a
+smaller instance. Reworded both to add Eagle to the list; left
+`avatarView.ts`'s own comment alone since it already deferred to
+`bobOffset`'s comment as the source of truth rather than repeating the
+list itself. No behavior change, so no new tests; full suite re-verified
+after the merge and the edit (typecheck, 332 unit tests, build, 88 E2E
+tests, all green).
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
