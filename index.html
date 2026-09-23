@@ -105,7 +105,11 @@
        * screen area. `display: none` by default (not just pointer-events,
        * since these are visible buttons rather than an invisible zone) —
        * only a coarse-pointer/touch device shows them, same idiom
-       * `#dev-panels-toggle` already uses.
+       * `#dev-panels-toggle` already uses. A third button (undo, KeyX's
+       * touch equivalent) joins this same stacked flex column rather than
+       * claiming its own fixed position — the column just grows, the same
+       * "avoid overlap by construction" idiom `#dev-panels` already uses,
+       * per AUTONOMY.md's UI layout convention.
        */
       #vertical-controls {
         position: fixed;
@@ -301,11 +305,12 @@
     <div id="vertical-controls">
       <button id="vertical-up" type="button" aria-label="Ascend / jump">&#9650;</button>
       <button id="vertical-down" type="button" aria-label="Descend">&#9660;</button>
+      <button id="undo-button" type="button" aria-label="Undo last placement">&#8630;</button>
     </div>
     <div id="hud-controls">
       Move: WASD/Arrows or drag (left) &middot; Run: Shift or drag further
       &middot; Jump/Ascend: Space or &#9650; &middot; Descend: Ctrl or &#9660;
-      &middot; Click to place &middot; Undo: X
+      &middot; Click to place &middot; Undo: X or &#8630;
     </div>
     <div id="hud-position" data-x="0" data-z="0">x: 0.00  z: 0.00</div>
     <div id="hud-structures" data-count="0">Structures: 0</div>

@@ -336,3 +336,27 @@ test("holding the descend button dives despite buoyancy, in the sea realm", asyn
 
   expect(divedDepth!).toBeLessThan(startDepth);
 });
+
+// The undo button (#undo-button, third button in #vertical-controls) is
+// KeyX's touch equivalent — castle-placement.spec.ts's "pressing X undoes
+// the most recently placed piece" is this project's keyboard coverage,
+// this is the touch-only equivalent, same relationship the jump/vertical
+// tests above already have with land-walk.spec.ts/air-flight.spec.ts/
+// sea-swim.spec.ts's own keyboard tests.
+test("tapping the undo button removes the most recently placed piece", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+
+  // Same reliably-outside-the-joystick-zone tap spot as the "tapping
+  // outside the joystick zone places a castle piece" test above.
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  await page.touchscreen.tap(viewport.width * 0.9, viewport.height * 0.55);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+
+  await pressVerticalButton(page, "undo-button");
+  await releaseVerticalButton(page, "undo-button");
+
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+});

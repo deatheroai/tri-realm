@@ -540,10 +540,13 @@ fetch it.
   piece's actual mesh from that realm's scene (keyed by the same
   `PlacedStructure.id` the placement functions already track meshes by)
   and re-persist the map, so an undone piece doesn't reappear on reload.
-  Keyboard-only for now, same staged rollout "Land jump" (2026-09-17) then
-  "Touch vertical controls" (2026-09-18) used — a touch undo button is a
-  smaller, additive follow-on, not required to make undo usable at all the
-  way touch's missing vertical axis was.
+  Shipped keyboard-only first, same staged rollout "Land jump" (2026-09-17)
+  then "Touch vertical controls" (2026-09-18) used; touch parity followed
+  (`BACKLOG.md`, 2026-09-23) — `TouchUndoInput`
+  (`src/input/touchUndoInput.ts`) mirrors `KeyboardInput.consumeUndoPressed()`'s
+  shape exactly (a single button, rising-edge queued, reset on read), joining
+  `#vertical-controls`' existing flex column as a third stacked button rather
+  than claiming a new fixed screen position.
 
 ## Modularity
 

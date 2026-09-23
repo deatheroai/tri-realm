@@ -230,6 +230,43 @@ suite verified (typecheck, 332 unit tests, build, 88 E2E tests, all
 green, including the narrow-viewport overlay-regression check with the
 updated `#hud-controls` wording).
 
+**2026-09-23's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer). This cycle's own
+sync from `main` was a clean fast-forward (the prior day's skins-cycle doc
+fix, no World-territory overlap). Re-checked `ARCHITECTURE.md` and the
+stray-`TODO`/`FIXME` grep the way recent cycles have — nothing new — so
+instead closed the touch-parity gap the prior day's own undo item had
+explicitly deferred: undo (`KeyX`) shipped keyboard-only on 2026-09-22,
+"a smaller, additive follow-on, not required to make undo usable at all
+the way touch's missing vertical axis was" — but it's still a real gap
+(a misplaced structure had no recovery at all on a touch-only device),
+same "genuine follow-on this track already flagged for itself" bar
+"Touch vertical controls" (2026-09-18) used against "Land jump"
+(2026-09-17).
+`TouchUndoInput` (`src/input/touchUndoInput.ts`) mirrors
+`KeyboardInput.consumeUndoPressed()`'s shape exactly — a single button,
+rising-edge queued, reset on read — simpler than `TouchVerticalInput`
+since undo is a discrete action with no held/axis state to track. A third
+button (`#undo-button`, "↺") joins `#vertical-controls`' existing flex
+column in `index.html` rather than claiming a new fixed screen position —
+the column just grows, same "avoid overlap by construction" idiom
+`#dev-panels` already established, verified by the narrow-viewport and
+real-touch-device overlap-regression checks in `e2e/skins.spec.ts` (both
+still pass unchanged — `#vertical-controls` is checked as one box there,
+so a taller box needed no test update) and confirmed with a real
+Pixel-5-viewport screenshot. `main.ts`'s undo consumption now merges
+`input.consumeUndoPressed() || touchUndo?.consumeUndoPressed()`, the same
+merge shape `jumpPressed` already uses for its own two sources.
+`#hud-controls`' hint text gained "or ↺" after "Undo: X".
+5 new unit tests (`touchUndoInput.test.ts`, mirroring
+`touchVerticalInput.test.ts`'s own coverage of the rising-edge/reset-on-
+read/touchcancel-releases-like-touchend shapes). 1 new E2E test
+(`e2e/touch-controls.spec.ts`): tapping the undo button after a touch
+placement removes it, mirroring `castle-placement.spec.ts`'s own keyboard
+undo test. Full suite verified (typecheck, 337 unit tests, build, 89 E2E
+tests, all green).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

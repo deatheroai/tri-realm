@@ -6,6 +6,7 @@ import { TouchJoystick } from "./input/touchJoystick";
 import { combineMoveInputs } from "./input/combineMoveInputs";
 import { TouchVerticalInput } from "./input/touchVerticalInput";
 import { combineVerticalInputs } from "./input/combineVerticalInputs";
+import { TouchUndoInput } from "./input/touchUndoInput";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { createLandRealmMap, landTerrainPlacementRule, LAND_MAP_ID } from "./land/landRealmMap";
@@ -659,6 +660,14 @@ const verticalDownButton = document.getElementById("vertical-down");
 const touchVertical =
   verticalUpButton && verticalDownButton ? new TouchVerticalInput(verticalUpButton, verticalDownButton) : null;
 
+// Touch equivalent of KeyboardInput's KeyX undo (removeLastPlacedStructure
+// below) — same "always constructed, CSS/pointer-coarse gates visibility"
+// pattern as touchVertical above. Joins the same #vertical-controls column
+// rather than claiming a new fixed corner (AUTONOMY.md's UI layout
+// convention) since it's a discrete action button, not a movement axis.
+const undoButton = document.getElementById("undo-button");
+const touchUndo = undoButton ? new TouchUndoInput(undoButton) : null;
+
 /**
  * Marks exactly one button in a dev panel row as the currently-selected
  * option (adds the shared `.active` class, removes it from siblings) —
@@ -1041,12 +1050,14 @@ function animate(): void {
   // consumeJumpPressed has the identical reset-on-read shape).
   const jumpPressed = input.consumeJumpPressed() || (touchVertical?.consumeJumpPressed() ?? false);
 
-  // Undo (KeyX): consumed every frame the same reset-on-read way jump is,
-  // so a stray press can't carry over and fire against the wrong realm's
-  // map later — removeLastPlacedStructure's own per-realm self-guards
-  // decide which realm's last piece (if any) actually gets removed, based
-  // on whichever realm is active in the same frame the press is read.
-  if (input.consumeUndoPressed()) {
+  // Undo (KeyX, or the touch undo button): consumed every frame the same
+  // reset-on-read way jump is, so a stray press can't carry over and fire
+  // against the wrong realm's map later — removeLastPlacedStructure's own
+  // per-realm self-guards decide which realm's last piece (if any) actually
+  // gets removed, based on whichever realm is active in the same frame the
+  // press is read. Merges in the touch button's own rising edge the same
+  // way jumpPressed above merges touchVertical's.
+  if (input.consumeUndoPressed() || (touchUndo?.consumeUndoPressed() ?? false)) {
     removeLastPlacedStructure();
   }
 
