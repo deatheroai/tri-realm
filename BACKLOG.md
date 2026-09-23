@@ -1267,6 +1267,40 @@ list itself. No behavior change, so no new tests; full suite re-verified
 after the merge and the edit (typecheck, 332 unit tests, build, 88 E2E
 tests, all green).
 
+**2026-09-23 (this cycle) — the one remaining `todo` re-checked, still not
+solo-actionable; this time the usual gap-hunt came up genuinely empty, so
+flagged rather than manufactured.** Camera framing: unchanged, same
+blast-radius reasoning as every prior re-check holds (`castle-placement.spec.ts`/
+`land-save-load.spec.ts`/`touch-controls.spec.ts` still click at fixed
+viewport-fraction ground positions that assume today's elevation — none of
+them are this track's to migrate proactively). Ran the same search the last
+several cycles have used (repo-wide `TODO`/`FIXME` grep in `src/`/`e2e/`:
+none; `ATTRIBUTIONS.md` vs. `attributions.ts` re-compared: still in sync;
+`ARCHITECTURE.md`'s Skins section re-read in full against current code,
+including the `swimIdle`/`swimActive` skin list and the just-fixed
+Capsule/Dive-Suit/Bird/Eagle bob-offset enumeration: both accurate now) and,
+unlike the four cycles before it, found no small stale-doc gap either — the
+obvious backlog of "things the last cycle didn't get to" is genuinely
+empty, not just re-described smaller each time.
+Checked in-flight branches before concluding that: `claude/dive-suit-auto-equip-zb1qvy`
+and `claude/garden-implementation-status-g3b8o5` are both now 12 days stale
+(last commit 2026-09-11) — neither is this track's own daily branch, so per
+`AUTONOMY.md`'s merge protocol neither was touched, just re-noted again.
+This cycle's own sync from `main` was a clean fast-forward (World's
+same-day cycle, which added a touch "undo last placement" button — parity
+with the existing `KeyX` shortcut — no Skins-territory overlap).
+Rather than invent unrequested new scope (a new avatar skin or block
+material nobody asked for) just to have something to commit, logged the
+actual situation as a `DECISIONS.md` Pending item instead: this is the
+fourth consecutive daily cycle (2026-09-20, -21, -22, and today) with no
+genuine Skins-owned work beyond re-confirming the one blocked item — the
+prior three each found only a shrinking stale-doc typo to fix, and this one
+found nothing at all. See `DECISIONS.md` for the actual question raised. No
+code change this cycle; full suite re-verified after the merge anyway
+(typecheck, 332 unit tests, build, 88 E2E tests, all green) to confirm the
+merged tree is still in a clean, landable state even though nothing new
+landed on top of it.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.

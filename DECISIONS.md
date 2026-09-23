@@ -10,8 +10,45 @@ on these.
 
 ## Pending Decisions
 
-None outstanding — land↔sea portal flavor resolved 2026-09-07 (see
-Resolved).
+- **Skins track backlog is effectively exhausted — what should it build
+  next, or should its cadence change?** Raised 2026-09-23. Every named
+  item in `BACKLOG.md`'s "Skins / visual identity" section and the
+  2026-09-08 priority order is `done` except one: the 3rd-person camera
+  framing revisit, which has been re-checked as genuinely not
+  solo-actionable every cycle since 2026-09-03 (changing it moves the
+  on-screen horizon, breaking fixed-viewport-fraction ground clicks in
+  three World-owned E2E files — `castle-placement.spec.ts`,
+  `land-save-load.spec.ts`, `touch-controls.spec.ts` — that this track
+  has never had a reason to touch proactively per `AUTONOMY.md`'s file
+  ownership). With that one item stuck, the last four consecutive daily
+  cycles (2026-09-20 through 2026-09-23) had no other genuine Skins-owned
+  work to build: the 2026-09-20/21/22 cycles each found one real but
+  shrinking stale-doc gap (a doc describing already-shipped behavior
+  slightly wrong) to fix instead of manufacturing busywork, and today's
+  cycle's same search — `TODO`/`FIXME` grep, `ATTRIBUTIONS.md` vs.
+  `attributions.ts`, `ARCHITECTURE.md`'s Skins section against current
+  code — came up completely empty. Rather than invent new scope nobody
+  asked for (a new avatar skin, a new block material) just to have
+  something to commit, or keep re-running the same "nothing found" search
+  every day, this seems worth an actual call from you. Options, none
+  picked yet:
+  1. **Give Skins new scope** — more avatar skins, more block materials,
+     a specific asset ask — the track builds it the same way it always
+     has.
+  2. **Let this track finish the camera-framing item itself**, explicitly
+     authorizing it to migrate the three World-owned E2E files' fixed
+     ground-click coordinates to the same world-coordinate-projection
+     pattern `castle-placement.spec.ts` and this track's own
+     `skins.spec.ts` already use — the actual elevation change becomes
+     safe once that's done, and it closes the one open item cleanly.
+  3. **Reduce or pause the Skins daily cadence** until there's new scope
+     to give it, rather than running a cycle a day that mostly just
+     re-confirms the same blocked item.
+  Not blocking: nothing is broken, the repo builds clean, and the next
+  automated cycle will keep doing the same re-check/search-for-a-gap
+  pattern until this is answered — logged here per `AUTONOMY.md`'s "log
+  rather than guess" default instead of guessing which of the above you'd
+  actually want.
 
 ## Needs Your Action (not decisions — steps only you can take)
 
