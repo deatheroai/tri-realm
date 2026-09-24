@@ -1328,6 +1328,43 @@ code change this cycle; full suite re-verified after the merge anyway
 merged tree is still in a clean, landable state even though nothing new
 landed on top of it.
 
+**2026-09-24's skins cycle**, fifth consecutive day with no genuine
+Skins-owned work beyond re-confirming the same blocked item. The
+2026-09-23 Pending decision in `DECISIONS.md` (what should this track
+build next, or should its cadence change) is still unanswered — re-checked,
+not re-logged, since it's already there. Sync from `main` was a clean
+fast-forward (the same-day World cycle, a doc-only fix to
+`ARCHITECTURE.md`'s Construction section describing sea/air's structure
+catalogs — no Skins-territory overlap). Camera framing: unchanged, same
+blast-radius reasoning as every prior re-check holds. Ran the usual
+searches again: repo-wide `TODO`/`FIXME` grep in `src/`/`e2e/` — none;
+`ATTRIBUTIONS.md` vs. `attributions.ts` — still in sync (every model/
+texture section has a matching in-app entry); `ARCHITECTURE.md`'s Skins
+section re-read in full against current `avatarSkins.ts`/`avatarView.ts`
+— still accurate, including the procedural/no-clip skin list.
+Also looked into the one real, non-manufactured lead this cycle had —
+the same-day World cycle flagged a genuine (if unconfirmed) flake in this
+track's own `skins.spec.ts`: the "every gltf avatar skin renders within a
+sane height range" test measured Robot at 13.26x Capsule's height once
+under parallel-worker contention, but passed 3/3 in isolation and 89/89 on
+a full re-run. Read the relevant code
+(`window.__getAvatarWorldHeight` in `main.ts`, `AvatarView.setSkin` in
+`avatarView.ts`) rather than dismissing it unread: `currentSkinId` is only
+assigned after `root.clear()`/`root.add()` have already swapped in the new
+visual, all synchronously in the same function — there's no window where
+the skin-id getter reports the new skin while the old mesh is still
+attached, so nothing in the code explains a 13x reading. Consistent with
+World's own conclusion that it's worker-contention noise, not a logic bug;
+not chased further. Ran the full E2E suite fresh this cycle anyway
+(89/89 green, including that exact test) — no repeat.
+The two long-tracked stale branches noted every cycle since 2026-09-10
+(`claude/dive-suit-auto-equip-zb1qvy`, `claude/garden-implementation-
+status-g3b8o5`) are gone from `origin` entirely now — not investigated
+further, since neither ever touched this track's file ownership. No code
+change this cycle; full suite verified after the merge (typecheck, 337
+unit tests, build, 89 E2E tests, all green) to confirm the merged tree
+stays in a clean, landable state.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
