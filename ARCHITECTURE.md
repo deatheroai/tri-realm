@@ -469,8 +469,10 @@ fetch it.
 - **Sea construction** (`BACKLOG.md`, "sea construction/placement"):
   sea is the second realm to plug into the same shape, confirming this
   file genuinely didn't need to change to support it. `src/sea/
-  seaStructures.ts` (catalog — one starter type, `reef-pillar`, same
-  "rough is fine" single-type start land's own Phase 1a once had) and
+  seaStructures.ts` (catalog — started with one type, `reef-pillar`, same
+  "rough is fine" single-type start land's own Phase 1a once had; gained a
+  second, wide/low `reef-ridge` type 2026-09-21, a deliberate silhouette
+  contrast to the pillar's narrow/tall shape) and
   `src/sea/seaPlacement.ts` (mesh factory, mirrors `src/land/placement.ts`'s
   block-material/procedural-texture pipeline exactly) plug into
   `validatePlacement` via a real, non-trivial `seaTerrainPlacementRule`
@@ -488,8 +490,10 @@ fetch it.
   keyed by `SEA_MAP_ID`.
 - **Air construction** (`BACKLOG.md`, "air construction/placement"): the
   third and final realm to plug into the same shape. `src/air/
-  airStructures.ts` (catalog — one starter type, `sky-platform`, same
-  "rough is fine" discipline sea's own catalog started under) and
+  airStructures.ts` (catalog — started with one type, `sky-platform`, same
+  "rough is fine" discipline sea's own catalog started under; gained a
+  second, narrow/tall `sky-spire` type 2026-09-21, a deliberate silhouette
+  contrast to the platform's flat/wide shape) and
   `src/air/airPlacement.ts` (mesh factory, mirrors `seaPlacement.ts`
   exactly) plug into `validatePlacement` via `airTerrainPlacementRule`
   (`src/air/airRealmMap.ts`) — trivially true, same reasoning land's own

@@ -267,6 +267,33 @@ placement removes it, mirroring `castle-placement.spec.ts`'s own keyboard
 undo test. Full suite verified (typecheck, 337 unit tests, build, 89 E2E
 tests, all green).
 
+**2026-09-24's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer). This cycle's own
+sync from `main` was a clean fast-forward (the prior day's skins-cycle,
+which found no new Skins-owned work and logged a scope question to
+`DECISIONS.md` — see its Pending section — no World-territory overlap).
+Repo-wide `TODO`/`FIXME` grep in `src/`/`e2e/` came back empty, and
+`ARCHITECTURE.md`'s Avatar controller/Realm connections sections still
+matched shipped code — but its Construction system section didn't: it
+still described sea's and air's structure catalogs as having "one starter
+type" each (`reef-pillar`, `sky-platform`), even though the 2026-09-21
+cycle gave each a real second type (`reef-ridge`, `sky-spire`) three days
+ago. Same stale-doc-describing-already-shipped-code shape the 2026-09-20/21
+doc fixes closed, just found in a section those cycles hadn't re-read.
+Corrected both paragraphs to name the second type and its silhouette-
+contrast reasoning. No behavior change, so no new tests.
+**Found and confirmed a real, unrelated E2E flake while verifying, not a
+regression**: `skins.spec.ts`'s "every gltf avatar skin renders within a
+sane height range" test failed once under full-suite parallel-worker
+contention (Robot measuring 13.26x Capsule's height — a stale/partial
+measurement, not a real rendering change) but passed 3/3 in isolation and
+on a full-suite re-run immediately after; not investigated further since
+it's Skins-owned territory (`src/skins/`) and a full clean re-run came back
+89/89 green, same "one confirmation re-run, not a root-cause chase" bar
+recent cycles have used for genuine flakes. Full suite verified (typecheck,
+337 unit tests, build, 89 E2E tests, all green).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single
