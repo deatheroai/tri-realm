@@ -1427,6 +1427,43 @@ change this cycle; full suite verified after the merge (typecheck, 337
 unit tests, build, 89 E2E tests, all green) to confirm the merged tree
 stays in a clean, landable state.
 
+**2026-09-25's skins cycle**, sixth consecutive day with no genuine
+Skins-owned work beyond re-confirming the same blocked item. The
+2026-09-23 Pending decision in `DECISIONS.md` (what should this track
+build next, or should its cadence change) is still unanswered — re-checked,
+not re-logged, since it's already there and nothing about the situation has
+changed enough to warrant a new entry. Sync from `main` was a clean
+fast-forward (the same-day World cycle: extending `setActiveButton`
+active-state highlighting — the shared helper this track built 2026-09-08 —
+to the structure-type and realm dev-panel rows, which World's own item had
+explicitly left for itself to pick up; no Skins-territory overlap, just
+consumption of an already-shared helper).
+Camera framing: unchanged, same blast-radius reasoning as every prior
+re-check holds (`castle-placement.spec.ts`/`land-save-load.spec.ts`/
+`touch-controls.spec.ts` still click at fixed viewport-fraction ground
+positions assuming today's elevation). Ran the same searches every recent
+cycle has used: repo-wide `TODO`/`FIXME` grep in `src/`/`e2e/` — none;
+`ATTRIBUTIONS.md` vs. `attributions.ts` — still in sync, every entry
+cross-checked line by line this time rather than just diffed at a glance;
+`ARCHITECTURE.md`'s Skins section re-read in full against current
+`avatarSkins.ts`/`avatarView.ts` — still accurate (the bob-offset
+no-animation-skin list, the swim-clip two-step pipeline, the vertical-pitch
+section all match shipped code). Checked in-flight branches too: the eight
+non-daily branches this cycle's own broader `git fetch origin` surfaced
+(`claude/dive-suit-auto-equip-zb1qvy`, `claude/garden-implementation-
+status-g3b8o5`, `claude/avatar-floating-air-realm-yibz10`,
+`claude/floating-in-air-5urm2i`, plus four unrelated ones) are all at least
+14 days stale and none touch this track's file ownership — the 2026-09-24
+cycle's note that the first two were "gone from origin entirely" turned out
+to be an artifact of that cycle's own narrower fetch, not an actual
+deletion; harmless either way since none were ever merge candidates.
+Yesterday's flagged (unconfirmed) flake in `skins.spec.ts`'s gltf-height-
+ratio test (Robot measuring 13.26x Capsule's height once under worker
+contention) didn't reproduce in this cycle's own full run either. No code
+change this cycle; full suite verified after the merge (typecheck, 337
+unit tests, build, 91 E2E tests, all green) to confirm the merged tree
+stays in a clean, landable state.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
