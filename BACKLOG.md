@@ -341,6 +341,20 @@ Land is marked active on load and switching to Air moves the highlight —
 same assertion shape `skins.spec.ts`'s own "dev panel active-state
 highlighting" tests already use for the Skins-owned rows. Full suite
 verified (typecheck, 337 unit tests, build, 91 E2E tests, all green).
+**Found and confirmed a real, pre-existing flake while verifying, not a
+regression from this cycle's own change**: `castle-placement.spec.ts`'s
+"pressing X undoes the most recently placed piece" failed intermittently
+(second ground click 60px over sometimes not registering as a second
+placement) — reproduced the same failure rate on the pre-this-cycle
+commit in a separate worktree (`64f3903`, before any of today's edits),
+confirming it predates this cycle rather than being caused by it. Not
+root-caused further this cycle, same "one confirmation bar, not a
+root-cause chase" this file has used for prior genuine flakes — a full
+clean suite run immediately after came back 91/91 green. Worth a future
+cycle's attention if it keeps recurring (likely camera-settle timing
+against the same close-together screen-offset clicks the type-switching
+test's own comment already flagged as fragile at this camera angle), but
+out of scope for this small, additive change.
 
 ## Phase 0 — Get something live
 
