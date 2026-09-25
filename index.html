@@ -239,8 +239,8 @@
        * without this, the panels were silent about current state, making
        * it harder to review the deployed preview (e.g. "did that click
        * actually select Robot?"). Shared selector so any dev panel row can
-       * adopt the same `.active` class on its currently-selected button;
-       * only the skin/material rows (Skins-owned) actually apply it so far
+       * adopt the same `.active` class on its currently-selected button —
+       * every row (skin/material, structure-type, realm) applies it now
        * (see main.ts's setActiveButton).
        */
       #dev-skin-panel button.active,

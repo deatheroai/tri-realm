@@ -96,6 +96,19 @@ test("defaults to the Keep structure type, and switching type changes new placem
   expect(await page.evaluate(() => window.__getLastPlacedType?.())).toBe("castle-tower");
 });
 
+test("structure-type dev panel marks Keep active on load, and the clicked type active on switch", async ({ page }) => {
+  await page.goto("/");
+  const keepButton = page.getByRole("button", { name: "Keep" });
+  const wallButton = page.getByRole("button", { name: "Wall" });
+  await expect(keepButton).toHaveClass(/active/);
+  await expect(wallButton).not.toHaveClass(/active/);
+
+  await wallButton.click();
+
+  await expect(wallButton).toHaveClass(/active/);
+  await expect(keepButton).not.toHaveClass(/active/);
+});
+
 test("pressing X undoes the most recently placed piece", async ({ page }) => {
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");

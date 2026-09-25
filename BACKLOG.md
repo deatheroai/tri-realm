@@ -294,6 +294,54 @@ it's Skins-owned territory (`src/skins/`) and a full clean re-run came back
 recent cycles have used for genuine flakes. Full suite verified (typecheck,
 337 unit tests, build, 89 E2E tests, all green).
 
+**2026-09-25's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer). This cycle's own
+sync from `main` was a clean fast-forward (the prior day's skins-cycle,
+a fifth consecutive re-check finding no new Skins-owned work — no
+World-territory overlap). Repo-wide `TODO`/`FIXME` grep in `src/`/`e2e/`
+came back empty, and `ARCHITECTURE.md`'s Realm connections/Avatar
+controller/Construction system/`RealmMap` schema sections were all
+re-read in full against current code — no drift found this time (the
+2026-09-20 through 2026-09-24 cycles already closed every stale-doc gap
+those sections had).
+Found a real gap instead in `main.ts` itself, flagged explicitly but never
+picked up: the 2026-09-08 Skins-track item that added dev-panel
+active-state highlighting (the shared `.active` CSS class + `setActiveButton`
+helper) only ever wired it into the Skins-owned Avatar/Blocks rows, and
+said so plainly in its own writeup — *"Structure-type/realm rows (World's)
+can adopt the same shared class later; not touched this cycle."* — and in
+`setActiveButton`'s own doc comment (*"only the rows below (Skins-owned)
+call it so far"*). Both `#dev-structure-panel` (land/sea/air structure-type
+rows) and `#dev-realm-panel` are World's own file ownership
+(`AUTONOMY.md`), and `index.html`'s shared CSS selector
+(`#dev-structure-panel button.active`, `#dev-realm-panel button.active`)
+had been sitting ready and unused this whole time — a real, once-flagged,
+never-closed gap, not manufactured busywork.
+Closed it the same way the Skins item originally built the pattern: each
+of the three structure-type rows (land, sea, air) and the realm row now
+track their buttons in a `Map<id, HTMLButtonElement>`, call the existing
+`setActiveButton(row, btn)` on click, and set the correct default-active
+button right after the row is built (land defaults to Keep, sea to Pillar,
+air to Platform, realm to Land — each read from the same
+`currentStructureTypeId`/`currentSeaStructureTypeId`/
+`currentAirStructureTypeId`/`activeRealm` variables the panels already
+initialize from) — so the "which option is actually selected" question the
+2026-09-08 item raised for Skins' own rows is answered the same way for
+World's, correct on first load with no click needed, same as Avatar/Blocks
+already were. `setActiveButton`'s doc comment and `index.html`'s matching
+CSS comment updated to say every row calls it now, closing out the two
+places that explicitly called out this as future work.
+No new modules, no schema/behavior change — purely wiring an existing,
+already-tested, already-styled helper into two more panels. 2 new E2E
+tests (World-owned files, per `AUTONOMY.md`'s file ownership): `e2e/
+castle-placement.spec.ts` confirms Keep is marked active on load and
+switching to Wall moves the highlight; `e2e/air-flight.spec.ts` confirms
+Land is marked active on load and switching to Air moves the highlight —
+same assertion shape `skins.spec.ts`'s own "dev panel active-state
+highlighting" tests already use for the Skins-owned rows. Full suite
+verified (typecheck, 337 unit tests, build, 91 E2E tests, all green).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

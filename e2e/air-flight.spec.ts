@@ -11,6 +11,19 @@ test("starts in the land realm; the dev panel switches to air", async ({ page })
     .toBe("air");
 });
 
+test("dev realm panel marks Land active on load, and Air active once switched", async ({ page }) => {
+  await page.goto("/");
+  const landButton = page.getByRole("button", { name: "Land" });
+  const airButton = page.getByRole("button", { name: "Air" });
+  await expect(landButton).toHaveClass(/active/);
+  await expect(airButton).not.toHaveClass(/active/);
+
+  await airButton.click();
+
+  await expect(airButton).toHaveClass(/active/);
+  await expect(landButton).not.toHaveClass(/active/);
+});
+
 test("holding W flies the avatar forward in the air realm", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Air" }).click();

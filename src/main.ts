@@ -673,8 +673,8 @@ const touchUndo = undoButton ? new TouchUndoInput(undoButton) : null;
  * option (adds the shared `.active` class, removes it from siblings) —
  * without this the panels were silent about current state, making it
  * harder to review the deployed preview ("did that click actually select
- * Robot?"). Any dev panel row can reuse this; only the rows below
- * (Skins-owned) call it so far.
+ * Robot?"). Every dev panel row calls this now — skins/materials (Skins-
+ * owned) above, structure-type and realm rows (World-owned) below.
  */
 function setActiveButton(row: HTMLElement, activeButton: HTMLButtonElement): void {
   for (const child of row.children) {
@@ -828,15 +828,20 @@ const devStructurePanel = document.getElementById("dev-structure-panel");
 if (devStructurePanel) {
   const structureRow = document.createElement("div");
   structureRow.textContent = "Structure: ";
+  const structureButtonsById = new Map<string, HTMLButtonElement>();
   for (const type of CASTLE_STRUCTURE_TYPES) {
     const btn = document.createElement("button");
     btn.textContent = type.label;
+    structureButtonsById.set(type.id, btn);
     btn.addEventListener("click", () => {
       currentStructureTypeId = type.id;
+      setActiveButton(structureRow, btn);
     });
     structureRow.appendChild(btn);
   }
   devStructurePanel.appendChild(structureRow);
+  const defaultStructureButton = structureButtonsById.get(currentStructureTypeId);
+  if (defaultStructureButton) setActiveButton(structureRow, defaultStructureButton);
 
   // Sea's own structure-type row, same shape as land's above (just one type
   // today — `seaStructures.ts` deliberately started small, same as land's
@@ -846,29 +851,39 @@ if (devStructurePanel) {
   // convention").
   const seaStructureRow = document.createElement("div");
   seaStructureRow.textContent = "Sea structure: ";
+  const seaStructureButtonsById = new Map<string, HTMLButtonElement>();
   for (const type of SEA_STRUCTURE_TYPES) {
     const btn = document.createElement("button");
     btn.textContent = type.label;
+    seaStructureButtonsById.set(type.id, btn);
     btn.addEventListener("click", () => {
       currentSeaStructureTypeId = type.id;
+      setActiveButton(seaStructureRow, btn);
     });
     seaStructureRow.appendChild(btn);
   }
   devStructurePanel.appendChild(seaStructureRow);
+  const defaultSeaStructureButton = seaStructureButtonsById.get(currentSeaStructureTypeId);
+  if (defaultSeaStructureButton) setActiveButton(seaStructureRow, defaultSeaStructureButton);
 
   // Air's own structure-type row — same one-type-so-far shape as sea's row
   // above (`airStructures.ts` deliberately started small too).
   const airStructureRow = document.createElement("div");
   airStructureRow.textContent = "Air structure: ";
+  const airStructureButtonsById = new Map<string, HTMLButtonElement>();
   for (const type of AIR_STRUCTURE_TYPES) {
     const btn = document.createElement("button");
     btn.textContent = type.label;
+    airStructureButtonsById.set(type.id, btn);
     btn.addEventListener("click", () => {
       currentAirStructureTypeId = type.id;
+      setActiveButton(airStructureRow, btn);
     });
     airStructureRow.appendChild(btn);
   }
   devStructurePanel.appendChild(airStructureRow);
+  const defaultAirStructureButton = airStructureButtonsById.get(currentAirStructureTypeId);
+  if (defaultAirStructureButton) setActiveButton(airStructureRow, defaultAirStructureButton);
 }
 
 // Which realm's scene/movement module is currently active. The real
@@ -888,15 +903,20 @@ if (devRealmPanel) {
     { id: "air", label: "Air" },
     { id: "sea", label: "Sea" },
   ];
+  const realmButtonsById = new Map<Realm, HTMLButtonElement>();
   for (const realm of realms) {
     const btn = document.createElement("button");
     btn.textContent = realm.label;
+    realmButtonsById.set(realm.id, btn);
     btn.addEventListener("click", () => {
       activeRealm = realm.id;
+      setActiveButton(realmRow, btn);
     });
     realmRow.appendChild(btn);
   }
   devRealmPanel.appendChild(realmRow);
+  const defaultRealmButton = realmButtonsById.get(activeRealm);
+  if (defaultRealmButton) setActiveButton(realmRow, defaultRealmButton);
 }
 window.__getActiveRealm = () => activeRealm;
 
