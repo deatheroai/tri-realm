@@ -14,9 +14,25 @@ test("clicking the ground places a castle piece", async ({ page }) => {
 
   await page.mouse.click(groundX, groundY);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
+  const firstPos = {
+    x: Number(await structuresHud.getAttribute("data-last-x")),
+    y: Number(await structuresHud.getAttribute("data-last-y")),
+    z: Number(await structuresHud.getAttribute("data-last-z")),
+  };
 
-  // A second placement should accumulate, not replace.
-  await page.mouse.click(groundX + 60, groundY);
+  // A second placement should accumulate, not replace. Click a
+  // well-separated *world* ground point (via the app's own world-to-screen
+  // projection) rather than a fixed pixel offset from the first click —
+  // over rolling-hill terrain a small fixed screen-space offset doesn't
+  // reliably land back on the ground (confirmed flaky: reproduced a miss
+  // directly with the old `groundX + 60` offset).
+  const secondPoint = await page.evaluate(
+    (p) => window.__projectToScreen?.(p.x + 8, p.y, p.z),
+    firstPos,
+  );
+  if (!secondPoint) throw new Error("__projectToScreen not available");
+
+  await page.mouse.click(secondPoint.x, secondPoint.y);
   await expect(structuresHud).toHaveAttribute("data-count", "2");
 });
 
@@ -126,7 +142,16 @@ test("pressing X undoes the most recently placed piece", async ({ page }) => {
     z: Number(await structuresHud.getAttribute("data-last-z")),
   };
 
-  await page.mouse.click(groundX + 60, groundY);
+  // Same fixed-pixel-offset flakiness as the "accumulate" test above
+  // (confirmed by reproducing an intermittent miss) — click a well-separated
+  // *world* ground point instead, via the app's own world-to-screen
+  // projection.
+  const secondPoint = await page.evaluate(
+    (p) => window.__projectToScreen?.(p.x + 8, p.y, p.z),
+    firstPos,
+  );
+  if (!secondPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(secondPoint.x, secondPoint.y);
   await expect(structuresHud).toHaveAttribute("data-count", "2");
 
   await page.keyboard.press("KeyX");

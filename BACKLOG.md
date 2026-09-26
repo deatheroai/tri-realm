@@ -356,6 +356,44 @@ against the same close-together screen-offset clicks the type-switching
 test's own comment already flagged as fragile at this camera angle), but
 out of scope for this small, additive change.
 
+**2026-09-26's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer). This cycle's own
+sync from `main` was a clean fast-forward (the prior day's skins-cycle,
+which found no new Skins-owned work — no World-territory overlap).
+Repo-wide `TODO`/`FIXME` grep in `src`/`e2e` came back empty, and
+`ARCHITECTURE.md` was re-read in full against current code — no drift
+found this time.
+Rather than stop there, followed up on the flake flagged just above instead
+of treating "one confirmation re-run" as the end of the story: that entry
+had only re-run the full suite once (91/91 green) before shelving the flake
+as "worth a future cycle's attention," never actually re-running the one
+failing test in isolation enough times to see the failure again — so this
+cycle did that first, rather than assuming its own "camera-settle timing"
+guess was right just because a retry happened to pass. It reproduced on the
+6th isolated, single-worker run (no parallel contention at all), ruling out
+that guess outright: `Received: "1"` after the second placement click, i.e.
+the click itself silently placed nothing, not a timing race.
+Root cause, confirmed via the failing test's own error context rather than
+guessed: both this test and the older "clicking the ground places a castle
+piece" test (`e2e/castle-placement.spec.ts`) click a *second* piece at a
+fixed pixel offset from the first (`groundX + 60, groundY`) — exactly the
+"guessed screen-fraction offset" fragility the 2026-09-09 Quaternius-models
+cycle already root-caused and fixed for this same file's type-switching
+test (rolling-hill terrain means a fixed screen-space offset doesn't
+reliably re-hit the ground at this camera's shallow angle), just never
+back-ported to these two older, simpler tests at the time. Fixed both the
+same way that cycle's own fix did, and the way this file's own "stacking"
+test already does: capture the first piece's real world position from the
+HUD, then click a well-separated *world* point (`firstPos.x + 8`) projected
+back to screen coordinates via the app's own `window.__projectToScreen`,
+instead of a guessed pixel offset. Test-only change, no production code
+touched.
+Re-ran the fixed "undo" test in isolation 6+ times after the fix (the same
+count that reproduced the original failure) with no repeat, plus the full
+suite fresh (typecheck, 337 unit tests, build, 91 E2E tests — 80 desktop +
+11 mobile — all green).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single
