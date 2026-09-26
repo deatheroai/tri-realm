@@ -1502,6 +1502,41 @@ change this cycle; full suite verified after the merge (typecheck, 337
 unit tests, build, 91 E2E tests, all green) to confirm the merged tree
 stays in a clean, landable state.
 
+**2026-09-26's skins cycle**, seventh consecutive day with no genuine
+Skins-owned work beyond re-confirming the same blocked item. The
+2026-09-23 Pending decision in `DECISIONS.md` (what should this track
+build next, or should its cadence change) is still unanswered — re-checked,
+not re-logged, since it's already there and nothing about the situation has
+changed. Sync from `main` was a clean fast-forward: the same-day World
+cycle fixed a genuine flake it found in its own territory (fixed-pixel-
+offset second ground clicks in two `castle-placement.spec.ts` tests,
+migrated to `window.__projectToScreen`-based world-coordinate clicks,
+matching that file's own "stacking" test's existing pattern) — no
+Skins-territory overlap.
+Checked whether that fix meaningfully changes the camera-framing item's
+own blast-radius reasoning, since it touches the exact kind of fixed-
+viewport-fraction click that reasoning is about: it doesn't, not really —
+only the *second* click in each of those two tests was migrated; all three
+tests in that file (plus every test in `land-save-load.spec.ts` and
+`touch-controls.spec.ts`) still open with the same
+`viewport.height * 0.75` first ground click the blast-radius note has
+always been about. Re-verified directly (`grep` across `e2e/` for
+`viewport.height \* 0\.` / `viewport.width / 2`) rather than assumed from
+the commit message alone. Camera framing stays exactly where it was.
+Ran the same searches every recent cycle has used: repo-wide `TODO`/
+`FIXME` grep in `src/`/`e2e/` — none; `ATTRIBUTIONS.md` vs.
+`attributions.ts` — still in sync, checked entry by entry; `ARCHITECTURE.md`'s
+Skins section re-read in full against current `avatarSkins.ts`/
+`avatarView.ts`/`castleStructures.ts` — still accurate (procedural/no-clip
+skin list, the swim-clip two-step pipeline, the castle-tower roof-cap reuse
+all match shipped code). Checked in-flight branches: the same set of stale
+non-daily branches noted every recent cycle, plus one new one this cycle's
+fetch surfaced (`claude/pr-watch-default`) — unrelated repo-infra work, not
+a merge candidate, not investigated further. No code change this cycle;
+full suite verified after the merge (typecheck, 337 unit tests, build, 91
+E2E tests, all green) to confirm the merged tree stays in a clean,
+landable state.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
