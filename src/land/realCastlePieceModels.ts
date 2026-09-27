@@ -78,11 +78,22 @@ export function upgradeCastlePieceToRealModel(box: THREE.Mesh, type: CastleStruc
       // hits an invisible object — so a child added under box would have
       // silently gone invisible right along with it the moment
       // `box.visible = false` ran below, for every "replace-ground" type.
-      // Positioned at box's own world position (box has no rotation, and
-      // its parent is the scene directly with no other transform, so
-      // `.position` already *is* its world position) plus the same
-      // ground/roof offset as before.
+      // Positioned/oriented at box's own world position and yaw (box's
+      // parent is the scene directly with no other transform, so
+      // `.position`/`.rotation` already *are* its world values) plus the
+      // same ground/roof offset as before. The rotation copy specifically
+      // was missing until `BACKLOG.md`'s 2026-09-27 rotation feature
+      // exposed it: this callback only ever runs after `main.ts` has
+      // already set both `box.position` and `box.rotation.y` synchronously
+      // (this function is fired-and-forgotten from `createCastlePieceMesh`,
+      // before either is set, but `loadGltf`'s real network/promise
+      // latency means `.then()` here always resolves well after), so
+      // reading `box.rotation.y` now is exactly as safe as the pre-existing
+      // `box.position` read on the line below — without it, a rotated Wall
+      // or Gate's visible model (the box itself is hidden for
+      // "replace-ground" types) silently ignored `KeyR` entirely.
       visual.position.copy(box.position);
+      visual.rotation.y = box.rotation.y;
 
       if (realModel.placement === "replace-ground") {
         // The model's own local origin sits at its base (measured via

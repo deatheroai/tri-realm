@@ -137,6 +137,18 @@ describe("upgradeCastlePieceToRealModel", () => {
     expect(visual.position.z).toBe(-3);
   });
 
+  it("matches the box's own yaw — a rotated Wall/Gate's real model must turn with it, not stay stuck facing its authored orientation", async () => {
+    const fakeModel = new THREE.Group();
+    vi.spyOn(GLTFLoader.prototype, "loadAsync").mockResolvedValue(fakeGltf(fakeModel));
+
+    const { box, scene } = bareBoxInScene("castle-wall");
+    box.rotation.y = Math.PI / 2; // as if main.ts had already rotated it (KeyR) before scene.add
+    await upgradeCastlePieceToRealModel(box, findCastleStructureType("castle-wall"));
+
+    const visual = scene.children.find((c) => c !== box)!;
+    expect(visual.rotation.y).toBeCloseTo(Math.PI / 2, 5);
+  });
+
   it("gives two placements of the same type their own independent visual, instead of fighting over one shared object", async () => {
     // Same real regression AvatarView already guards against for two
     // simultaneous avatar skins (avatarView.test.ts) — here, two placed

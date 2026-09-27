@@ -1614,6 +1614,56 @@ full suite verified after the merge (typecheck, 337 unit tests, build, 91
 E2E tests, all green) to confirm the merged tree stays in a clean,
 landable state.
 
+**2026-09-27's skins cycle** broke the streak: found a real, confirmed bug
+in this track's own asset-swap code, not a stale doc or a re-check. Sync
+from `main` was a clean fast-forward (the same-day World cycle shipped
+structure rotation — `KeyR` cycles a quarter turn, wired all the way through
+`PlacedStructure.rotation`, `main.ts`'s box mesh, and
+`placementValidation.ts`'s rotation-aware overlap check). Rather than just
+re-confirm camera framing and re-run the usual doc/TODO searches again,
+read through World's new rotation diff against this track's own
+`src/land/realCastlePieceModels.ts` specifically, since that file's real
+Quaternius models (Wall/Gate/Keep-roof) are exactly the kind of thing a new
+placement-time transform could silently miss — and it had: `main.ts` sets
+`piece.rotation.y = currentRotation` on the box mesh at placement time (and
+again on restore-from-save), but `upgradeCastlePieceToRealModel`'s real-model
+`visual` only ever copied the box's *position*, never its rotation — its own
+comment even said "box has no rotation" (true when written, 2026-09-09, false
+since today). For Wall/Gate specifically (`placement: "replace-ground"` —
+the box itself is hidden once the real model loads, so the real model *is*
+the entire visible piece), this meant `KeyR` had silently zero visual effect
+once the model finished loading: the schema's `rotation` field, the HUD/save
+round-trip, and `placementValidation`'s footprint math all correctly tracked
+a rotated Wall, but the thing actually on screen just sat at its authored
+orientation forever. Keep/Tower's roof-cap models are unaffected in practice
+(a round tower roof reads the same at any yaw), but the fix applies
+uniformly rather than special-casing by shape.
+Fixed with one line (`visual.rotation.y = box.rotation.y`, right alongside
+the existing position copy) plus an updated comment explaining why reading
+`box.rotation.y` inside the async `.then()` is exactly as safe as the
+pre-existing `box.position` read on the same line — both are set
+synchronously by `main.ts` well before the real network/promise latency this
+callback waits on. 1 new unit test
+(`realCastlePieceModels.test.ts`: a box rotated a quarter turn before the
+model loads produces a visual at the same yaw), mirroring the existing
+position-propagation test's shape. Not covered by an E2E test — the two new
+rotation E2E tests World added only assert the data model
+(`__getLastPlacedRotation`, the HUD), not the loaded GLTF sibling's own
+transform, and this track's existing debug hooks have no equivalent for it;
+a unit test at the same level as this file's other coverage (sibling
+add/hide/position, load-failure fallback) is the right-sized guard, matching
+how the original sibling-visibility bug this file's own comment describes
+was itself only unit-tested.
+The 2026-09-23 `DECISIONS.md` Pending item (what should this track build
+next, or should its cadence change) is still unanswered and still accurate
+as written — this cycle's find doesn't change that picture, since it's a
+bug fix surfaced by *World's* new feature intersecting this track's old
+code, not new Skins-owned scope opening up. Left as-is rather than re-logged.
+Camera framing: unchanged, same blast-radius reasoning as every prior
+re-check holds. Full suite verified (typecheck, 347 unit tests — the 337
+baseline plus World's own 10 rotation tests plus this cycle's 1 — build, 94
+E2E tests, all green).
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
