@@ -52,22 +52,40 @@ function footprintsOverlap(
   );
 }
 
+// A `PlacedStructure.rotation` is a yaw around Y, but every catalog entry's
+// `dimensions` are authored axis-aligned (unrotated) — so an overlap check
+// against a rotated piece needs its *effective* (world-axis) footprint, not
+// its authored one. Only quarter turns are supported (main.ts's own rotate
+// control only ever cycles in 90° steps), which keeps this exact rather
+// than needing a real oriented-bounding-box check: a quarter turn simply
+// swaps which authored axis (width vs. depth) now runs along world X vs. Z.
+function rotatedFootprint(footprint: StructureFootprint, rotation: number): StructureFootprint {
+  const TAU = Math.PI * 2;
+  const normalized = ((rotation % TAU) + TAU) % TAU;
+  const quarterTurns = Math.round(normalized / (Math.PI / 2));
+  const swapped = quarterTurns % 2 === 1;
+  return swapped ? { width: footprint.depth, height: footprint.height, depth: footprint.width } : footprint;
+}
+
 /**
- * Checks whether `type` can be placed at `position` on `map`: within its
- * bounds, not overlapping an existing structure (a true 3D check, so
- * stacking one piece directly atop another is still allowed — only a
- * genuine overlap is rejected), and accepted by the realm's own terrain
- * rule. `position` is a structure's center, matching how placed meshes
- * are actually positioned (`src/land/placement.ts`).
+ * Checks whether `type` can be placed at `position`, rotated `rotation`
+ * radians around Y, on `map`: within its bounds, not overlapping an
+ * existing structure (a true 3D check against each structure's own
+ * *effective*, rotation-adjusted footprint, so stacking one piece directly
+ * atop another is still allowed — only a genuine overlap is rejected), and
+ * accepted by the realm's own terrain rule. `position` is a structure's
+ * center, matching how placed meshes are actually positioned
+ * (`src/land/placement.ts`).
  */
 export function validatePlacement(
   map: RealmMap,
   type: string,
   position: Vec3,
+  rotation: number,
   footprintOf: FootprintLookup,
   terrainRule: TerrainPlacementRule,
 ): PlacementCheck {
-  const footprint = footprintOf(type);
+  const footprint = rotatedFootprint(footprintOf(type), rotation);
 
   const halfWidth = map.bounds.width / 2;
   const halfDepth = map.bounds.depth / 2;
@@ -76,7 +94,12 @@ export function validatePlacement(
   }
 
   const overlapsExisting = map.structures.some((existing) =>
-    footprintsOverlap(position, footprint, existing.position, footprintOf(existing.type)),
+    footprintsOverlap(
+      position,
+      footprint,
+      existing.position,
+      rotatedFootprint(footprintOf(existing.type), existing.rotation),
+    ),
   );
   if (overlapsExisting) {
     return { valid: false, reason: "overlaps-structure" };

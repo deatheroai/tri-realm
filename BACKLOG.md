@@ -394,6 +394,83 @@ count that reproduced the original failure) with no repeat, plus the full
 suite fresh (typecheck, 337 unit tests, build, 91 E2E tests — 80 desktop +
 11 mobile — all green).
 
+**2026-09-27's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer). This cycle's own
+sync from `main` was a clean fast-forward (the prior day's skins cycle, a
+seventh consecutive re-check finding no new Skins-owned work — no
+World-territory overlap). Repo-wide `TODO`/`FIXME` grep in `src`/`e2e` came
+back empty, and `ARCHITECTURE.md`'s Avatar controller/Realm connections/
+Construction system sections were all re-read in full against current
+code — no drift found this time, unlike several recent cycles. Checked
+in-flight branches too: the same set of stale non-daily branches noted
+every recent cycle are all still 2+ weeks stale and none touch this
+track's file ownership.
+Looked past doc drift to the schema itself instead and found a real,
+load-bearing gap: `PlacedStructure.rotation` (`src/world/realmMap.ts`) has
+existed since Phase 1b, and `addStructure`'s own doc comment has always
+described it as "what's actually decided at placement time" right
+alongside type and position — but grepping every call site turned up
+`rotation: 0` hardcoded at all three (`placeCastlePieceAt`/
+`placeSeaPieceAt`/`placeAirPieceAt` in `main.ts`), and no renderer —
+neither a fresh placement nor a restored-from-save mesh — ever read the
+field back at all. The same shape as "Land jump"'s doc-vs-code gap
+(2026-09-17), just in a different corner of the schema — and squarely this
+track's own charter (`AUTONOMY.md`: "construction/placement mechanics"),
+not a data-model change (the field already existed, nothing about
+`RealmMap`'s shape changed).
+`KeyR` (`KeyboardInput.consumeRotatePressed()`, `src/input/keyboardInput.ts`
+— identical rising-edge/reset-on-read shape to `consumeJumpPressed()`/
+`consumeUndoPressed()`) cycles a new shared `currentRotation` (`main.ts`)
+by one quarter turn; each of the three placement functions now applies it
+to both the new mesh (`piece.rotation.y = currentRotation`) and the
+persisted structure (`addStructure({ ..., rotation: currentRotation })`),
+and all three restore-from-save loops re-apply a restored piece's own
+saved `structure.rotation` the same way, so a rotated piece looks right
+again after a reload, not just at the moment it's placed. Consumed every
+frame regardless of active realm, same "a stray press can't queue up
+across a realm switch" reasoning `jumpPressed`/undo already use.
+Deliberately quarter-turns only (not free rotation) — this let
+`placementValidation.ts`'s overlap check become rotation-aware exactly,
+rather than needing a real oriented-bounding-box check: a catalog's
+`dimensions` are authored axis-aligned, so a quarter-turned piece's
+*effective* footprint just swaps width/depth (`rotatedFootprint`, new).
+`validatePlacement` gained a `rotation` parameter for the candidate, and
+now also looks up each *existing* structure's own `.rotation` before
+computing its footprint — a rotated neighbor's overlap footprint has to
+swap the same way the candidate's does, not just the new placement's,
+confirmed by a dedicated test that rotates the existing structure instead
+of the candidate and checks the outcome is identical either way.
+`#hud-controls` gained "Rotate: R" — same "an unreachable-without-a-hint
+control is a real player-facing gap" reasoning "On-screen controls hint"
+(2026-09-19) already used — which **immediately failed the narrow-viewport
+overlap-regression test** (`e2e/skins.spec.ts`) the same way that item's
+own first draft did: the added text pushed `#hud-controls` to a fourth
+wrapped line at 390px, colliding with `#dev-panels-content`. Fixed by
+trimming other wording (dropping "(left)" from the move hint) to make
+room, not by touching the shared panel's own position — exactly the
+"found by an existing regression guard, fixed by shortening text"
+resolution that 2026-09-19 item used.
+9 new unit tests (`keyboardInput.test.ts`: `consumeRotatePressed` mirrors
+every one of `consumeUndoPressed`'s own cases; `placementValidation.test.ts`:
+a non-square footprint's overlap outcome flips based on the candidate's
+rotation, a full 2π turn behaves identically to no rotation, and an
+existing structure's own rotation is honored independently of the
+candidate's). 3 new E2E tests: `castle-placement.spec.ts` confirms a
+fresh placement starts at rotation 0, that KeyR advances it to exactly
+π/2 (checked via a new `window.__getLastPlacedRotation` debug hook, same
+pattern as `__getLastPlacedType`), and that four presses wrap back to
+exactly 0; `land-save-load.spec.ts` confirms a rotated piece's rotation
+survives a reload. Verified visually with a real screenshot (two Wall
+pieces placed side by side, one rotated a quarter turn — the real
+Quaternius model's brick face reads clearly different between the two,
+confirming the fix works through the real-model-upgrade path too, not
+just the placeholder box). Touch has no rotate control yet — deliberately
+out of scope this cycle, same staged "keyboard first" rollout jump/undo
+both used; a fourth `#vertical-controls` button is a natural follow-on.
+Full suite verified (typecheck, 346 unit tests, build, 94 E2E tests, all
+green).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

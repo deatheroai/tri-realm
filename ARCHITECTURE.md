@@ -551,6 +551,28 @@ fetch it.
   shape exactly (a single button, rising-edge queued, reset on read), joining
   `#vertical-controls`' existing flex column as a third stacked button rather
   than claiming a new fixed screen position.
+- **Rotation** (`BACKLOG.md`, 2026-09-27): `PlacedStructure.rotation` (a yaw
+  around Y) existed in the schema since Phase 1b, and `addStructure`'s own
+  doc comment always described it as "what's actually decided at placement
+  time" alongside type/position — but every placement call site hardcoded
+  `rotation: 0`, and no renderer (initial placement or a restored-from-save
+  mesh) ever read the field back, so it was completely dead. `KeyR`
+  (`KeyboardInput.consumeRotatePressed()`, same rising-edge/reset-on-read
+  shape as undo/jump) cycles `main.ts`'s shared `currentRotation` by one
+  quarter turn; the next placement in *any* realm uses it (`piece.rotation.y
+  = currentRotation`, `addStructure({ ..., rotation: currentRotation })`),
+  and a restored piece re-applies its saved `structure.rotation` the same
+  way. Only quarter turns are supported — deliberately, since
+  `placementValidation.ts`'s overlap check needed to become rotation-aware
+  too: a structure catalog's `dimensions` are authored axis-aligned, so a
+  rotated piece's *effective* footprint (what the overlap check actually
+  needs) swaps width/depth for an odd number of quarter turns
+  (`rotatedFootprint`) rather than needing a real oriented-bounding-box
+  check. `validatePlacement` now takes the candidate's rotation and looks up
+  each existing structure's own `rotation` too — a rotated neighbor's
+  footprint must swap the same way, not just the new candidate's. Keyboard-
+  only first, same staged rollout undo/jump used; touch parity (a fourth
+  `#vertical-controls` button) is a natural follow-on, not built this cycle.
 
 ## Modularity
 

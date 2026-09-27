@@ -214,6 +214,7 @@ declare global {
     __getLastPlacedColor?: () => number | undefined;
     __getLastPlacedMapUuid?: () => string | undefined;
     __getLastPlacedType?: () => string | undefined;
+    __getLastPlacedRotation?: () => number | undefined;
     __getActiveRealm?: () => "land" | "air" | "sea";
     __getLandAltitude?: () => number;
     __getAirAltitude?: () => number;
@@ -273,6 +274,7 @@ window.__getLastPlacedMapUuid = () => {
   return material?.map?.uuid;
 };
 window.__getLastPlacedType = () => landMap.structures[landMap.structures.length - 1]?.type;
+window.__getLastPlacedRotation = () => landMap.structures[landMap.structures.length - 1]?.rotation;
 // Sea has no visible structures HUD yet (see `placeSeaPieceAt`/`persistSeaMap`
 // below) — these mirror `structuresHud`/`__getLastPlacedType` above for E2E
 // coverage without needing a new on-screen element (see AUTONOMY.md's "UI
@@ -297,6 +299,12 @@ const pointerNdc = new THREE.Vector2();
 const placedMeshes = new Map<string, THREE.Object3D>();
 let currentBlockMaterialId = DEFAULT_BLOCK_MATERIAL_ID;
 let currentStructureTypeId = DEFAULT_CASTLE_STRUCTURE_TYPE_ID;
+// The yaw (radians, around Y) the *next* placement in any realm will use —
+// shared across all three, same as currentBlockMaterialId, since "which way
+// is this piece facing" isn't realm-specific. Cycled by KeyR/consumeRotatePressed
+// in quarter turns only (see placementValidation.ts's rotatedFootprint,
+// which assumes exactly that).
+let currentRotation = 0;
 
 // Footprint lookup for validatePlacement (src/world/placementValidation.ts)
 // — a structure type's `dimensions` already has the shape it wants.
@@ -308,6 +316,7 @@ const castleStructureFootprintOf = (typeId: string) => findCastleStructureType(t
 for (const structure of landMap.structures) {
   const restoredPiece = createCastlePieceMesh(structure.type, structure.materialId);
   restoredPiece.position.set(structure.position.x, structure.position.y, structure.position.z);
+  restoredPiece.rotation.y = structure.rotation;
   scene.add(restoredPiece);
   placedMeshes.set(structure.id, restoredPiece);
 }
@@ -358,16 +367,24 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
     position = { x: hit.object.position.x, y: hitBox.max.y + groundOffset, z: hit.object.position.z };
   }
 
-  const check = validatePlacement(landMap, currentStructureTypeId, position, castleStructureFootprintOf, landTerrainPlacementRule);
+  const check = validatePlacement(
+    landMap,
+    currentStructureTypeId,
+    position,
+    currentRotation,
+    castleStructureFootprintOf,
+    landTerrainPlacementRule,
+  );
   if (!check.valid) return; // rough Phase 1b pass: reject silently, no error UI yet
 
   const piece = createCastlePieceMesh(currentStructureTypeId, currentBlockMaterialId);
   piece.position.set(position.x, position.y, position.z);
+  piece.rotation.y = currentRotation;
 
   const { map, structure } = addStructure(landMap, {
     type: currentStructureTypeId,
     position,
-    rotation: 0,
+    rotation: currentRotation,
     materialId: currentBlockMaterialId,
   });
   landMap = map;
@@ -414,6 +431,7 @@ const seaStructureFootprintOf = (typeId: string) => findSeaStructureType(typeId)
 for (const structure of seaMap.structures) {
   const restoredPiece = createSeaStructureMesh(structure.type, structure.materialId);
   restoredPiece.position.set(structure.position.x, structure.position.y, structure.position.z);
+  restoredPiece.rotation.y = structure.rotation;
   seaScene.add(restoredPiece);
   seaPlacedMeshes.set(structure.id, restoredPiece);
 }
@@ -455,6 +473,7 @@ function placeSeaPieceAt(clientX: number, clientY: number): void {
     seaMap,
     currentSeaStructureTypeId,
     position,
+    currentRotation,
     seaStructureFootprintOf,
     seaTerrainPlacementRule,
   );
@@ -462,11 +481,12 @@ function placeSeaPieceAt(clientX: number, clientY: number): void {
 
   const piece = createSeaStructureMesh(currentSeaStructureTypeId, currentBlockMaterialId);
   piece.position.set(position.x, position.y, position.z);
+  piece.rotation.y = currentRotation;
 
   const { map, structure } = addStructure(seaMap, {
     type: currentSeaStructureTypeId,
     position,
-    rotation: 0,
+    rotation: currentRotation,
     materialId: currentBlockMaterialId,
   });
   seaMap = map;
@@ -514,6 +534,7 @@ const airPlaneIntersection = new THREE.Vector3();
 for (const structure of airMap.structures) {
   const restoredPiece = createAirStructureMesh(structure.type, structure.materialId);
   restoredPiece.position.set(structure.position.x, structure.position.y, structure.position.z);
+  restoredPiece.rotation.y = structure.rotation;
   airScene.add(restoredPiece);
   airPlacedMeshes.set(structure.id, restoredPiece);
 }
@@ -562,16 +583,24 @@ function placeAirPieceAt(clientX: number, clientY: number): void {
     return; // looking dead parallel to the plane (straight up/down) — no sensible point to place at
   }
 
-  const check = validatePlacement(airMap, currentAirStructureTypeId, position, airStructureFootprintOf, airTerrainPlacementRule);
+  const check = validatePlacement(
+    airMap,
+    currentAirStructureTypeId,
+    position,
+    currentRotation,
+    airStructureFootprintOf,
+    airTerrainPlacementRule,
+  );
   if (!check.valid) return; // rough pass, matches land/sea: reject silently, no error UI yet
 
   const piece = createAirStructureMesh(currentAirStructureTypeId, currentBlockMaterialId);
   piece.position.set(position.x, position.y, position.z);
+  piece.rotation.y = currentRotation;
 
   const { map, structure } = addStructure(airMap, {
     type: currentAirStructureTypeId,
     position,
-    rotation: 0,
+    rotation: currentRotation,
     materialId: currentBlockMaterialId,
   });
   airMap = map;
@@ -1079,6 +1108,16 @@ function animate(): void {
   // way jumpPressed above merges touchVertical's.
   if (input.consumeUndoPressed() || (touchUndo?.consumeUndoPressed() ?? false)) {
     removeLastPlacedStructure();
+  }
+
+  // Rotate (KeyR): cycles the yaw the *next* placement (in any realm) will
+  // use by one quarter turn — consumed every frame regardless of realm,
+  // same reasoning as jumpPressed/undo above, so a stray press while
+  // flying/swimming can't queue up and rotate the *next* land placement
+  // unexpectedly. Wraps at a full turn purely for tidiness — rotatedFootprint
+  // (placementValidation.ts) already normalizes any angle on its own.
+  if (input.consumeRotatePressed()) {
+    currentRotation = (currentRotation + Math.PI / 2) % (Math.PI * 2);
   }
 
   // Only the active realm's movement module runs each frame — a realm

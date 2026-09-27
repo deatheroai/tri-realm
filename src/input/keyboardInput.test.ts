@@ -152,3 +152,53 @@ describe("KeyboardInput.consumeUndoPressed", () => {
     expect(input.consumeJumpPressed()).toBe(true); // untouched by the undo check above
   });
 });
+
+describe("KeyboardInput.consumeRotatePressed", () => {
+  it("is false when nothing has been pressed", () => {
+    const input = new KeyboardInput(new FakeKeyTarget());
+    expect(input.consumeRotatePressed()).toBe(false);
+  });
+
+  it("is true exactly once after a fresh KeyR press", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "KeyR");
+
+    expect(input.consumeRotatePressed()).toBe(true);
+    expect(input.consumeRotatePressed()).toBe(false);
+  });
+
+  it("does not re-queue while R is held (repeated keydown, no keyup between)", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "KeyR");
+    input.consumeRotatePressed();
+    target.fire("keydown", "KeyR");
+
+    expect(input.consumeRotatePressed()).toBe(false);
+  });
+
+  it("queues a new rotate after releasing and pressing R again", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "KeyR");
+    input.consumeRotatePressed();
+    target.fire("keyup", "KeyR");
+    target.fire("keydown", "KeyR");
+
+    expect(input.consumeRotatePressed()).toBe(true);
+  });
+
+  it("ignores non-rotate keys, and is independent of the undo/jump queues", () => {
+    const target = new FakeKeyTarget();
+    const input = new KeyboardInput(target);
+
+    target.fire("keydown", "KeyX");
+
+    expect(input.consumeRotatePressed()).toBe(false);
+    expect(input.consumeUndoPressed()).toBe(true); // untouched by the rotate check above
+  });
+});

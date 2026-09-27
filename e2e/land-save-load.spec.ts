@@ -36,6 +36,25 @@ test("a placed castle piece and the player's position survive a reload", async (
   await expect(hud).toHaveAttribute("data-z", zBeforeReload!);
 });
 
+test("a placed piece's rotation survives a reload too", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+
+  await page.keyboard.press("KeyR"); // rotate a quarter turn before placing
+
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  await page.mouse.click(viewport.width / 2, viewport.height * 0.75);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(Math.PI / 2, 5);
+
+  await page.reload();
+
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(Math.PI / 2, 5);
+});
+
 test("a fresh visit with nothing saved still starts clean", async ({ page }) => {
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");

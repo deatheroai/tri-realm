@@ -173,3 +173,54 @@ test("pressing X with nothing placed does nothing (no error, count stays 0)", as
 
   await expect(structuresHud).toHaveAttribute("data-count", "0");
 });
+
+test("pressing R rotates the next placed piece by a quarter turn", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  const groundX = viewport.width / 2;
+  const groundY = viewport.height * 0.75;
+
+  // Placed with no rotation yet — the schema's default/starting yaw.
+  await page.mouse.click(groundX, groundY);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(0, 5);
+
+  await page.keyboard.press("KeyR");
+
+  // A well-separated *world* ground point, same reasoning as the
+  // "accumulate" test above (a fixed screen-space offset doesn't reliably
+  // re-hit the ground over rolling-hill terrain).
+  const firstPos = {
+    x: Number(await structuresHud.getAttribute("data-last-x")),
+    y: Number(await structuresHud.getAttribute("data-last-y")),
+    z: Number(await structuresHud.getAttribute("data-last-z")),
+  };
+  const secondPoint = await page.evaluate(
+    (p) => window.__projectToScreen?.(p.x + 8, p.y, p.z),
+    firstPos,
+  );
+  if (!secondPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(secondPoint.x, secondPoint.y);
+  await expect(structuresHud).toHaveAttribute("data-count", "2");
+
+  expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(Math.PI / 2, 5);
+});
+
+test("rotation wraps back to zero after four quarter turns", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("KeyR");
+  }
+
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  await page.mouse.click(viewport.width / 2, viewport.height * 0.75);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+
+  expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(0, 5);
+});

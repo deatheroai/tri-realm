@@ -19,6 +19,10 @@ const JUMP_KEYS = new Set(["Space"]);
 // anything movement-related, so there's no cross-realm ambiguity to reason
 // about the way Space's dual jump/ascend role needs.
 const UNDO_KEYS = new Set(["KeyX"]);
+// Cycles the rotation a *new* placement will use (main.ts's
+// currentRotation) by one quarter turn — a dedicated key, same reasoning
+// as UNDO_KEYS above.
+const ROTATE_KEYS = new Set(["KeyR"]);
 
 /** Pure mapping from the set of currently-held key codes to a move intent. */
 export function computeMoveInput(pressedKeys: ReadonlySet<string>): MoveInput {
@@ -42,6 +46,7 @@ export class KeyboardInput {
   private readonly pressed = new Set<string>();
   private jumpQueued = false;
   private undoQueued = false;
+  private rotateQueued = false;
 
   constructor(target: Pick<Window, "addEventListener"> = window) {
     target.addEventListener("keydown", (e) => {
@@ -56,6 +61,11 @@ export class KeyboardInput {
       // placed piece in one long keydown-repeat burst.
       if (UNDO_KEYS.has(code) && !this.pressed.has(code)) {
         this.undoQueued = true;
+      }
+      // Same rising-edge-only shape as jump/undo — holding R shouldn't spin
+      // through every quarter turn in one long keydown-repeat burst.
+      if (ROTATE_KEYS.has(code) && !this.pressed.has(code)) {
+        this.rotateQueued = true;
       }
       this.pressed.add(code);
     });
@@ -94,5 +104,16 @@ export class KeyboardInput {
     const undone = this.undoQueued;
     this.undoQueued = false;
     return undone;
+  }
+
+  /**
+   * Rotate trigger: true at most once per fresh KeyR press, reset back to
+   * false as soon as it's read — same reset-on-read shape as
+   * `consumeUndoPressed`.
+   */
+  consumeRotatePressed(): boolean {
+    const rotated = this.rotateQueued;
+    this.rotateQueued = false;
+    return rotated;
   }
 }
