@@ -571,8 +571,11 @@ fetch it.
   check. `validatePlacement` now takes the candidate's rotation and looks up
   each existing structure's own `rotation` too — a rotated neighbor's
   footprint must swap the same way, not just the new candidate's. Keyboard-
-  only first, same staged rollout undo/jump used; touch parity (a fourth
-  `#vertical-controls` button) is a natural follow-on, not built this cycle.
+  only first, same staged rollout undo/jump used; touch parity followed
+  (`BACKLOG.md`, 2026-09-28) — `TouchRotateInput`
+  (`src/input/touchRotateInput.ts`) mirrors `TouchUndoInput`'s shape exactly
+  (a single button, rising-edge queued, reset on read), joining
+  `#vertical-controls`' existing flex column as a fourth stacked button.
 
 ## Modularity
 

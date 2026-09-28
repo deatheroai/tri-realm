@@ -471,6 +471,111 @@ both used; a fourth `#vertical-controls` button is a natural follow-on.
 Full suite verified (typecheck, 346 unit tests, build, 94 E2E tests, all
 green).
 
+**2026-09-28's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer). This cycle's own
+sync from `main` was a clean fast-forward (a same-day-prior fix from a
+persistent session — `visual.rotation.y = box.rotation.y` in
+`src/land/realCastlePieceModels.ts`, closing a real bug the 2026-09-27
+rotation feature's own "replace-ground" real-model visuals had: the sibling
+model never copied the box's yaw, so `KeyR` had zero visible effect on Wall/
+Gate once their real model finished loading — no World-territory overlap
+with anything built this cycle). Repo-wide `TODO`/`FIXME` grep in `src`/
+`e2e` came back empty; re-confirmed the live deployment is still
+unreachable from this session (same 403 policy denial as every prior
+check, item 2 stays genuinely not-solo-actionable); checked in-flight
+branches too — the same set of stale non-daily branches noted every recent
+cycle are all still weeks stale and none touch this track's file
+ownership.
+Rather than re-run another doc-drift pass (`ARCHITECTURE.md` was re-read in
+full and matched shipped code with no gap this time), picked up the one
+explicitly-flagged, not-yet-built follow-on both `BACKLOG.md`'s own
+2026-09-27 writeup and `ARCHITECTURE.md`'s Rotation section named directly:
+"Touch has no rotate control yet... a fourth `#vertical-controls` button is
+a natural follow-on" — the exact same "genuine follow-on this track already
+flagged for itself" bar "Touch vertical controls" (2026-09-18) used against
+"Land jump" (2026-09-17) and "Touch undo" (2026-09-23) used against "Undo"
+(2026-09-22).
+`TouchRotateInput` (`src/input/touchRotateInput.ts`) mirrors
+`TouchUndoInput`'s shape exactly (a single button, rising-edge queued, reset
+on read) — simpler than `TouchVerticalInput` since rotation, like undo, is a
+discrete action with no held/axis state to track. A fourth button
+(`#rotate-button`, "↻") joins `#vertical-controls`' existing flex column
+rather than claiming a new fixed screen position — the column just grows,
+same "avoid overlap by construction" idiom `#dev-panels` already
+established. `main.ts`'s rotate consumption now merges
+`input.consumeRotatePressed() || touchRotate?.consumeRotatePressed()`, the
+same merge shape `jumpPressed`/undo already use for their own two sources.
+`#hud-controls`' hint text gained "R/↻" for rotate (and every other " or "
+in that hint shortened to "/" to make room — see below).
+
+**Found and fixed three real, run-verified bugs while landing this, not
+just guessed at** — the fourth button was the one this cycle's own
+"natural follow-on" note anticipated, but growing `#vertical-controls`
+turned out to have real knock-on effects nobody had reason to predict until
+the actual regression suite caught them:
+
+1. **A pre-existing screen-fraction tap point silently stopped landing
+   placements at all, on the real touch device project.** Three
+   `e2e/touch-controls.spec.ts` tests (two pre-existing — "tapping outside
+   the joystick zone", "tapping the undo button" — plus this cycle's own new
+   rotate test) all tapped `(90% viewport width, 55% viewport height)`,
+   chosen back when `#vertical-controls` had two buttons and left over
+   100px of clearance above it. A fourth button grew the column's top edge
+   to within ~3px of that tap point — not enough for `elementFromPoint` to
+   call it an overlap, but enough that Chromium's own touch tap-target
+   disambiguation (a real fat-finger heuristic, confirmed by direct
+   experiment, not inferred) silently redirected the tap to the nearby
+   button instead of the canvas underneath, so no placement ever happened.
+   Caught immediately by two previously-green, unrelated tests going red —
+   not shipped on the strength of the new test alone. Fixed by moving the
+   shared tap point from 90% to 75% of viewport width (still clear of the
+   joystick zone, now with real margin from `#vertical-controls` too) in
+   all three tests.
+2. **The new rotate test's own second-placement point projected far
+   off-screen on the mobile viewport.** Mirroring
+   `castle-placement.spec.ts`'s desktop rotation test's `x + 8` world-space
+   offset landed at screen x≈892 on a 393px-wide mobile viewport — this
+   viewport's narrower field of view maps world units to far more screen
+   pixels than desktop's 1280px-wide camera does, something the desktop
+   version's own "any structure type's future dimensions" margin reasoning
+   never had to consider. Root-caused by directly measuring
+   `__projectToScreen`'s output rather than assuming the desktop offset
+   would transfer, the same discipline this file already used for air's own
+   "Sky Spire" test fix (2026-09-21). Fixed with a smaller, negative
+   (leftward — away from `#vertical-controls`, which sits on the right)
+   `x - 3` offset for this test specifically, confirmed to land a genuinely
+   separate (not stacked) placement, not just an in-bounds one.
+3. **The fourth button broke both of `e2e/skins.spec.ts`'s generic
+   overlap-regression checks** — the exact class of bug those checks exist
+   to catch, this time triggered by this cycle's own change rather than a
+   sibling track's. On the narrow-viewport (390px) desktop check, the
+   longer `#hud-controls` hint text (now naming five controls, not four)
+   wrapped to a line that collided with `#dev-panels-content`'s first row —
+   same "hint text got too long" shape the 2026-09-19 and 2026-09-27 items
+   each hit and fixed the same way: shortened every " or " in the hint to
+   "/" (Move/Run/Jump/Descend/Rotate/Undo all affected), regaining enough
+   width without dropping any control from the hint. On the real-touch-device
+   check (panels expanded), the taller `#vertical-controls` column now
+   reached up far enough to collide with `#dev-panels-content`'s third
+   row (the realm switcher) — measured the real overlap (21px vertically)
+   rather than guessing at a fix, and lowered `#vertical-controls`' `bottom`
+   from 70px to 40px (confirmed with real bounding-box measurements to stay
+   clear of `#hud-position`/`#hud-structures`/`#credits` near the very
+   bottom of the screen too) rather than shrinking the touch targets
+   themselves.
+5 new unit tests (`touchRotateInput.test.ts`, mirroring
+`touchUndoInput.test.ts`'s own coverage of the rising-edge/reset-on-read/
+touchcancel-releases-like-touchend shapes). 1 new E2E test
+(`e2e/touch-controls.spec.ts`): tapping the rotate button then placing a
+second, well-separated piece confirms it lands at exactly a quarter turn —
+mirroring `castle-placement.spec.ts`'s own keyboard rotation test and its
+`__projectToScreen`-based well-separated-world-point technique, adapted for
+the mobile viewport per bug 2 above. Full suite verified (typecheck, 352
+unit tests, build, 95 E2E tests — including both previously-broken
+overlap-regression tests and all three affected touch-controls tests,
+re-run individually and as part of the full suite — all green).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

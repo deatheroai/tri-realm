@@ -7,6 +7,7 @@ import { combineMoveInputs } from "./input/combineMoveInputs";
 import { TouchVerticalInput } from "./input/touchVerticalInput";
 import { combineVerticalInputs } from "./input/combineVerticalInputs";
 import { TouchUndoInput } from "./input/touchUndoInput";
+import { TouchRotateInput } from "./input/touchRotateInput";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { createLandRealmMap, landTerrainPlacementRule, LAND_MAP_ID } from "./land/landRealmMap";
@@ -697,6 +698,16 @@ const touchVertical =
 const undoButton = document.getElementById("undo-button");
 const touchUndo = undoButton ? new TouchUndoInput(undoButton) : null;
 
+// Touch equivalent of KeyboardInput's KeyR rotate cycle — same
+// "always constructed, CSS/pointer-coarse gates visibility" pattern as
+// touchVertical/touchUndo above, and the exact follow-on ARCHITECTURE.md's
+// Rotation section flagged ("touch parity ... is a natural follow-on, not
+// built this cycle") when rotation itself shipped keyboard-only. Joins the
+// same #vertical-controls column as a fourth stacked button rather than
+// claiming a new fixed corner (AUTONOMY.md's UI layout convention).
+const rotateButton = document.getElementById("rotate-button");
+const touchRotate = rotateButton ? new TouchRotateInput(rotateButton) : null;
+
 /**
  * Marks exactly one button in a dev panel row as the currently-selected
  * option (adds the shared `.active` class, removes it from siblings) —
@@ -1110,13 +1121,15 @@ function animate(): void {
     removeLastPlacedStructure();
   }
 
-  // Rotate (KeyR): cycles the yaw the *next* placement (in any realm) will
-  // use by one quarter turn — consumed every frame regardless of realm,
-  // same reasoning as jumpPressed/undo above, so a stray press while
-  // flying/swimming can't queue up and rotate the *next* land placement
-  // unexpectedly. Wraps at a full turn purely for tidiness — rotatedFootprint
-  // (placementValidation.ts) already normalizes any angle on its own.
-  if (input.consumeRotatePressed()) {
+  // Rotate (KeyR, or the touch rotate button): cycles the yaw the *next*
+  // placement (in any realm) will use by one quarter turn — consumed every
+  // frame regardless of realm, same reasoning as jumpPressed/undo above, so
+  // a stray press while flying/swimming can't queue up and rotate the *next*
+  // land placement unexpectedly. Wraps at a full turn purely for tidiness —
+  // rotatedFootprint (placementValidation.ts) already normalizes any angle
+  // on its own. Merges in the touch button's own rising edge the same way
+  // jumpPressed/undo above merge their own touch sources.
+  if (input.consumeRotatePressed() || (touchRotate?.consumeRotatePressed() ?? false)) {
     currentRotation = (currentRotation + Math.PI / 2) % (Math.PI * 2);
   }
 

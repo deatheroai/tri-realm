@@ -206,12 +206,16 @@ test("tapping outside the joystick zone places a castle piece instead of moving"
   await expect(structuresHud).toHaveAttribute("data-count", "0");
 
   // The touch-zone occupies the bottom-left 55%x60% of the viewport (see
-  // index.html), and the camera looks down at the ground, so the right
-  // 20% of the screen at mid-height is reliably both outside the zone and
-  // aimed at ground, not sky.
+  // index.html), and the camera looks down at the ground, so a point at
+  // mid-height clear of both that zone and #vertical-controls (bottom-right,
+  // now four buttons tall as of the rotate button — a full-width-90% tap at
+  // this height lands inside its column and Chromium's touch-target
+  // adjustment silently redirects the tap to the nearest button instead of
+  // the canvas, found via a genuinely failing test, not guessed at) is
+  // reliably both outside both zones and aimed at ground, not sky.
   const viewport = page.viewportSize();
   if (!viewport) throw new Error("no viewport size");
-  const tapX = viewport.width * 0.9;
+  const tapX = viewport.width * 0.75;
   const tapY = viewport.height * 0.55;
 
   await page.touchscreen.tap(tapX, tapY);
@@ -352,11 +356,56 @@ test("tapping the undo button removes the most recently placed piece", async ({ 
   // outside the joystick zone places a castle piece" test above.
   const viewport = page.viewportSize();
   if (!viewport) throw new Error("no viewport size");
-  await page.touchscreen.tap(viewport.width * 0.9, viewport.height * 0.55);
+  await page.touchscreen.tap(viewport.width * 0.75, viewport.height * 0.55);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
 
   await pressVerticalButton(page, "undo-button");
   await releaseVerticalButton(page, "undo-button");
 
   await expect(structuresHud).toHaveAttribute("data-count", "0");
+});
+
+// The rotate button (#rotate-button, fourth button in #vertical-controls) is
+// KeyR's touch equivalent — castle-placement.spec.ts's "KeyR advances rotation
+// to exactly pi/2" is this project's keyboard coverage, this is the
+// touch-only equivalent, same relationship the undo test above has with
+// castle-placement.spec.ts's own keyboard undo test.
+test("tapping the rotate button rotates the next placed piece a quarter turn", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+
+  // Same reliably-outside-the-joystick-zone-and-vertical-controls tap spot
+  // as the "tapping outside the joystick zone" test above.
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  const groundX = viewport.width * 0.75;
+  const groundY = viewport.height * 0.55;
+
+  await page.touchscreen.tap(groundX, groundY);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(0, 5);
+
+  await pressVerticalButton(page, "rotate-button");
+  await releaseVerticalButton(page, "rotate-button");
+
+  // A well-separated *world* ground point, same reasoning as
+  // castle-placement.spec.ts's own rotation test — a fixed screen-space
+  // offset doesn't reliably re-hit the ground over rolling-hill terrain.
+  // Negative x (not +8 like the desktop version): this mobile viewport's
+  // narrower field of view projects world-space offsets to far more screen
+  // pixels per unit than desktop's 1280px-wide camera does, so +8 lands
+  // hundreds of pixels off-screen — found via a genuinely failing test, not
+  // guessed at. Left (negative x) has more room before the viewport edge
+  // than right, which is also where #vertical-controls sits.
+  const firstPos = {
+    x: Number(await structuresHud.getAttribute("data-last-x")),
+    y: Number(await structuresHud.getAttribute("data-last-y")),
+    z: Number(await structuresHud.getAttribute("data-last-z")),
+  };
+  const secondPoint = await page.evaluate((p) => window.__projectToScreen?.(p.x - 3, p.y, p.z), firstPos);
+  if (!secondPoint) throw new Error("__projectToScreen not available");
+  await page.touchscreen.tap(secondPoint.x, secondPoint.y);
+  await expect(structuresHud).toHaveAttribute("data-count", "2");
+
+  expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(Math.PI / 2, 5);
 });

@@ -106,15 +106,22 @@
        * since these are visible buttons rather than an invisible zone) —
        * only a coarse-pointer/touch device shows them, same idiom
        * `#dev-panels-toggle` already uses. A third button (undo, KeyX's
-       * touch equivalent) joins this same stacked flex column rather than
-       * claiming its own fixed position — the column just grows, the same
-       * "avoid overlap by construction" idiom `#dev-panels` already uses,
-       * per AUTONOMY.md's UI layout convention.
+       * touch equivalent) and a fourth (rotate, KeyR's touch equivalent)
+       * join this same stacked flex column rather than claiming their own
+       * fixed position — the column just grows, the same "avoid overlap by
+       * construction" idiom `#dev-panels` already uses, per AUTONOMY.md's
+       * UI layout convention.
        */
       #vertical-controls {
         position: fixed;
         right: 16px;
-        bottom: 70px;
+        /* Lowered from the original 70px once a fourth (rotate) button
+         * made the column tall enough to reach up into #dev-panels-content's
+         * own bottom row on a real touch device with panels expanded —
+         * found by the generic overlap-regression check in skins.spec.ts,
+         * not a visual guess. Still clear of #hud-position/#hud-structures/
+         * #credits near the very bottom of the screen. */
+        bottom: 40px;
         z-index: 6;
         display: none;
         flex-direction: column;
@@ -306,11 +313,12 @@
       <button id="vertical-up" type="button" aria-label="Ascend / jump">&#9650;</button>
       <button id="vertical-down" type="button" aria-label="Descend">&#9660;</button>
       <button id="undo-button" type="button" aria-label="Undo last placement">&#8630;</button>
+      <button id="rotate-button" type="button" aria-label="Rotate next placement">&#8635;</button>
     </div>
     <div id="hud-controls">
-      Move: WASD/Arrows or drag &middot; Run: Shift or drag further
-      &middot; Jump/Ascend: Space or &#9650; &middot; Descend: Ctrl or &#9660;
-      &middot; Click to place &middot; Rotate: R &middot; Undo: X or &#8630;
+      Move: WASD/Arrows/drag &middot; Run: Shift/drag further
+      &middot; Jump/Ascend: Space/&#9650; &middot; Descend: Ctrl/&#9660;
+      &middot; Click to place &middot; Rotate: R/&#8635; &middot; Undo: X/&#8630;
     </div>
     <div id="hud-position" data-x="0" data-z="0">x: 0.00  z: 0.00</div>
     <div id="hud-structures" data-count="0">Structures: 0</div>
