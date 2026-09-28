@@ -1769,6 +1769,39 @@ re-check holds. Full suite verified (typecheck, 347 unit tests — the 337
 baseline plus World's own 10 rotation tests plus this cycle's 1 — build, 94
 E2E tests, all green).
 
+**2026-09-28's skins cycle.** The 2026-09-23 `DECISIONS.md` Pending item
+(what should this track build next, or should its cadence change) is still
+unanswered — re-checked, not re-logged, since nothing about the situation
+has changed. Sync from `main` was a clean fast-forward (the same-day World
+cycle: touch parity for rotation — a fourth `#vertical-controls` button,
+`TouchRotateInput` mirroring `TouchUndoInput`'s shape — no Skins-territory
+overlap). Read World's diff against this track's own
+`src/land/realCastlePieceModels.ts` the same way yesterday's cycle did
+(that's exactly where yesterday's rotation-copy bug was found) — nothing
+new this time; the touch button only adds a second input source to the
+same `currentRotation` value the box/visual-sibling code already reads
+correctly since yesterday's fix.
+Ran the usual searches: repo-wide `TODO`/`FIXME` grep in `src/`/`e2e/` —
+none; `ATTRIBUTIONS.md` vs. `attributions.ts` — still in sync, checked
+entry by entry; `ARCHITECTURE.md`'s Rotation/undo entries already reflect
+today's touch-parity work (World's own cycle updated them with today's
+date before this cycle even started).
+Found one real, non-manufactured doc gap instead: `ARCHITECTURE.md`'s
+"Skins" section documents the block-materials real-texture upgrade
+(`realBlockTextures.ts`) in detail, but never once mentioned its structure-
+side twin, `src/land/realCastlePieceModels.ts` — the same "safe default
+first, async upgrade" system that both the 2026-09-09 sibling-visibility
+bug and yesterday's rotation-copy bug live in — despite both bugs already
+being written up in this file's own history. Added a "Real castle piece
+models" subsection covering the synchronous-box/async-upgrade shape, the
+`"replace-ground"` vs. `"roof-cap"` split, and both bugs' actual root
+causes, mirroring the existing Block materials subsection's level of
+detail. Purely descriptive — no behavior change, so no new tests. Full
+suite re-verified after the doc edit (typecheck, 352 unit tests, build, 95
+E2E tests, all green).
+Camera framing: unchanged, same blast-radius reasoning as every prior
+re-check holds.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
