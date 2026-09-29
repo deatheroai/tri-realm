@@ -396,6 +396,49 @@ with Ambient+Directional only, no environment map, and a fully metallic
 surface with no environment to reflect renders almost black. Confirmed
 by actually rendering it, not by predicting it — see `BACKLOG.md`.)
 
+### Real castle piece models (`src/land/realCastlePieceModels.ts`)
+
+The structure-side analogue of the block-materials real-texture upgrade
+above, for the same reason: `createCastlePieceMesh` (`src/land/placement.ts`)
+always returns the plain, block-material-colored box synchronously first —
+placement, collision, and save/load stay unchanged — and
+`upgradeCastlePieceToRealModel` fires an async glTF load that mutates that
+same piece in place once it resolves, same "safe default first" philosophy
+as `AvatarView`/`upgradeToRealTextures`. A load failure leaves the box
+exactly as it already was, with no separate fallback to reach for. A
+catalog entry's `realModel` (`castleStructures.ts`) is either
+`"replace-ground"` (the real model becomes the entire visible piece; the box
+itself is hidden, e.g. Wall/Gate) or `"roof-cap"` (the real model sits on
+top of the box, which stays visible underneath, e.g. Keep/Tower's roof).
+
+Two real bugs were found here by actually rendering and looking, not
+guessed at:
+
+- **Sibling, not child.** The real model is added as a sibling of the box
+  (`box.parent.add(visual)`), never as `box.add(visual)`. An early version
+  nested it as a child and then set `box.visible = false` for
+  `"replace-ground"` types — the piece rendered as nothing at all, because
+  three.js's renderer walks the scene via `Object3D.traverseVisible`, which
+  stops descending the instant it hits an invisible object, silently hiding
+  the nested child along with it. The box stays a fully valid raycast/
+  stacking target either way regardless of its own visibility.
+- **Rotation copy** (`BACKLOG.md`, 2026-09-27). The real model's transform is
+  copied from the box's own `.position`/`.rotation.y` once the async load
+  resolves (safe to read by then — `main.ts` always sets both
+  synchronously well before the model's real network/promise latency
+  settles). The rotation copy specifically was missing until the structure-
+  rotation feature (`KeyR`) shipped and exposed it: `PlacedStructure.rotation`,
+  the HUD, and the save round-trip all correctly tracked a rotated Wall or
+  Gate, but its real, visible model — the box itself is hidden for
+  `"replace-ground"` types — silently ignored `KeyR` entirely, sitting at
+  its authored orientation forever. Fixed with `visual.rotation.y =
+  box.rotation.y` alongside the existing position copy.
+
+Every placement gets its own `gltf.scene.clone(true)` (cached and shared
+across placements of the same type, same as glTF caching elsewhere) since
+these pieces have no skeleton — a plain clone is enough, no
+`SkeletonUtils` needed.
+
 ### Dev skin switcher
 
 A small on-screen panel (`#dev-skin-panel`, not child-facing UI — same
