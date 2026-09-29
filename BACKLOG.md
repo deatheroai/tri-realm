@@ -1821,6 +1821,15 @@ E2E tests, all green).
 Camera framing: unchanged, same blast-radius reasoning as every prior
 re-check holds.
 
+**2026-09-29's skins cycle.** The 2026-09-23 `DECISIONS.md` Pending item
+(what should this track build next, or should its cadence change) is still
+unanswered — re-checked, not re-logged. Sync from `main` was a clean merge
+(World's placement-rejection feedback HUD line — `placementFeedback.ts`,
+one new `index.html` element; no Skins-territory overlap). `TODO`/`FIXME`
+grep: none. The new HUD element passes `skins.spec.ts`'s overlap guard.
+No code change; full suite verified on the merged tree (typecheck, 353
+unit tests, build, 96 E2E tests, all green). Camera framing: unchanged.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
