@@ -224,3 +224,35 @@ test("rotation wraps back to zero after four quarter turns", async ({ page }) =>
 
   expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(0, 5);
 });
+
+test("a rejected placement shows the reason on the HUD, then clears", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  const x = viewport.width / 2;
+  const y = viewport.height * 0.75;
+
+  await page.mouse.click(x, y);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  await expect(structuresHud).not.toHaveAttribute("data-reject", /.+/);
+
+  // A ground point just in front of the piece (nearer the camera, so not
+  // occluded by it) whose footprint still overlaps the piece's (y - 0.7: the Keep's half-height, back down to ground level): must be
+  // rejected, not silently ignored. Projected from world coordinates, not
+  // a fixed pixel offset, for the same reason the tests above do.
+  const pos = {
+    x: Number(await structuresHud.getAttribute("data-last-x")),
+    y: Number(await structuresHud.getAttribute("data-last-y")),
+    z: Number(await structuresHud.getAttribute("data-last-z")),
+  };
+  const near = await page.evaluate((p) => window.__projectToScreen?.(p.x, p.y - 0.7, p.z + 0.8), pos);
+  if (!near) throw new Error("no projection hook");
+  await page.mouse.click(near.x, near.y);
+  await expect(structuresHud).toHaveAttribute("data-reject", "overlaps-structure");
+  await expect(structuresHud).toContainText("Can't place here");
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+
+  await expect(structuresHud).not.toHaveAttribute("data-reject", /.+/, { timeout: 5000 });
+  await expect(structuresHud).toHaveText("Structures: 1");
+});

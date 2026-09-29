@@ -43,6 +43,11 @@
       #hud-structures {
         bottom: 10px;
         right: 12px;
+        /* A rejected-placement message replaces the count temporarily —
+           wrap it rather than let it run into #hud-position on narrow
+           viewports. */
+        max-width: 45vw;
+        text-align: right;
       }
       #hud-controls {
         top: 10px;

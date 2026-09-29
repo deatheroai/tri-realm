@@ -19,6 +19,8 @@ import {
 } from "./land/castleStructures";
 import { addStructure, removeLastStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
+import type { PlacementRejectionReason } from "./world/placementValidation";
+import { describePlacementRejection } from "./world/placementFeedback";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
 import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransition";
 import { createAirScene } from "./air/airScene";
@@ -184,8 +186,14 @@ const input = new KeyboardInput();
 
 const structuresHud = document.getElementById("hud-structures");
 
+let rejectionTimer: ReturnType<typeof setTimeout> | undefined;
+
 function updateStructuresHud(lastPosition?: Vec3): void {
   if (!structuresHud) return;
+  // Any real HUD refresh (a successful placement, undo) supersedes a stale
+  // rejection message.
+  clearTimeout(rejectionTimer);
+  delete structuresHud.dataset.reject;
   const placedCount = landMap.structures.length;
   structuresHud.textContent = `Structures: ${placedCount}`;
   structuresHud.dataset.count = String(placedCount);
@@ -194,6 +202,20 @@ function updateStructuresHud(lastPosition?: Vec3): void {
     structuresHud.dataset.lastY = lastPosition.y.toFixed(3);
     structuresHud.dataset.lastZ = lastPosition.z.toFixed(3);
   }
+}
+// Rejected-placement feedback: temporarily replaces #hud-structures' text
+// (no new fixed element — see AUTONOMY.md's UI layout convention) with the
+// reason, then restores the count. Shared by all three realms since only
+// one is ever active. `data-reject` is the E2E hook.
+const PLACEMENT_REJECTION_MS = 2000;
+function showPlacementRejection(reason: PlacementRejectionReason): void {
+  if (!structuresHud) return;
+  structuresHud.textContent = describePlacementRejection(reason);
+  structuresHud.dataset.reject = reason;
+  clearTimeout(rejectionTimer);
+  rejectionTimer = setTimeout(() => {
+    updateStructuresHud();
+  }, PLACEMENT_REJECTION_MS);
 }
 // A restored save's last structure counts as "last placed" too, so the
 // HUD (and E2E assertions against it) reflect a reload the same way they
@@ -376,7 +398,10 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
     castleStructureFootprintOf,
     landTerrainPlacementRule,
   );
-  if (!check.valid) return; // rough Phase 1b pass: reject silently, no error UI yet
+  if (!check.valid) {
+    showPlacementRejection(check.reason);
+    return;
+  }
 
   const piece = createCastlePieceMesh(currentStructureTypeId, currentBlockMaterialId);
   piece.position.set(position.x, position.y, position.z);
@@ -478,7 +503,10 @@ function placeSeaPieceAt(clientX: number, clientY: number): void {
     seaStructureFootprintOf,
     seaTerrainPlacementRule,
   );
-  if (!check.valid) return; // rough pass, matches land: reject silently, no error UI yet
+  if (!check.valid) {
+    showPlacementRejection(check.reason);
+    return;
+  }
 
   const piece = createSeaStructureMesh(currentSeaStructureTypeId, currentBlockMaterialId);
   piece.position.set(position.x, position.y, position.z);
@@ -592,7 +620,10 @@ function placeAirPieceAt(clientX: number, clientY: number): void {
     airStructureFootprintOf,
     airTerrainPlacementRule,
   );
-  if (!check.valid) return; // rough pass, matches land/sea: reject silently, no error UI yet
+  if (!check.valid) {
+    showPlacementRejection(check.reason);
+    return;
+  }
 
   const piece = createAirStructureMesh(currentAirStructureTypeId, currentBlockMaterialId);
   piece.position.set(position.x, position.y, position.z);

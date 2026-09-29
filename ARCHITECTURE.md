@@ -620,6 +620,16 @@ fetch it.
   (a single button, rising-edge queued, reset on read), joining
   `#vertical-controls`' existing flex column as a fourth stacked button.
 
+- **Rejection feedback** (`BACKLOG.md`, 2026-09-29): `validatePlacement`
+  always returned a typed `reason`, but all three realms' placement call
+  sites dropped it ("reject silently, no error UI yet"), so an overlapping
+  or otherwise invalid click just did nothing. `describePlacementRejection`
+  (`src/world/placementFeedback.ts`, exhaustive on the reason union) maps
+  each reason to player-facing text; `main.ts`'s `showPlacementRejection`
+  temporarily replaces `#hud-structures`' text with it for 2s (also sets
+  `data-reject=<reason>` as the E2E hook) — no new fixed element, per the
+  UI layout convention. Any real HUD refresh (placement, undo) clears it.
+
 ## Modularity
 
 New realms, movement modules, or structure types are meant to extend this

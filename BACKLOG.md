@@ -576,6 +576,25 @@ unit tests, build, 95 E2E tests — including both previously-broken
 overlap-regression tests and all three affected touch-controls tests,
 re-run individually and as part of the full suite — all green).
 
+**2026-09-29's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; sync from `main`
+conflicted only on `.autonomy-heartbeat.log`, resolved by keeping both
+sides). Found a real gap in the construction system: since Phase 1b every
+realm's placement call site carried the comment "reject silently, no error
+UI yet" — `validatePlacement` returned a typed rejection reason
+(`out-of-bounds`/`overlaps-structure`/`terrain-not-suitable`) that was
+thrown away, so an invalid click looked like a broken app. Added
+`describePlacementRejection` (`src/world/placementFeedback.ts`) and a
+transient message on the existing `#hud-structures` element (2s, then the
+count returns; `data-reject` hook), wired into land, sea and air. Gave
+`#hud-structures` `max-width: 45vw` so the longer text wraps instead of
+reaching `#hud-position` on narrow viewports. 1 new unit test, 1 new E2E
+test (`castle-placement.spec.ts`: a click just in front of a placed piece
+is rejected with `overlaps-structure`, count unchanged, message clears).
+Note for future E2E authors: clicking the *same* screen point twice
+stacks (the ray hits the piece), it is not a rejection.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single
