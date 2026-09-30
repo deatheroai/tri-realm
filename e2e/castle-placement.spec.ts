@@ -213,9 +213,13 @@ test("rotation wraps back to zero after four quarter turns", async ({ page }) =>
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");
 
+  await expect(structuresHud).toHaveAttribute("data-facing", "0");
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press("KeyR");
+    // The HUD previews the yaw the next placement will use.
+    await expect(structuresHud).toHaveAttribute("data-facing", String(((i + 1) * 90) % 360));
   }
+  await expect(structuresHud).toHaveText("Structures: 0 · 0°");
 
   const viewport = page.viewportSize();
   if (!viewport) throw new Error("no viewport size");
@@ -254,5 +258,5 @@ test("a rejected placement shows the reason on the HUD, then clears", async ({ p
   await expect(structuresHud).toHaveAttribute("data-count", "1");
 
   await expect(structuresHud).not.toHaveAttribute("data-reject", /.+/, { timeout: 5000 });
-  await expect(structuresHud).toHaveText("Structures: 1");
+  await expect(structuresHud).toHaveText("Structures: 1 · 0°");
 });

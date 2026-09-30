@@ -595,6 +595,25 @@ is rejected with `overlaps-structure`, count unchanged, message clears).
 Note for future E2E authors: clicking the *same* screen point twice
 stacks (the ray hits the piece), it is not a rejection.
 
+**2026-09-30's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` again conflicted only on
+`.autonomy-heartbeat.log`, kept both sides). Found a real UX gap in the
+construction system: KeyR / the touch rotate button cycles the yaw the next
+placement uses, but nothing on screen ever showed it — a player had to
+place a piece to learn which way it faced. `#hud-structures` now reads
+`Structures: N · 90°` (`facingDegrees`/`describeFacing`,
+`src/world/placementFeedback.ts`; `data-facing` E2E hook), refreshed on
+every rotate press. `currentRotation` moved above `updateStructuresHud` in
+`main.ts` (the initial HUD call would otherwise hit its TDZ). Learned the
+hard way: a longer "Facing 90°" label wrapped to two lines and made
+`#hud-structures` overlap `#credits` on narrow viewports (caught by
+`skins.spec.ts`'s overlay guard) — kept to a bare degree figure. 1 new unit
+test; `castle-placement.spec.ts` extended (rotation-wrap test asserts the
+HUD at each turn; rejection test's restored text updated). Note: e2e runs
+against a built `dist`, so rebuild before re-running specs.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

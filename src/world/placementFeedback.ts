@@ -14,3 +14,16 @@ export function describePlacementRejection(reason: PlacementRejectionReason): st
       return "Can't place here: unsuitable terrain";
   }
 }
+
+/** The next placement's yaw as whole degrees clockwise-agnostic 0/90/180/270
+ * (rotation is quarter-turn only, see placementValidation.ts). */
+export function facingDegrees(rotation: number): number {
+  const deg = Math.round((rotation * 180) / Math.PI) % 360;
+  return (deg + 360) % 360;
+}
+
+/** HUD text for the yaw the next placement will use — kept to a bare
+ * degree figure so the count line stays one line on narrow viewports. */
+export function describeFacing(rotation: number): string {
+  return `${facingDegrees(rotation)}°`;
+}

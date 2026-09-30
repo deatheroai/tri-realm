@@ -20,7 +20,7 @@ import {
 import { addStructure, removeLastStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
 import { validatePlacement } from "./world/placementValidation";
 import type { PlacementRejectionReason } from "./world/placementValidation";
-import { describePlacementRejection } from "./world/placementFeedback";
+import { describeFacing, describePlacementRejection, facingDegrees } from "./world/placementFeedback";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
 import { findNearbyPortal, PORTAL_TRIGGER_RADIUS } from "./world/portalTransition";
 import { createAirScene } from "./air/airScene";
@@ -186,6 +186,13 @@ const input = new KeyboardInput();
 
 const structuresHud = document.getElementById("hud-structures");
 
+// The yaw (radians, around Y) the *next* placement in any realm will use —
+// shared across all three, same as currentBlockMaterialId, since "which way
+// is this piece facing" isn't realm-specific. Cycled by KeyR/consumeRotatePressed
+// in quarter turns only (see placementValidation.ts's rotatedFootprint,
+// which assumes exactly that).
+let currentRotation = 0;
+
 let rejectionTimer: ReturnType<typeof setTimeout> | undefined;
 
 function updateStructuresHud(lastPosition?: Vec3): void {
@@ -195,7 +202,8 @@ function updateStructuresHud(lastPosition?: Vec3): void {
   clearTimeout(rejectionTimer);
   delete structuresHud.dataset.reject;
   const placedCount = landMap.structures.length;
-  structuresHud.textContent = `Structures: ${placedCount}`;
+  structuresHud.textContent = `Structures: ${placedCount} · ${describeFacing(currentRotation)}`;
+  structuresHud.dataset.facing = String(facingDegrees(currentRotation));
   structuresHud.dataset.count = String(placedCount);
   if (lastPosition) {
     structuresHud.dataset.lastX = lastPosition.x.toFixed(3);
@@ -322,12 +330,6 @@ const pointerNdc = new THREE.Vector2();
 const placedMeshes = new Map<string, THREE.Object3D>();
 let currentBlockMaterialId = DEFAULT_BLOCK_MATERIAL_ID;
 let currentStructureTypeId = DEFAULT_CASTLE_STRUCTURE_TYPE_ID;
-// The yaw (radians, around Y) the *next* placement in any realm will use —
-// shared across all three, same as currentBlockMaterialId, since "which way
-// is this piece facing" isn't realm-specific. Cycled by KeyR/consumeRotatePressed
-// in quarter turns only (see placementValidation.ts's rotatedFootprint,
-// which assumes exactly that).
-let currentRotation = 0;
 
 // Footprint lookup for validatePlacement (src/world/placementValidation.ts)
 // — a structure type's `dimensions` already has the shape it wants.
@@ -1162,6 +1164,7 @@ function animate(): void {
   // jumpPressed/undo above merge their own touch sources.
   if (input.consumeRotatePressed() || (touchRotate?.consumeRotatePressed() ?? false)) {
     currentRotation = (currentRotation + Math.PI / 2) % (Math.PI * 2);
+    updateStructuresHud();
   }
 
   // Only the active realm's movement module runs each frame — a realm
