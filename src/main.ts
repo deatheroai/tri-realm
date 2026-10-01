@@ -193,6 +193,19 @@ const structuresHud = document.getElementById("hud-structures");
 // which assumes exactly that).
 let currentRotation = 0;
 
+// Which realm's scene/movement module is currently active. The real
+// land<->air portal (below, maybeTriggerPortal) is the in-world way to
+// switch now — this dev-only panel stays as a "cheat" for quick review/
+// testing, same "in-app preview" spirit as the skin/structure dev panels
+// above.
+type Realm = "land" | "air" | "sea";
+let activeRealm: Realm = "land";
+
+// What the HUD last rendered, so the frame loop can refresh it when the
+// active realm or its structure count changes by any route (portal, dev
+// panel, sea/air placement or undo) without wiring each call site.
+let hudRealm: Realm | undefined;
+let hudRealmCount = -1;
 let rejectionTimer: ReturnType<typeof setTimeout> | undefined;
 
 function updateStructuresHud(lastPosition?: Vec3): void {
@@ -201,10 +214,18 @@ function updateStructuresHud(lastPosition?: Vec3): void {
   // rejection message.
   clearTimeout(rejectionTimer);
   delete structuresHud.dataset.reject;
-  const placedCount = landMap.structures.length;
-  structuresHud.textContent = `Structures: ${placedCount} · ${describeFacing(currentRotation)}`;
+  // The visible text counts the *active* realm's structures (it used to
+  // always show land's, which read as wrong in sea/air). `data-count` stays
+  // land's own count — the long-standing E2E hook — and `data-realm-count`
+  // is the active realm's, matching the text.
+  const realmCount = activeRealmMap().structures.length;
+  structuresHud.textContent = `Structures: ${realmCount} · ${describeFacing(currentRotation)}`;
   structuresHud.dataset.facing = String(facingDegrees(currentRotation));
-  structuresHud.dataset.count = String(placedCount);
+  structuresHud.dataset.count = String(landMap.structures.length);
+  structuresHud.dataset.realm = activeRealm;
+  structuresHud.dataset.realmCount = String(realmCount);
+  hudRealm = activeRealm;
+  hudRealmCount = realmCount;
   if (lastPosition) {
     structuresHud.dataset.lastX = lastPosition.x.toFixed(3);
     structuresHud.dataset.lastY = lastPosition.y.toFixed(3);
@@ -959,13 +980,6 @@ if (devStructurePanel) {
   if (defaultAirStructureButton) setActiveButton(airStructureRow, defaultAirStructureButton);
 }
 
-// Which realm's scene/movement module is currently active. The real
-// land<->air portal (below, maybeTriggerPortal) is the in-world way to
-// switch now — this dev-only panel stays as a "cheat" for quick review/
-// testing, same "in-app preview" spirit as the skin/structure dev panels
-// above.
-type Realm = "land" | "air" | "sea";
-let activeRealm: Realm = "land";
 
 const devRealmPanel = document.getElementById("dev-realm-panel");
 if (devRealmPanel) {
@@ -1165,6 +1179,10 @@ function animate(): void {
   if (input.consumeRotatePressed() || (touchRotate?.consumeRotatePressed() ?? false)) {
     currentRotation = (currentRotation + Math.PI / 2) % (Math.PI * 2);
     updateStructuresHud();
+  }
+
+  if (activeRealm !== hudRealm || activeRealmMap().structures.length !== hudRealmCount) {
+    if (!structuresHud?.dataset.reject) updateStructuresHud();
   }
 
   // Only the active realm's movement module runs each frame — a realm

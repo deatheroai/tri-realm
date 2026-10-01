@@ -57,6 +57,26 @@ test("placing in sea doesn't affect land's own structure count", async ({ page }
   await expect(structuresHud).toHaveAttribute("data-count", "0");
 });
 
+test("the structures HUD counts the active realm's pieces, not always land's", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  await switchToSea(page);
+  await expect(structuresHud).toHaveAttribute("data-realm", "sea");
+  await expect(structuresHud).toHaveAttribute("data-realm-count", "0");
+
+  const floorPoint = await page.evaluate(
+    (y) => window.__projectToScreen?.(0, y, -3),
+    SEA_FLOOR_Y,
+  );
+  if (!floorPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(floorPoint.x, floorPoint.y);
+
+  await expect(structuresHud).toHaveAttribute("data-realm-count", "1");
+  await expect(structuresHud).toContainText("Structures: 1");
+  // Land's own count (the `data-count` hook) is still land's.
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+});
+
 test("a placed sea structure and the player's sea position survive a reload", async ({ page }) => {
   await page.goto("/");
   await switchToSea(page);
