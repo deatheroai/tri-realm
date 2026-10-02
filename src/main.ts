@@ -9,6 +9,7 @@ import { combineVerticalInputs } from "./input/combineVerticalInputs";
 import { TouchUndoInput } from "./input/touchUndoInput";
 import { TouchRotateInput } from "./input/touchRotateInput";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
+import { obstaclesFromStructures, type StructureObstacle } from "./land/structureCollision";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { createLandRealmMap, landTerrainPlacementRule, LAND_MAP_ID } from "./land/landRealmMap";
 import { createCastlePieceMesh, castlePieceGroundOffset } from "./land/placement";
@@ -176,6 +177,8 @@ function loadOrCreateLandMap(): RealmMap {
 }
 
 let landMap = loadOrCreateLandMap();
+let landObstaclesSource: RealmMap["structures"] | undefined;
+let landObstacles: StructureObstacle[] = [];
 
 // Same terrain the ground mesh itself is built from (scene.ts) — movement
 // collision and the rendered terrain can't drift apart, and both now go
@@ -1191,7 +1194,14 @@ function animate(): void {
   let cameraLookAtY: number;
 
   if (activeRealm === "land") {
-    movement = stepLandMovement(movement, moveInput, groundHeightAt, dt, jumpPressed);
+    // Placed structures are solid to the land avatar. `addStructure`/
+    // `removeLastStructure` are immutable, so the structures array's identity
+    // changing is a cheap "rebuild the obstacle boxes" signal.
+    if (landMap.structures !== landObstaclesSource) {
+      landObstaclesSource = landMap.structures;
+      landObstacles = obstaclesFromStructures(landMap.structures, castleStructureFootprintOf);
+    }
+    movement = stepLandMovement(movement, moveInput, groundHeightAt, dt, jumpPressed, landObstacles);
     avatar.position.set(
       movement.position.x,
       movement.position.y + AVATAR_GROUND_OFFSET,

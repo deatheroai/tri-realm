@@ -260,3 +260,39 @@ test("a rejected placement shows the reason on the HUD, then clears", async ({ p
   await expect(structuresHud).not.toHaveAttribute("data-reject", /.+/, { timeout: 5000 });
   await expect(structuresHud).toHaveText("Structures: 1 · 0°");
 });
+
+test("a placed structure is solid: the avatar can't walk through it", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const positionHud = page.locator("#hud-position");
+
+  // A Keep (the default type) is far taller than a step. Place one a few
+  // units behind spawn (+z) — the other directions run into the land<->air/
+  // sea portals within a few seconds, which would swap realms mid-test.
+  const target = await page.evaluate(() => window.__projectToScreen?.(0, 0, 5));
+  if (!target) throw new Error("__projectToScreen not available");
+  await page.mouse.click(target.x, target.y);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  const wallX = Number(await structuresHud.getAttribute("data-last-x"));
+  const wallZ = Number(await structuresHud.getAttribute("data-last-z"));
+  expect(wallZ).toBeGreaterThan(2);
+
+  // Line up with the piece's x first (the click's ground hit isn't exactly
+  // where the projected point was), then walk straight into it. Without
+  // collision the avatar would pass right through; with it, it stops short.
+  const sideKey = wallX > 0 ? "KeyD" : "KeyA";
+  await page.keyboard.down(sideKey);
+  await page.waitForFunction(
+    (x) => Math.abs(Number(document.getElementById("hud-position")?.dataset.x) - x) < 0.3,
+    wallX,
+    { polling: "raf", timeout: 15000 },
+  );
+  await page.keyboard.up(sideKey);
+
+  await page.keyboard.down("KeyS");
+  await page.waitForTimeout(2500); // ~15 units unobstructed
+  await page.keyboard.up("KeyS");
+  const z = Number(await positionHud.getAttribute("data-z"));
+  expect(z).toBeGreaterThan(1); // it did walk
+  expect(z).toBeLessThan(wallZ); // ...but never reached the piece's centre
+});

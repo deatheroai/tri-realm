@@ -632,6 +632,27 @@ wiring. `activeRealm` moved above `updateStructuresHud` in `main.ts`
 (`sea-construction.spec.ts`). Full suite green (typecheck, build, 354 unit
 tests, 97 E2E tests).
 
+**2026-10-02's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` was a fast-forward).
+Found a real gap in the core systems: placed structures were purely
+visual — the land avatar walked straight through every Keep/Wall/Gate, and
+the 2026-08-26 decision had named castle walls as the likely trigger for
+real collision. New `src/land/structureCollision.ts` (axis-aligned boxes
+from `PlacedStructure` + catalog footprint, rotation-aware) feeds a new
+optional `obstacles` argument of `stepLandMovement`: a piece taller than
+`STEP_HEIGHT` (0.4) above the feet blocks horizontal entry with per-axis
+sliding; lower pieces (or any piece the avatar jumped above) are stood on;
+an avatar already inside a box can always leave. `placementValidation.ts`'s
+`rotatedFootprint` is now exported for reuse. Land only — sea/air movement
+unchanged. 11 new unit tests (`structureCollision.test.ts`); 1 new E2E
+(`castle-placement.spec.ts`: walks into a Keep placed behind spawn and is
+stopped short — verified to fail with collision disabled). E2E gotcha for
+future authors: walking ±x or -z from spawn reaches a land portal within
+~2s and swaps realms, so collision tests walk +z. Full suite green
+(typecheck, build, 365+ unit tests, 98 E2E tests).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

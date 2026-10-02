@@ -59,7 +59,7 @@ function footprintsOverlap(
 // control only ever cycles in 90° steps), which keeps this exact rather
 // than needing a real oriented-bounding-box check: a quarter turn simply
 // swaps which authored axis (width vs. depth) now runs along world X vs. Z.
-function rotatedFootprint(footprint: StructureFootprint, rotation: number): StructureFootprint {
+export function rotatedFootprint(footprint: StructureFootprint, rotation: number): StructureFootprint {
   const TAU = Math.PI * 2;
   const normalized = ((rotation % TAU) + TAU) % TAU;
   const quarterTurns = Math.round(normalized / (Math.PI / 2));

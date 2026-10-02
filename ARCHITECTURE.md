@@ -221,6 +221,17 @@ rolling-hill terrain is completely unaffected in practice; this exists for
 whatever future terrain/structure actually needs a real wall (see
 `BACKLOG.md`).
 
+**Placed structures are solid on land** (`src/land/structureCollision.ts`):
+`obstaclesFromStructures` turns `PlacedStructure`s into axis-aligned boxes
+(footprint from the realm's catalog, rotation-aware via
+`rotatedFootprint`); `main.ts` rebuilds them whenever `landMap.structures`
+changes identity and passes them to `stepLandMovement`. A box whose top is
+more than `STEP_HEIGHT` (0.4) above the avatar's feet blocks horizontal
+entry (sliding along one axis if the other is free); a lower one — or any
+box the avatar jumped above — is stood on, raising the ground under it.
+An avatar that starts inside a box (a piece placed on top of it) can
+always walk out. Land only; sea/air movement still ignores structures.
+
 ## Skins (visual identity)
 
 Everything an object *looks like* — the avatar's model, a castle block's
