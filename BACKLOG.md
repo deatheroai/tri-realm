@@ -653,6 +653,29 @@ future authors: walking ±x or -z from spawn reaches a land portal within
 ~2s and swaps realms, so collision tests walk +z. Full suite green
 (typecheck, build, 365+ unit tests, 98 E2E tests).
 
+**2026-10-03's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` was a fast-forward).
+Closed the gap yesterday's land-collision entry named itself ("Land only —
+sea/air movement unchanged"): placed air and sea structures were still
+ghosts — the swimmer/flyer passed straight through every piece. New
+`src/world/volumeCollision.ts` (`volumeObstaclesFromStructures`: full 3D
+boxes from `PlacedStructure` + the realm's footprint catalog, rotation-aware;
+`resolveVolumeMove`: per-axis move that rejects an axis step entering a box,
+so the avatar slides along faces, and never traps one already inside). Air
+has no ground to stand on, so unlike land this is plain solid volume — no
+step-up. `stepAirMovement`/`stepSeaMovement` gained an optional trailing
+`obstacles` argument (existing callers/tests unaffected); a blocked axis also
+zeroes that velocity component, and sea's floor/surface clamp is unchanged.
+`main.ts` rebuilds each realm's boxes when its (immutable) structures array
+changes identity, same cheap signal land uses. 10 new unit tests
+(`volumeCollision.test.ts`); 2 new E2E (`air-construction.spec.ts`,
+`sea-construction.spec.ts`: place a piece ahead, fly/swim into it, stop short
+— both verified to fail with collision disabled). E2E gotcha: `npm run build`
+failing typecheck leaves a stale `dist`, so a revert experiment must use
+`npx vite build` or it silently tests the old code.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

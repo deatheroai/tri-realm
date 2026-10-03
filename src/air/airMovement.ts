@@ -1,5 +1,6 @@
 import type { Vec3 } from "../math/vec3";
 import type { MoveInput } from "../input/keyboardInput";
+import { resolveVolumeMove, type VolumeObstacle } from "../world/volumeCollision";
 
 export interface AirMovementState {
   position: Vec3;
@@ -24,12 +25,16 @@ const ACCEL_RESPONSIVENESS = 3; // higher = snappier response to input changes
  * (ARCHITECTURE.md) instead of land's snappier movement. The exponential
  * form is frame-rate independent, same technique as `smoothingFactor`
  * (followCamera.ts).
+ *
+ * `obstacles` (placed structures, `src/world/volumeCollision.ts`) are solid:
+ * a blocked axis is rejected (sliding along the face) and its velocity zeroed.
  */
 export function stepAirMovement(
   state: AirMovementState,
   input: MoveInput,
   vertical: number,
   dt: number,
+  obstacles: readonly VolumeObstacle[] = [],
 ): AirMovementState {
   const maxSpeed = input.run ? BOOST_MAX_SPEED : MAX_SPEED;
 
@@ -52,12 +57,18 @@ export function stepAirMovement(
     z: state.velocity.z + (targetVelocity.z - state.velocity.z) * t,
   };
 
+  const moved = resolveVolumeMove(obstacles, state.position, {
+    x: state.position.x + velocity.x * dt,
+    y: state.position.y + velocity.y * dt,
+    z: state.position.z + velocity.z * dt,
+  });
+
   return {
-    position: {
-      x: state.position.x + velocity.x * dt,
-      y: state.position.y + velocity.y * dt,
-      z: state.position.z + velocity.z * dt,
+    position: moved.position,
+    velocity: {
+      x: moved.blocked.x ? 0 : velocity.x,
+      y: moved.blocked.y ? 0 : velocity.y,
+      z: moved.blocked.z ? 0 : velocity.z,
     },
-    velocity,
   };
 }

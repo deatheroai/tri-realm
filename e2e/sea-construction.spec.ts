@@ -183,3 +183,31 @@ test("pressing X undoes the most recently placed sea structure, but not while on
     .poll(async () => page.evaluate(() => window.__getSeaStructureCount?.()))
     .toBe(0);
 });
+
+test("a placed sea structure is solid — swimming straight into it stops short", async ({ page }) => {
+  await page.goto("/");
+  await switchToSea(page);
+
+  // Dive to the sea floor first so the swimmer is level with the piece
+  // placed on it (buoyancy would otherwise drift it up and over).
+  await page.keyboard.down("ControlLeft");
+  await expect
+    .poll(async () => page.evaluate(() => window.__getSeaDepth?.()), { timeout: 15000 })
+    .toBeLessThan(SEA_FLOOR_Y + 1);
+  await page.waitForTimeout(300);
+
+  const floorPoint = await page.evaluate((y) => window.__projectToScreen?.(0, y, -3), SEA_FLOOR_Y);
+  if (!floorPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(floorPoint.x, floorPoint.y);
+  await expect.poll(async () => page.evaluate(() => window.__getSeaStructureCount?.())).toBe(1);
+
+  await page.keyboard.down("KeyW");
+  await page.keyboard.down("ShiftLeft");
+  await page.waitForTimeout(2500);
+  await page.keyboard.up("ShiftLeft");
+  await page.keyboard.up("KeyW");
+  await page.keyboard.up("ControlLeft");
+
+  const z = Number(await page.locator("#hud-position").getAttribute("data-z"));
+  expect(z).toBeGreaterThan(-3);
+});

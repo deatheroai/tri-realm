@@ -10,6 +10,7 @@ import { TouchUndoInput } from "./input/touchUndoInput";
 import { TouchRotateInput } from "./input/touchRotateInput";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
 import { obstaclesFromStructures, type StructureObstacle } from "./land/structureCollision";
+import { volumeObstaclesFromStructures, type VolumeObstacle } from "./world/volumeCollision";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
 import { createLandRealmMap, landTerrainPlacementRule, LAND_MAP_ID } from "./land/landRealmMap";
 import { createCastlePieceMesh, castlePieceGroundOffset } from "./land/placement";
@@ -179,6 +180,10 @@ function loadOrCreateLandMap(): RealmMap {
 let landMap = loadOrCreateLandMap();
 let landObstaclesSource: RealmMap["structures"] | undefined;
 let landObstacles: StructureObstacle[] = [];
+let airObstaclesSource: RealmMap["structures"] | undefined;
+let airObstacles: VolumeObstacle[] = [];
+let seaObstaclesSource: RealmMap["structures"] | undefined;
+let seaObstacles: VolumeObstacle[] = [];
 
 // Same terrain the ground mesh itself is built from (scene.ts) — movement
 // collision and the rendered terrain can't drift apart, and both now go
@@ -1226,7 +1231,12 @@ function animate(): void {
     cameraLookAtY = movement.position.y + 1;
   } else if (activeRealm === "air") {
     const vertical = combineVerticalInputs(input.getVerticalInput(), touchVertical?.getVerticalInput() ?? 0);
-    airMovement = stepAirMovement(airMovement, moveInput, vertical, dt);
+    // Placed structures are solid; rebuild boxes when the (immutable) array changes.
+    if (airMap.structures !== airObstaclesSource) {
+      airObstaclesSource = airMap.structures;
+      airObstacles = volumeObstaclesFromStructures(airMap.structures, airStructureFootprintOf);
+    }
+    airMovement = stepAirMovement(airMovement, moveInput, vertical, dt, airObstacles);
     airAvatar.position.set(airMovement.position.x, airMovement.position.y, airMovement.position.z);
 
     // Air-specific animation/pitch parity with sea (Phase 2 `todo`,
@@ -1275,7 +1285,11 @@ function animate(): void {
     cameraLookAtY = airMovement.position.y;
   } else {
     const vertical = combineVerticalInputs(input.getVerticalInput(), touchVertical?.getVerticalInput() ?? 0);
-    seaMovement = stepSeaMovement(seaMovement, moveInput, vertical, dt, SEA_FLOOR_Y, SEA_SURFACE_Y);
+    if (seaMap.structures !== seaObstaclesSource) {
+      seaObstaclesSource = seaMap.structures;
+      seaObstacles = volumeObstaclesFromStructures(seaMap.structures, seaStructureFootprintOf);
+    }
+    seaMovement = stepSeaMovement(seaMovement, moveInput, vertical, dt, SEA_FLOOR_Y, SEA_SURFACE_Y, seaObstacles);
     seaAvatar.position.set(seaMovement.position.x, seaMovement.position.y, seaMovement.position.z);
 
     // Sea-specific animation-state mapping (src/sea/seaAnimation.ts,

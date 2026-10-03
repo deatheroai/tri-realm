@@ -230,7 +230,14 @@ more than `STEP_HEIGHT` (0.4) above the avatar's feet blocks horizontal
 entry (sliding along one axis if the other is free); a lower one — or any
 box the avatar jumped above — is stood on, raising the ground under it.
 An avatar that starts inside a box (a piece placed on top of it) can
-always walk out. Land only; sea/air movement still ignores structures.
+always walk out.
+
+**Placed structures are solid in air and sea** (`src/world/volumeCollision.ts`):
+full 3D boxes from `PlacedStructure` + the realm's footprint catalog
+(rotation-aware). `stepAirMovement`/`stepSeaMovement` take them as an
+optional last argument and move per axis, rejecting any axis step that
+enters a box (sliding along faces) and zeroing that velocity component; an
+avatar already inside can always leave. No step-up — there is no ground.
 
 ## Skins (visual identity)
 

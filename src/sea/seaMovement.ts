@@ -1,5 +1,6 @@
 import type { Vec3 } from "../math/vec3";
 import type { MoveInput } from "../input/keyboardInput";
+import { resolveVolumeMove, type VolumeObstacle } from "../world/volumeCollision";
 
 export interface SeaMovementState {
   position: Vec3;
@@ -33,6 +34,8 @@ const VERTICAL_RESPONSIVENESS = 1.8;
  *   band between `floorY` (the sea floor) and `surfaceY` (the water
  *   surface), and vertical velocity zeroes out on hitting either bound
  *   instead of accumulating into a wasted push against it.
+ * - Placed structures (`obstacles`, `src/world/volumeCollision.ts`) are solid:
+ *   a blocked axis is rejected (sliding along the face) and its velocity zeroed.
  */
 export function stepSeaMovement(
   state: SeaMovementState,
@@ -41,6 +44,7 @@ export function stepSeaMovement(
   dt: number,
   floorY: number,
   surfaceY: number,
+  obstacles: readonly VolumeObstacle[] = [],
 ): SeaMovementState {
   const maxSpeed = input.run ? KICK_MAX_SPEED : MAX_SPEED;
 
@@ -70,12 +74,18 @@ export function stepSeaMovement(
   // the next frame vertical/buoyancy pressure eases off.
   const hitBound = cappedY !== uncappedY;
 
+  const moved = resolveVolumeMove(obstacles, state.position, {
+    x: state.position.x + velocity.x * dt,
+    y: cappedY,
+    z: state.position.z + velocity.z * dt,
+  });
+
   return {
-    position: {
-      x: state.position.x + velocity.x * dt,
-      y: cappedY,
-      z: state.position.z + velocity.z * dt,
+    position: moved.position,
+    velocity: {
+      x: moved.blocked.x ? 0 : velocity.x,
+      y: hitBound || moved.blocked.y ? 0 : velocity.y,
+      z: moved.blocked.z ? 0 : velocity.z,
     },
-    velocity: hitBound ? { ...velocity, y: 0 } : velocity,
   };
 }

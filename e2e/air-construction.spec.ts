@@ -140,3 +140,24 @@ test("pressing X undoes the most recently placed air structure", async ({ page }
     .poll(async () => page.evaluate(() => window.__getAirStructureCount?.()))
     .toBe(0);
 });
+
+test("a placed air structure is solid — flying straight into it stops short", async ({ page }) => {
+  await page.goto("/");
+  await switchToAir(page);
+
+  // A platform lands ~3 units ahead (-z) at the avatar's own altitude, so
+  // flying forward runs straight into it.
+  const airPoint = await page.evaluate((y) => window.__projectToScreen?.(0, y, -3), AIR_SPAWN_Y);
+  if (!airPoint) throw new Error("__projectToScreen not available");
+  await page.mouse.click(airPoint.x, airPoint.y);
+  await expect.poll(async () => page.evaluate(() => window.__getAirStructureCount?.())).toBe(1);
+
+  // Without collision 2.5s of forward flight carries the avatar well past
+  // z = -4.5 (the platform's far edge); with it, it stops at its near face.
+  await page.keyboard.down("KeyW");
+  await page.waitForTimeout(2500);
+  await page.keyboard.up("KeyW");
+
+  const z = Number(await page.locator("#hud-position").getAttribute("data-z"));
+  expect(z).toBeGreaterThan(-3);
+});
