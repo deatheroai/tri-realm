@@ -3,7 +3,7 @@ import { describeFacing, describePlacementRejection, facingDegrees } from "./pla
 import type { PlacementRejectionReason } from "./placementValidation";
 
 describe("describePlacementRejection", () => {
-  const reasons: PlacementRejectionReason[] = ["out-of-bounds", "overlaps-structure", "terrain-not-suitable"];
+  const reasons: PlacementRejectionReason[] = ["out-of-bounds", "overlaps-structure", "blocks-portal", "terrain-not-suitable"];
 
   it("gives every rejection reason a distinct, non-empty message", () => {
     const messages = reasons.map(describePlacementRejection);

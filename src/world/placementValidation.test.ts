@@ -123,4 +123,36 @@ describe("validatePlacement", () => {
       expect(result).toEqual({ valid: true });
     });
   });
+
+  describe("portal keep-out", () => {
+    const portal = {
+      id: "p",
+      position: { x: 0, y: 0, z: 0 },
+      targetRealmMapId: "other",
+      targetSpawnPosition: { x: 0, y: 0, z: 0 },
+      kind: "test",
+    };
+    const withPortal = (): RealmMap => ({ ...emptyMap(), bounds: { width: 40, depth: 40 }, portals: [portal] });
+
+    it("rejects a piece on or touching the portal's keep-out radius", () => {
+      expect(validatePlacement(withPortal(), "cube", { x: 0, y: 0, z: 0 }, 0, footprintOf, alwaysWalkable)).toEqual({
+        valid: false,
+        reason: "blocks-portal",
+      });
+      // Box edge at x=1.5 - 0.5 = 1 -> exactly on the radius counts as blocking.
+      expect(validatePlacement(withPortal(), "cube", { x: 1.5, y: 0, z: 0 }, 0, footprintOf, alwaysWalkable)).toEqual({
+        valid: false,
+        reason: "blocks-portal",
+      });
+    });
+
+    it("accepts a piece clear of the keep-out, or far above/below the portal", () => {
+      expect(validatePlacement(withPortal(), "cube", { x: 2, y: 0, z: 0 }, 0, footprintOf, alwaysWalkable)).toEqual({
+        valid: true,
+      });
+      expect(validatePlacement(withPortal(), "cube", { x: 0, y: 6, z: 0 }, 0, footprintOf, alwaysWalkable)).toEqual({
+        valid: true,
+      });
+    });
+  });
 });

@@ -24,7 +24,11 @@ export type FootprintLookup = (type: string) => StructureFootprint;
  * Land's is trivially true today — see `src/land/landRealmMap.ts`. */
 export type TerrainPlacementRule = (map: RealmMap, position: Vec3) => boolean;
 
-export type PlacementRejectionReason = "out-of-bounds" | "overlaps-structure" | "terrain-not-suitable";
+export type PlacementRejectionReason =
+  | "out-of-bounds"
+  | "overlaps-structure"
+  | "blocks-portal"
+  | "terrain-not-suitable";
 
 export type PlacementCheck = { valid: true } | { valid: false; reason: PlacementRejectionReason };
 
@@ -67,6 +71,27 @@ export function rotatedFootprint(footprint: StructureFootprint, rotation: number
   return swapped ? { width: footprint.depth, height: footprint.height, depth: footprint.width } : footprint;
 }
 
+// How close (world units) a piece's box may come to a portal's center.
+// Deliberately tighter than the avatar's trigger radius (2): the point is
+// to stop a piece landing *on* the portal, not to exclude everything the
+// avatar could trigger it from — a wider keep-out would reject ordinary
+// clicks on the open ground around a portal for no gameplay benefit.
+export const PORTAL_KEEP_OUT_RADIUS = 1;
+
+// True when any part of the candidate's box is within `PORTAL_KEEP_OUT_RADIUS`
+// of a portal. Placed structures are solid to every realm's avatar now (see
+// `src/land/structureCollision.ts`, `src/world/volumeCollision.ts`), so a
+// piece dropped on a portal would wall it off with no way to undo short of
+// KeyX — and a whole ring of them could permanently strand the avatar.
+function blocksPortal(map: RealmMap, position: Vec3, footprint: StructureFootprint): boolean {
+  return map.portals.some((portal) => {
+    const dx = Math.max(Math.abs(portal.position.x - position.x) - footprint.width / 2, 0);
+    const dy = Math.max(Math.abs(portal.position.y - position.y) - footprint.height / 2, 0);
+    const dz = Math.max(Math.abs(portal.position.z - position.z) - footprint.depth / 2, 0);
+    return Math.hypot(dx, dy, dz) <= PORTAL_KEEP_OUT_RADIUS;
+  });
+}
+
 /**
  * Checks whether `type` can be placed at `position`, rotated `rotation`
  * radians around Y, on `map`: within its bounds, not overlapping an
@@ -103,6 +128,10 @@ export function validatePlacement(
   );
   if (overlapsExisting) {
     return { valid: false, reason: "overlaps-structure" };
+  }
+
+  if (blocksPortal(map, position, footprint)) {
+    return { valid: false, reason: "blocks-portal" };
   }
 
   if (!terrainRule(map, position)) {

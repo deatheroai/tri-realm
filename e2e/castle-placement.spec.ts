@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { LAND_PORTAL_POSITION } from "../src/world/landAirPortal";
 
 test("clicking the ground places a castle piece", async ({ page }) => {
   await page.goto("/");
@@ -295,4 +296,18 @@ test("a placed structure is solid: the avatar can't walk through it", async ({ p
   const z = Number(await positionHud.getAttribute("data-z"));
   expect(z).toBeGreaterThan(1); // it did walk
   expect(z).toBeLessThan(wallZ); // ...but never reached the piece's centre
+});
+
+test("a piece can't be placed on a portal: rejected as blocks-portal", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+
+  // The land-side balloon — projected at its real terrain height, since the
+  // rolling hills put it well off the y=0 plane the other tests project onto.
+  const onPortal = await page.evaluate((p) => window.__projectToScreen?.(p.x, p.y, p.z), LAND_PORTAL_POSITION);
+  if (!onPortal) throw new Error("__projectToScreen not available");
+  await page.mouse.click(onPortal.x, onPortal.y);
+  await expect(structuresHud).toHaveAttribute("data-reject", "blocks-portal");
+  await expect(structuresHud).toContainText("blocks a portal");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
 });

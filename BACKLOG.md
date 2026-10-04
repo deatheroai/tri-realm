@@ -676,6 +676,27 @@ changes identity, same cheap signal land uses. 10 new unit tests
 failing typecheck leaves a stale `dist`, so a revert experiment must use
 `npx vite build` or it silently tests the old code.
 
+**2026-10-04's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` conflicted only on
+`.autonomy-heartbeat.log`, kept both sides). Found a hole opened by the last
+two cycles' collision work: placed structures are now solid in every realm,
+but `validatePlacement` knew nothing about portals, so a piece dropped on a
+portal walled it off (and a ring of them could strand the avatar, with only
+KeyX to recover). New rejection reason `blocks-portal`
+(`src/world/placementValidation.ts`): a candidate's box may not come within
+`PORTAL_KEEP_OUT_RADIUS` (1 unit, 3D, closest-point-on-box so footprint and
+rotation count) of any `map.portals` entry — applies to land, sea and air
+via the shared validator, and `describePlacementRejection` has the matching
+HUD text. Deliberately 1, not the avatar's 2-unit trigger radius: a first
+draft used 2 and broke three unrelated E2E tests whose terrain-projected
+clicks legitimately land near the ±10 portals. 2 new unit tests; 1 new E2E
+(`castle-placement.spec.ts`: clicking the balloon is rejected). E2E gotcha:
+`__projectToScreen` at y=0 doesn't hit the same ground point as a click on
+hilly terrain — project at the target's real terrain height when the exact
+spot matters. Full suite green.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single
