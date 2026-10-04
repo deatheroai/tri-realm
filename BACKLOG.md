@@ -1932,6 +1932,14 @@ grep: none. The new HUD element passes `skins.spec.ts`'s overlap guard.
 No code change; full suite verified on the merged tree (typecheck, 353
 unit tests, build, 96 E2E tests, all green). Camera framing: unchanged.
 
+**2026-10-04's skins cycle.** The 2026-09-23 `DECISIONS.md` Pending item
+(what should this track build next, or should its cadence change) is still
+unanswered — re-checked, not re-logged. Sync from `main` was a clean
+fast-forward (World's portal-blocks-placement validation; no Skins-territory
+overlap). No unblocked Skins-owned backlog item, so no code change. Full
+suite verified on the merged tree (typecheck, 377 unit tests, build, 101
+E2E tests, all green). Camera framing: unchanged.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
