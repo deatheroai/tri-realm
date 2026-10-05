@@ -28,6 +28,7 @@ export type PlacementRejectionReason =
   | "out-of-bounds"
   | "overlaps-structure"
   | "blocks-portal"
+  | "blocks-avatar"
   | "terrain-not-suitable";
 
 export type PlacementCheck = { valid: true } | { valid: false; reason: PlacementRejectionReason };
@@ -92,6 +93,25 @@ function blocksPortal(map: RealmMap, position: Vec3, footprint: StructureFootpri
   });
 }
 
+// Rough avatar body used to keep a new piece from materializing around the
+// player: a vertical capsule-ish box from the feet up. Horizontal radius
+// matches the land collision radius (`AVATAR_RADIUS`, kept literal here so
+// this realm-agnostic file doesn't import from `src/land/`).
+export const AVATAR_KEEP_OUT_RADIUS = 0.3;
+export const AVATAR_KEEP_OUT_HEIGHT = 1.8;
+
+// True when the avatar's body would intersect the candidate's box. A piece
+// the avatar is standing exactly on top of (feet flush with its top face)
+// does not intersect — only one that would swallow part of the body does.
+function blocksAvatar(avatarPosition: Vec3, position: Vec3, footprint: StructureFootprint): boolean {
+  return (
+    axisOverlaps(position.x, footprint.width, avatarPosition.x, AVATAR_KEEP_OUT_RADIUS * 2) &&
+    axisOverlaps(position.z, footprint.depth, avatarPosition.z, AVATAR_KEEP_OUT_RADIUS * 2) &&
+    avatarPosition.y < position.y + footprint.height / 2 - TOUCHING_EPSILON &&
+    avatarPosition.y + AVATAR_KEEP_OUT_HEIGHT > position.y - footprint.height / 2 + TOUCHING_EPSILON
+  );
+}
+
 /**
  * Checks whether `type` can be placed at `position`, rotated `rotation`
  * radians around Y, on `map`: within its bounds, not overlapping an
@@ -109,6 +129,7 @@ export function validatePlacement(
   rotation: number,
   footprintOf: FootprintLookup,
   terrainRule: TerrainPlacementRule,
+  avatarPosition?: Vec3,
 ): PlacementCheck {
   const footprint = rotatedFootprint(footprintOf(type), rotation);
 
@@ -132,6 +153,10 @@ export function validatePlacement(
 
   if (blocksPortal(map, position, footprint)) {
     return { valid: false, reason: "blocks-portal" };
+  }
+
+  if (avatarPosition && blocksAvatar(avatarPosition, position, footprint)) {
+    return { valid: false, reason: "blocks-avatar" };
   }
 
   if (!terrainRule(map, position)) {

@@ -697,6 +697,19 @@ clicks legitimately land near the ±10 portals. 2 new unit tests; 1 new E2E
 hilly terrain — project at the target's real terrain height when the exact
 spot matters. Full suite green.
 
+**2026-10-05's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` was a fast-forward).
+Closed another hole in the placement rules: nothing stopped a piece being
+placed on the avatar's own body, so the avatar spawned inside solid
+geometry. New rejection reason `blocks-avatar`: `validatePlacement` takes an
+optional trailing `avatarPosition` (feet) and rejects a candidate whose box
+intersects a 0.3-radius, 1.8-tall body; standing flush on a piece's top face
+is fine. Wired into land, sea and air, with HUD text in
+`describePlacementRejection`. `#hud-position` gained `data-y` (E2E hook).
+2 new unit tests, 1 new E2E (`castle-placement.spec.ts`). Full suite green.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

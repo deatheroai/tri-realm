@@ -428,6 +428,7 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
     currentRotation,
     castleStructureFootprintOf,
     landTerrainPlacementRule,
+    avatar.position,
   );
   if (!check.valid) {
     showPlacementRejection(check.reason);
@@ -533,6 +534,7 @@ function placeSeaPieceAt(clientX: number, clientY: number): void {
     currentRotation,
     seaStructureFootprintOf,
     seaTerrainPlacementRule,
+    avatar.position,
   );
   if (!check.valid) {
     showPlacementRejection(check.reason);
@@ -650,6 +652,7 @@ function placeAirPieceAt(clientX: number, clientY: number): void {
     currentRotation,
     airStructureFootprintOf,
     airTerrainPlacementRule,
+    avatar.position,
   );
   if (!check.valid) {
     showPlacementRejection(check.reason);
@@ -1334,6 +1337,7 @@ function animate(): void {
     hud.textContent = `x: ${targetPosition.x.toFixed(2)}  z: ${targetPosition.z.toFixed(2)}`;
     hud.dataset.x = targetPosition.x.toFixed(3);
     hud.dataset.z = targetPosition.z.toFixed(3);
+    hud.dataset.y = targetPosition.y.toFixed(3);
   }
 
   const activeScene = activeRealm === "land" ? scene : activeRealm === "air" ? airScene : seaScene;

@@ -124,6 +124,24 @@ describe("validatePlacement", () => {
     });
   });
 
+  describe("avatar keep-out", () => {
+    const bigMap = (): RealmMap => ({ ...emptyMap(), bounds: { width: 40, depth: 40 } });
+    const place = (at: { x: number; y: number; z: number }, avatar?: { x: number; y: number; z: number }) =>
+      validatePlacement(bigMap(), "cube", at, 0, footprintOf, alwaysWalkable, avatar);
+
+    it("rejects a piece that would swallow the avatar's body", () => {
+      expect(place({ x: 5, y: 0.5, z: 5 }, { x: 5, y: 0, z: 5 })).toEqual({ valid: false, reason: "blocks-avatar" });
+      // Avatar's radius reaches into the box from just outside its edge.
+      expect(place({ x: 5, y: 0.5, z: 5 }, { x: 5.7, y: 0, z: 5 })).toEqual({ valid: false, reason: "blocks-avatar" });
+    });
+
+    it("accepts a piece beside, under (feet flush on top), or with no avatar given", () => {
+      expect(place({ x: 5, y: 0.5, z: 5 }, { x: 6, y: 0, z: 5 })).toEqual({ valid: true });
+      expect(place({ x: 5, y: 0.5, z: 5 }, { x: 5, y: 1, z: 5 })).toEqual({ valid: true });
+      expect(place({ x: 5, y: 0.5, z: 5 })).toEqual({ valid: true });
+    });
+  });
+
   describe("portal keep-out", () => {
     const portal = {
       id: "p",

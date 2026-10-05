@@ -12,6 +12,8 @@ export function describePlacementRejection(reason: PlacementRejectionReason): st
       return "Can't place here: overlaps a piece";
     case "blocks-portal":
       return "Can't place here: blocks a portal";
+    case "blocks-avatar":
+      return "Can't place here: you're standing there";
     case "terrain-not-suitable":
       return "Can't place here: unsuitable terrain";
   }
