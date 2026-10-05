@@ -311,3 +311,19 @@ test("a piece can't be placed on a portal: rejected as blocks-portal", async ({ 
   await expect(structuresHud).toContainText("blocks a portal");
   await expect(structuresHud).toHaveAttribute("data-count", "0");
 });
+
+test("a piece can't be placed on top of the avatar: rejected as blocks-avatar", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const positionHud = page.locator("#hud-position");
+
+  // Project the avatar's own feet, so the click's ground hit lands under them.
+  const x = Number(await positionHud.getAttribute("data-x"));
+  const y = Number(await positionHud.getAttribute("data-y"));
+  const z = Number(await positionHud.getAttribute("data-z"));
+  const atFeet = await page.evaluate((p) => window.__projectToScreen?.(p.x, p.y, p.z), { x, y, z });
+  if (!atFeet) throw new Error("__projectToScreen not available");
+  await page.mouse.click(atFeet.x, atFeet.y);
+  await expect(structuresHud).toHaveAttribute("data-reject", "blocks-avatar");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+});
