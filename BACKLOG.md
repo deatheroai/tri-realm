@@ -710,6 +710,24 @@ is fine. Wired into land, sea and air, with HUD text in
 `describePlacementRejection`. `#hud-position` gained `data-y` (E2E hook).
 2 new unit tests, 1 new E2E (`castle-placement.spec.ts`). Full suite green.
 
+**2026-10-06's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` conflicted only on
+`.autonomy-heartbeat.log`). Found a regression-in-spirit from 2026-10-02's
+land collision: the Gate is a free-standing *archway*, but collision treated
+it as a solid 1.6-wide slab, so it was indistinguishable from a Wall and
+could never be walked through. `CastleStructureType` gained an optional
+`passageWidth` (Gate: 1.2); `obstaclesFromStructures` takes an optional
+`passageOf` lookup and emits two jamb boxes instead of one slab, with the
+opening running along the authored width axis (swapped onto Z by a quarter
+turn). Collision inflates boxes by `AVATAR_RADIUS`, so 1.2 leaves a 0.6
+walkable lane. Placement still treats the whole box as occupied. Land only.
+4 new unit tests (`structureCollision.test.ts`); 2 new E2E
+(`castle-placement.spec.ts`: walk through a Gate; a Wall at the same spot
+still blocks as the control). E2E gotcha: `npm run build` before
+`playwright test` (the webServer is `vite preview`).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

@@ -25,20 +25,50 @@ export const AVATAR_RADIUS = 0.3;
 /** Max rise the avatar steps up onto without jumping (like a curb). */
 export const STEP_HEIGHT = 0.4;
 
+/** Width (along a piece's authored width axis) of the walk-through opening, if it has one. */
+export type PassageLookup = (typeId: string) => number | undefined;
+
 export function obstaclesFromStructures(
   structures: readonly PlacedStructure[],
   footprintOf: FootprintLookup,
+  passageOf?: PassageLookup,
 ): StructureObstacle[] {
-  return structures.map((s) => {
+  return structures.flatMap((s) => {
     const f = rotatedFootprint(footprintOf(s.type), s.rotation);
-    return {
+    const box: StructureObstacle = {
       minX: s.position.x - f.width / 2,
       maxX: s.position.x + f.width / 2,
       minZ: s.position.z - f.depth / 2,
       maxZ: s.position.z + f.depth / 2,
       topY: s.position.y + f.height / 2,
     };
+    const authored = footprintOf(s.type);
+    const passage = passageOf?.(s.type);
+    // A piece with an opening (a gate's archway) is two jambs, not one slab,
+    // so the avatar can walk through. The opening runs along the authored
+    // width axis, which a quarter turn swaps onto world Z.
+    if (passage === undefined || passage <= 0 || passage >= authored.width) return [box];
+    const alongX = !isQuarterTurn(s.rotation);
+    const half = passage / 2;
+    if (alongX) {
+      const cx = s.position.x;
+      return [
+        { ...box, maxX: cx - half },
+        { ...box, minX: cx + half },
+      ];
+    }
+    const cz = s.position.z;
+    return [
+      { ...box, maxZ: cz - half },
+      { ...box, minZ: cz + half },
+    ];
   });
+}
+
+function isQuarterTurn(rotation: number): boolean {
+  const TAU = Math.PI * 2;
+  const normalized = ((rotation % TAU) + TAU) % TAU;
+  return Math.round(normalized / (Math.PI / 2)) % 2 === 1;
 }
 
 /** True if a point (inflated by the avatar's radius) lies over the obstacle. */

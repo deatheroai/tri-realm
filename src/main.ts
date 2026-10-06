@@ -363,6 +363,7 @@ let currentStructureTypeId = DEFAULT_CASTLE_STRUCTURE_TYPE_ID;
 // Footprint lookup for validatePlacement (src/world/placementValidation.ts)
 // — a structure type's `dimensions` already has the shape it wants.
 const castleStructureFootprintOf = (typeId: string) => findCastleStructureType(typeId).dimensions;
+const castleStructurePassageOf = (typeId: string) => findCastleStructureType(typeId).passageWidth;
 
 // `landMap.structures` is data only — a restored save has no meshes yet,
 // so rebuild one per structure (same type/material it was placed with) and
@@ -1207,7 +1208,7 @@ function animate(): void {
     // changing is a cheap "rebuild the obstacle boxes" signal.
     if (landMap.structures !== landObstaclesSource) {
       landObstaclesSource = landMap.structures;
-      landObstacles = obstaclesFromStructures(landMap.structures, castleStructureFootprintOf);
+      landObstacles = obstaclesFromStructures(landMap.structures, castleStructureFootprintOf, castleStructurePassageOf);
     }
     movement = stepLandMovement(movement, moveInput, groundHeightAt, dt, jumpPressed, landObstacles);
     avatar.position.set(

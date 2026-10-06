@@ -327,3 +327,65 @@ test("a piece can't be placed on top of the avatar: rejected as blocks-avatar", 
   await expect(structuresHud).toHaveAttribute("data-reject", "blocks-avatar");
   await expect(structuresHud).toHaveAttribute("data-count", "0");
 });
+
+test("a Gate has a walk-through opening: the avatar can walk through it", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const positionHud = page.locator("#hud-position");
+
+  const placeAndAlign = async (label: string) => {
+    await page.getByRole("button", { name: label }).click();
+    const target = await page.evaluate(() => window.__projectToScreen?.(0, 0, 5));
+    if (!target) throw new Error("__projectToScreen not available");
+    await page.mouse.click(target.x, target.y);
+    await expect(structuresHud).toHaveAttribute("data-count", "1");
+    const px = Number(await structuresHud.getAttribute("data-last-x"));
+    const pz = Number(await structuresHud.getAttribute("data-last-z"));
+    expect(pz).toBeGreaterThan(2);
+    // Nudge sideways in short taps until centered on the piece (the opening's
+    // walkable lane is only ~0.6 wide, so a coarse alignment isn't enough).
+    for (let i = 0; i < 60; i++) {
+      const dx = px - Number(await positionHud.getAttribute("data-x"));
+      if (Math.abs(dx) < 0.08) break;
+      const key = dx > 0 ? "KeyD" : "KeyA";
+      await page.keyboard.down(key);
+      await page.waitForTimeout(25);
+      await page.keyboard.up(key);
+      await page.waitForTimeout(40);
+    }
+    expect(Math.abs(px - Number(await positionHud.getAttribute("data-x")))).toBeLessThan(0.2);
+    await page.keyboard.down("KeyS");
+    await page.waitForTimeout(2500);
+    await page.keyboard.up("KeyS");
+    return { pz, z: Number(await positionHud.getAttribute("data-z")) };
+  };
+
+  const gate = await placeAndAlign("Gate");
+  expect(gate.z).toBeGreaterThan(gate.pz + 1); // walked clean through the arch
+});
+
+test("a Wall in the same spot still blocks (control for the Gate opening)", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const positionHud = page.locator("#hud-position");
+  await page.getByRole("button", { name: "Wall" }).click();
+  const target = await page.evaluate(() => window.__projectToScreen?.(0, 0, 5));
+  if (!target) throw new Error("__projectToScreen not available");
+  await page.mouse.click(target.x, target.y);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+  const px = Number(await structuresHud.getAttribute("data-last-x"));
+  const pz = Number(await structuresHud.getAttribute("data-last-z"));
+  for (let i = 0; i < 60; i++) {
+    const dx = px - Number(await positionHud.getAttribute("data-x"));
+    if (Math.abs(dx) < 0.08) break;
+    const key = dx > 0 ? "KeyD" : "KeyA";
+    await page.keyboard.down(key);
+    await page.waitForTimeout(25);
+    await page.keyboard.up(key);
+    await page.waitForTimeout(40);
+  }
+  await page.keyboard.down("KeyS");
+  await page.waitForTimeout(2500);
+  await page.keyboard.up("KeyS");
+  expect(Number(await positionHud.getAttribute("data-z"))).toBeLessThan(pz);
+});

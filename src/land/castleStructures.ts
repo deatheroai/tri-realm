@@ -23,6 +23,12 @@ export interface CastleStructureType {
   id: string;
   label: string;
   dimensions: { width: number; height: number; depth: number };
+  /**
+   * Width of a walk-through opening centered along `dimensions.width`
+   * (a gate's archway). Placement still treats the whole box as occupied;
+   * only the land avatar's collision (`structureCollision.ts`) leaves the gap.
+   */
+  passageWidth?: number;
   realModel?: RealCastlePieceModel;
 }
 
@@ -80,6 +86,8 @@ export const CASTLE_STRUCTURE_TYPES: CastleStructureType[] = [
     id: "castle-gate",
     label: "Gate",
     dimensions: { width: 1.6, height: 2.6, depth: 0.48 },
+    // Collision inflates jambs by AVATAR_RADIUS, so 1.2 leaves a 0.6 walkable lane.
+    passageWidth: 1.2,
     realModel: { modelUrl: "/assets/models/castle-gate.glb", scale: 1, placement: "replace-ground" },
   },
   // Fourth type (`BACKLOG.md`'s "structure types beyond castles" item) — a

@@ -31,6 +31,45 @@ describe("obstaclesFromStructures", () => {
   });
 });
 
+describe("obstaclesFromStructures with a passage", () => {
+  const footprintOf = () => ({ width: 2, height: 4, depth: 1 });
+  const passageOf = () => 0.8;
+  const base = { id: "a", type: "t", realmMapId: "m", materialId: "x", position: { x: 10, y: 2, z: 20 } };
+
+  it("splits into two jambs around the opening along X", () => {
+    const boxes = obstaclesFromStructures([{ ...base, rotation: 0 }], footprintOf, passageOf);
+    expect(boxes).toEqual([
+      { minX: 9, maxX: 9.6, minZ: 19.5, maxZ: 20.5, topY: 4 },
+      { minX: 10.4, maxX: 11, minZ: 19.5, maxZ: 20.5, topY: 4 },
+    ]);
+  });
+
+  it("runs the opening along Z after a quarter turn", () => {
+    const boxes = obstaclesFromStructures([{ ...base, rotation: Math.PI / 2 }], footprintOf, passageOf);
+    expect(boxes).toHaveLength(2);
+    expect(boxes[0].maxZ).toBeCloseTo(19.6);
+    expect(boxes[1].minZ).toBeCloseTo(20.4);
+  });
+
+  it("ignores a passage as wide as the piece", () => {
+    expect(obstaclesFromStructures([{ ...base, rotation: 0 }], footprintOf, () => 2)).toHaveLength(1);
+  });
+
+  it("lets the avatar walk through the opening but not the jamb", () => {
+    const boxes = obstaclesFromStructures(
+      [{ ...base, position: { x: 3, y: 2, z: 0 }, rotation: Math.PI / 2 }],
+      footprintOf,
+      passageOf,
+    );
+    let through = start;
+    for (let i = 0; i < 240; i++) through = stepLandMovement(through, walkX, flat, 1 / 60, false, boxes);
+    expect(through.position.x).toBeGreaterThan(5);
+    let blocked = { position: { x: 0, y: 0, z: 0.8 }, velocityY: 0 };
+    for (let i = 0; i < 240; i++) blocked = stepLandMovement(blocked, walkX, flat, 1 / 60, false, boxes);
+    expect(blocked.position.x).toBeLessThan(3);
+  });
+});
+
 describe("stepLandMovement with obstacles", () => {
   it("blocks walking into a tall structure", () => {
     let s = start;
