@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validatePlacement, type FootprintLookup, type StructureFootprint } from "./placementValidation";
 import type { RealmMap } from "./realmMap";
+import { arrivalPointsFor } from "./portalArrivals";
 
 const CUBE: StructureFootprint = { width: 1, height: 1, depth: 1 };
 const footprintOf: FootprintLookup = () => CUBE;
@@ -171,6 +172,33 @@ describe("validatePlacement", () => {
       expect(validatePlacement(withPortal(), "cube", { x: 0, y: 6, z: 0 }, 0, footprintOf, alwaysWalkable)).toEqual({
         valid: true,
       });
+    });
+  });
+
+  describe("portal arrival keep-out", () => {
+    const bigMap = (id: string): RealmMap => ({ ...emptyMap(), id, bounds: { width: 200, depth: 200 } });
+
+    it("every realm has at least one arrival point, and unknown maps have none", () => {
+      for (const id of ["land-01", "air-01", "sea-01"]) expect(arrivalPointsFor(id).length).toBeGreaterThan(0);
+      expect(arrivalPointsFor("nowhere")).toEqual([]);
+    });
+
+    it("rejects a piece swallowing any arrival spot, generically for every realm", () => {
+      for (const id of ["land-01", "air-01", "sea-01"]) {
+        for (const arrival of arrivalPointsFor(id)) {
+          const at = { x: arrival.x, y: arrival.y + 0.5, z: arrival.z };
+          expect(validatePlacement(bigMap(id), "cube", at, 0, footprintOf, alwaysWalkable)).toEqual({
+            valid: false,
+            reason: "blocks-portal",
+          });
+        }
+      }
+    });
+
+    it("accepts the same piece a few units away", () => {
+      const [arrival] = arrivalPointsFor("air-01");
+      const at = { x: arrival.x + 3, y: arrival.y + 0.5, z: arrival.z + 3 };
+      expect(validatePlacement(bigMap("air-01"), "cube", at, 0, footprintOf, alwaysWalkable)).toEqual({ valid: true });
     });
   });
 });

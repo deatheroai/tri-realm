@@ -1,5 +1,6 @@
 import type { Vec3 } from "../math/vec3";
 import type { RealmMap } from "./realmMap";
+import { arrivalPointsFor } from "./portalArrivals";
 
 /**
  * Structure placement validation from `ARCHITECTURE.md`'s "Construction
@@ -152,6 +153,12 @@ export function validatePlacement(
   }
 
   if (blocksPortal(map, position, footprint)) {
+    return { valid: false, reason: "blocks-portal" };
+  }
+
+  // Portal arrival spots count as "blocks-portal" too: a piece on one would
+  // entomb whoever next walks through the portal.
+  if (arrivalPointsFor(map.id).some((arrival) => blocksAvatar(arrival, position, footprint))) {
     return { valid: false, reason: "blocks-portal" };
   }
 
