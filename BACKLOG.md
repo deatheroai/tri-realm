@@ -728,6 +728,23 @@ walkable lane. Placement still treats the whole box as occupied. Land only.
 still blocks as the control). E2E gotcha: `npm run build` before
 `playwright test` (the webServer is `vite preview`).
 
+**2026-10-07's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` was already up to date).
+Closed the last portal hole in the placement rules: `blocks-portal` kept
+pieces off a portal itself, but not off the spot where travellers *arrive*
+(`targetSpawnPosition`, a few units from the partner portal), so a piece
+dropped there entombed the next person through. New
+`src/world/portalArrivals.ts` (`arrivalPointsFor(mapId)`, derived from the
+six existing portal constants — no `RealmMap` schema change, so no save
+format impact); `validatePlacement` rejects any candidate that would
+swallow an arrival point (same body box as `blocks-avatar`) with the
+existing `blocks-portal` reason, so no new HUD text. Applies to land, sea
+and air. 3 new unit tests, generic over every realm's arrival points. No new
+E2E: it is the same shared validator the existing portal/avatar E2Es already
+exercise. Full suite green (typecheck, 386 unit, build, 104 E2E).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single
