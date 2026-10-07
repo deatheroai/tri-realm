@@ -1988,6 +1988,18 @@ overlap). No unblocked Skins-owned backlog item, so no code change. Full
 suite verified on the merged tree (typecheck, 377 unit tests, build, 101
 E2E tests, all green). Camera framing: unchanged.
 
+**2026-10-07's skins cycle.** The 2026-09-23 `DECISIONS.md` Pending item
+(what should this track build next, or should its cadence change) is still
+unanswered — re-checked, not re-logged. Sync from `main` was a real merge
+(World's gate walk-through opening and portal-arrival placement rejection;
+only conflict was `.autonomy-heartbeat.log`, both lines kept). No
+unblocked Skins-owned backlog item, so no code change. Full suite verified
+on the merged tree (typecheck, 386 unit tests, build, 104 E2E tests): all
+green except one World-owned test, `castle-placement.spec.ts`'s "a Gate has
+a walk-through opening", which failed once in the full run but passed on
+isolated re-run — likely load-timing flakiness, flagged for World. Camera
+framing: unchanged.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
