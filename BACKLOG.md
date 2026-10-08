@@ -2017,6 +2017,13 @@ a walk-through opening", which failed once in the full run but passed on
 isolated re-run — likely load-timing flakiness, flagged for World. Camera
 framing: unchanged.
 
+**2026-10-08's skins cycle** — no unblocked Skins work; the 2026-09-23 Pending
+decision in `DECISIONS.md` (new scope / authorize camera-framing migration /
+reduce cadence) is still unanswered, so not re-logged. Camera framing item
+unchanged. Synced `main` (heartbeat-log conflict only, kept both sides). Full
+suite re-verified on the merged tree (typecheck, 388 unit tests, build, 105
+E2E tests, all green). No code change.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
