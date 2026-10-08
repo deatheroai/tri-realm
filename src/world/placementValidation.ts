@@ -113,6 +113,29 @@ function blocksAvatar(avatarPosition: Vec3, position: Vec3, footprint: Structure
   );
 }
 
+// Portal arrival spots count as "blocks-portal" too: a piece on one would
+// entomb whoever next walks through the portal.
+function blocksPortalOrArrival(map: RealmMap, position: Vec3, footprint: StructureFootprint): boolean {
+  return (
+    blocksPortal(map, position, footprint) ||
+    arrivalPointsFor(map.id).some((arrival) => blocksAvatar(arrival, position, footprint))
+  );
+}
+
+/**
+ * Drops any placed structure that sits on a portal or one of its arrival
+ * spots. Saves made before those placement rules existed (or hand-edited
+ * ones) can hold such pieces; since every realm's avatar now collides with
+ * placed structures, loading one would wall off a portal or entomb the next
+ * traveller. Returns `map` itself (same identity) when nothing needs to go.
+ */
+export function withoutPortalBlockingStructures(map: RealmMap, footprintOf: FootprintLookup): RealmMap {
+  const kept = map.structures.filter(
+    (s) => !blocksPortalOrArrival(map, s.position, rotatedFootprint(footprintOf(s.type), s.rotation)),
+  );
+  return kept.length === map.structures.length ? map : { ...map, structures: kept };
+}
+
 /**
  * Checks whether `type` can be placed at `position`, rotated `rotation`
  * radians around Y, on `map`: within its bounds, not overlapping an
@@ -152,13 +175,7 @@ export function validatePlacement(
     return { valid: false, reason: "overlaps-structure" };
   }
 
-  if (blocksPortal(map, position, footprint)) {
-    return { valid: false, reason: "blocks-portal" };
-  }
-
-  // Portal arrival spots count as "blocks-portal" too: a piece on one would
-  // entomb whoever next walks through the portal.
-  if (arrivalPointsFor(map.id).some((arrival) => blocksAvatar(arrival, position, footprint))) {
+  if (blocksPortalOrArrival(map, position, footprint)) {
     return { valid: false, reason: "blocks-portal" };
   }
 

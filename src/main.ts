@@ -20,7 +20,7 @@ import {
   findCastleStructureType,
 } from "./land/castleStructures";
 import { addStructure, removeLastStructure, sampleTerrainHeight, type RealmMap } from "./world/realmMap";
-import { validatePlacement } from "./world/placementValidation";
+import { validatePlacement, withoutPortalBlockingStructures } from "./world/placementValidation";
 import type { PlacementRejectionReason } from "./world/placementValidation";
 import { describeFacing, describePlacementRejection, facingDegrees } from "./world/placementFeedback";
 import { loadRealmMap, saveRealmMap } from "./world/realmMapStorage";
@@ -93,7 +93,10 @@ const airScene = createAirScene();
 
 function loadOrCreateAirMap(): RealmMap {
   try {
-    return loadRealmMap(AIR_MAP_ID, window.localStorage) ?? createAirRealmMap();
+    const saved = loadRealmMap(AIR_MAP_ID, window.localStorage);
+    return saved
+      ? withoutPortalBlockingStructures(saved, (typeId) => findAirStructureType(typeId).dimensions)
+      : createAirRealmMap();
   } catch (err) {
     console.warn("Failed to load saved air map, starting fresh:", err);
     return createAirRealmMap();
@@ -133,7 +136,10 @@ const seaFloor = seaFloorOrUndefined;
 
 function loadOrCreateSeaMap(): RealmMap {
   try {
-    return loadRealmMap(SEA_MAP_ID, window.localStorage) ?? createSeaRealmMap();
+    const saved = loadRealmMap(SEA_MAP_ID, window.localStorage);
+    return saved
+      ? withoutPortalBlockingStructures(saved, (typeId) => findSeaStructureType(typeId).dimensions)
+      : createSeaRealmMap();
   } catch (err) {
     console.warn("Failed to load saved sea map, starting fresh:", err);
     return createSeaRealmMap();
@@ -170,7 +176,10 @@ const PLAYER_ENTITY_ID = "player";
 
 function loadOrCreateLandMap(): RealmMap {
   try {
-    return loadRealmMap(LAND_MAP_ID, window.localStorage) ?? createLandRealmMap();
+    const saved = loadRealmMap(LAND_MAP_ID, window.localStorage);
+    return saved
+      ? withoutPortalBlockingStructures(saved, (typeId) => findCastleStructureType(typeId).dimensions)
+      : createLandRealmMap();
   } catch (err) {
     console.warn("Failed to load saved land map, starting fresh:", err);
     return createLandRealmMap();

@@ -64,3 +64,24 @@ test("a fresh visit with nothing saved still starts clean", async ({ page }) => 
   await expect(hud).toHaveAttribute("data-x", "0.000");
   await expect(hud).toHaveAttribute("data-z", "0.000");
 });
+
+test("a save holding a piece on a portal loads without it (older saves predate the keep-out rule)", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error("no viewport size");
+  await page.mouse.click(viewport.width / 2, viewport.height * 0.75);
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+
+  // Inject a second piece right on the first portal into the saved map.
+  await page.evaluate(() => {
+    const key = "tri-realm:map:land-01";
+    const map = JSON.parse(window.localStorage.getItem(key)!);
+    const portal = map.portals[0];
+    map.structures.push({ ...map.structures[0], id: "on-portal", position: { ...portal.position } });
+    window.localStorage.setItem(key, JSON.stringify(map));
+  });
+
+  await page.reload();
+  await expect(structuresHud).toHaveAttribute("data-count", "1");
+});
