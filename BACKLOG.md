@@ -745,6 +745,23 @@ and air. 3 new unit tests, generic over every realm's arrival points. No new
 E2E: it is the same shared validator the existing portal/avatar E2Es already
 exercise. Full suite green (typecheck, 386 unit, build, 104 E2E).
 
+**2026-10-08's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` conflicted only on
+`.autonomy-heartbeat.log`). Closed the load-side twin of the last few
+placement-rule cycles: `blocks-portal` only guards *new* placements, but a
+save made before it existed (or hand-edited) can still hold a piece on a
+portal or arrival spot, and since every realm's avatar now collides with
+structures, loading it walled off the portal. New
+`withoutPortalBlockingStructures` (`src/world/placementValidation.ts`, shares
+one `blocksPortalOrArrival` check with `validatePlacement`) drops such pieces
+at load, returning the same map object when none; wired into all three
+`loadOrCreate*Map` loaders in `main.ts`. No `RealmMap` schema change. 2 new
+unit tests, 1 new E2E (`land-save-load.spec.ts`: inject a piece onto the
+portal into the save, reload, it's gone). Full suite green (typecheck, 388
+unit, build, 105 E2E).
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

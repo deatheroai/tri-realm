@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validatePlacement, type FootprintLookup, type StructureFootprint } from "./placementValidation";
+import { validatePlacement, withoutPortalBlockingStructures, type FootprintLookup, type StructureFootprint } from "./placementValidation";
 import type { RealmMap } from "./realmMap";
 import { arrivalPointsFor } from "./portalArrivals";
 
@@ -200,5 +200,38 @@ describe("validatePlacement", () => {
       const at = { x: arrival.x + 3, y: arrival.y + 0.5, z: arrival.z + 3 };
       expect(validatePlacement(bigMap("air-01"), "cube", at, 0, footprintOf, alwaysWalkable)).toEqual({ valid: true });
     });
+  });
+});
+
+describe("withoutPortalBlockingStructures", () => {
+  const footprintOf = () => ({ width: 1, height: 1, depth: 1 });
+  const portalMap = (structures: RealmMap["structures"]): RealmMap => ({
+    id: "test-map",
+    realm: "land",
+    bounds: { width: 100, depth: 100 },
+    terrain: { kind: "land-heightfield" },
+    structures,
+    entities: [],
+    portals: [
+      {
+        id: "p",
+        position: { x: 10, y: 0, z: 0 },
+        kind: "test",
+        targetRealmMapId: "other",
+        targetSpawnPosition: { x: 0, y: 0, z: 0 },
+      },
+    ],
+  });
+
+  it("drops a piece sitting on a portal and keeps the rest", () => {
+    const onPortal = { id: "a", type: "t", position: { x: 10, y: 0.5, z: 0 }, rotation: 0, realmMapId: "test-map", materialId: "stone" };
+    const clear = { id: "b", type: "t", position: { x: -20, y: 0.5, z: 5 }, rotation: 0, realmMapId: "test-map", materialId: "stone" };
+    const result = withoutPortalBlockingStructures(portalMap([onPortal, clear]), footprintOf);
+    expect(result.structures).toEqual([clear]);
+  });
+
+  it("returns the same map object when nothing blocks a portal", () => {
+    const map = portalMap([{ id: "b", type: "t", position: { x: -20, y: 0.5, z: 5 }, rotation: 0, realmMapId: "test-map", materialId: "stone" }]);
+    expect(withoutPortalBlockingStructures(map, footprintOf)).toBe(map);
   });
 });
