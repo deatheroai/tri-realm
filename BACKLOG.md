@@ -2043,6 +2043,11 @@ unchanged. Synced `main` (heartbeat-log conflict only, kept both sides). Full
 suite re-verified on the merged tree (typecheck, 388 unit tests, build, 105
 E2E tests, all green). No code change.
 
+**2026-10-09's skins cycle** — no unblocked Skins work; the 2026-09-23 Pending
+decision in `DECISIONS.md` is still unanswered, so not re-logged. Camera framing
+unchanged. Synced `main` cleanly. Full suite re-verified on the merged tree
+(build, 392 unit tests, 106 E2E tests, all green). No code change.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
