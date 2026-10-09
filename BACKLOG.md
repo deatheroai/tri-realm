@@ -762,6 +762,25 @@ unit tests, 1 new E2E (`land-save-load.spec.ts`: inject a piece onto the
 portal into the save, reload, it's gone). Full suite green (typecheck, 388
 unit, build, 105 E2E).
 
+**2026-10-09's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` was a fast-forward).
+Placed structures became solid in every realm over 2026-10-02..06, but the
+land scenery itself never did: the avatar walked straight through every tree
+and the fountain. New `src/land/decorationCollision.ts`
+(`decorationObstacles`: trees as a thin tall trunk box, the fountain as its
+basin footprint, flat flower beds/path stones deliberately left walkable)
+feeds the same `StructureObstacle` list placed structures use, merged in
+`main.ts`'s land branch (static, built once). Spawn and the stepping-stone
+path stay clear. 4 new unit tests; 1 new E2E (`castle-placement.spec.ts`:
+walking straight +z from spawn stops short of the fountain). The fountain
+sits on the x=0 line the older Keep/Gate/Wall collision tests walked down, so
+those now place at (-4, 8) instead; the Gate test also waits on position
+rather than a fixed 2.5s, and aims at the avatar's own x instead of nudging (frame-quantized taps overshot under load). Full suite green (typecheck, 392 unit, build, 106 E2E).
+Not done: placement validation doesn't know about scenery, so a piece can
+still be dropped inside a tree/the fountain.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

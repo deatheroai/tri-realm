@@ -9,6 +9,7 @@ import { combineVerticalInputs } from "./input/combineVerticalInputs";
 import { TouchUndoInput } from "./input/touchUndoInput";
 import { TouchRotateInput } from "./input/touchRotateInput";
 import { stepLandMovement, type LandMovementState } from "./land/landMovement";
+import { decorationObstacles } from "./land/decorationCollision";
 import { obstaclesFromStructures, type StructureObstacle } from "./land/structureCollision";
 import { volumeObstaclesFromStructures, type VolumeObstacle } from "./world/volumeCollision";
 import { desiredCameraPosition, smoothingFactor } from "./land/followCamera";
@@ -189,6 +190,8 @@ function loadOrCreateLandMap(): RealmMap {
 let landMap = loadOrCreateLandMap();
 let landObstaclesSource: RealmMap["structures"] | undefined;
 let landObstacles: StructureObstacle[] = [];
+// Trees and the fountain are fixed scenery — solid, never rebuilt.
+const landDecorationObstacles = decorationObstacles();
 let airObstaclesSource: RealmMap["structures"] | undefined;
 let airObstacles: VolumeObstacle[] = [];
 let seaObstaclesSource: RealmMap["structures"] | undefined;
@@ -1217,7 +1220,10 @@ function animate(): void {
     // changing is a cheap "rebuild the obstacle boxes" signal.
     if (landMap.structures !== landObstaclesSource) {
       landObstaclesSource = landMap.structures;
-      landObstacles = obstaclesFromStructures(landMap.structures, castleStructureFootprintOf, castleStructurePassageOf);
+      landObstacles = [
+        ...landDecorationObstacles,
+        ...obstaclesFromStructures(landMap.structures, castleStructureFootprintOf, castleStructurePassageOf),
+      ];
     }
     movement = stepLandMovement(movement, moveInput, groundHeightAt, dt, jumpPressed, landObstacles);
     avatar.position.set(

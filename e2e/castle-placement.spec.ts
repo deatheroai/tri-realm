@@ -268,15 +268,15 @@ test("a placed structure is solid: the avatar can't walk through it", async ({ p
   const positionHud = page.locator("#hud-position");
 
   // A Keep (the default type) is far taller than a step. Place one a few
-  // units behind spawn (+z) — the other directions run into the land<->air/
+  // units behind spawn (+z), off to the side of the fountain (x=0, z=5, also solid) — the other directions run into the land<->air/
   // sea portals within a few seconds, which would swap realms mid-test.
-  const target = await page.evaluate(() => window.__projectToScreen?.(0, 0, 5));
+  const target = await page.evaluate(() => window.__projectToScreen?.(-4, 0, 8));
   if (!target) throw new Error("__projectToScreen not available");
   await page.mouse.click(target.x, target.y);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
   const wallX = Number(await structuresHud.getAttribute("data-last-x"));
   const wallZ = Number(await structuresHud.getAttribute("data-last-z"));
-  expect(wallZ).toBeGreaterThan(2);
+  expect(wallZ).toBeGreaterThan(5);
 
   // Line up with the piece's x first (the click's ground hit isn't exactly
   // where the projected point was), then walk straight into it. Without
@@ -335,27 +335,38 @@ test("a Gate has a walk-through opening: the avatar can walk through it", async 
 
   const placeAndAlign = async (label: string) => {
     await page.getByRole("button", { name: label }).click();
-    const target = await page.evaluate(() => window.__projectToScreen?.(0, 0, 5));
+    // Step aside of the fountain first (hold-until, frame-rate independent), so
+    // the piece lands almost exactly in line with the avatar and the final
+    // alignment check below holds without any nudging.
+    await page.keyboard.down("KeyA");
+    await page.waitForFunction(
+      () => Number(document.getElementById("hud-position")?.dataset.x) < -3.95,
+      undefined,
+      { polling: "raf", timeout: 10000 },
+    );
+    await page.keyboard.up("KeyA");
+    const avatarX = Number(await positionHud.getAttribute("data-x"));
+    const target = await page.evaluate((x) => window.__projectToScreen?.(x, 0, 8), avatarX);
     if (!target) throw new Error("__projectToScreen not available");
     await page.mouse.click(target.x, target.y);
     await expect(structuresHud).toHaveAttribute("data-count", "1");
     const px = Number(await structuresHud.getAttribute("data-last-x"));
     const pz = Number(await structuresHud.getAttribute("data-last-z"));
-    expect(pz).toBeGreaterThan(2);
-    // Nudge sideways in short taps until centered on the piece (the opening's
-    // walkable lane is only ~0.6 wide, so a coarse alignment isn't enough).
-    for (let i = 0; i < 60; i++) {
-      const dx = px - Number(await positionHud.getAttribute("data-x"));
-      if (Math.abs(dx) < 0.08) break;
-      const key = dx > 0 ? "KeyD" : "KeyA";
-      await page.keyboard.down(key);
-      await page.waitForTimeout(25);
-      await page.keyboard.up(key);
-      await page.waitForTimeout(40);
-    }
-    expect(Math.abs(px - Number(await positionHud.getAttribute("data-x")))).toBeLessThan(0.2);
+    expect(pz).toBeGreaterThan(5);
+    // Aimed at the avatar's own x, so the click's ground-hit error (~0.1) is all
+    // that separates it from the opening's ~0.6-wide walkable lane. No sideways
+    // nudging: frame-quantized taps overshoot under load.
+    expect(Math.abs(px - Number(await positionHud.getAttribute("data-x")))).toBeLessThan(0.25);
+    // Walk until clear of the arch (or give up after a generous cap — a blocked
+    // avatar never gets there). Not a fixed wait: the piece is ~8 units away.
     await page.keyboard.down("KeyS");
-    await page.waitForTimeout(2500);
+    await page
+      .waitForFunction(
+        (z) => Number(document.getElementById("hud-position")?.dataset.z) > z + 1,
+        pz,
+        { polling: "raf", timeout: 6000 },
+      )
+      .catch(() => undefined);
     await page.keyboard.up("KeyS");
     return { pz, z: Number(await positionHud.getAttribute("data-z")) };
   };
@@ -369,7 +380,7 @@ test("a Wall in the same spot still blocks (control for the Gate opening)", asyn
   const structuresHud = page.locator("#hud-structures");
   const positionHud = page.locator("#hud-position");
   await page.getByRole("button", { name: "Wall" }).click();
-  const target = await page.evaluate(() => window.__projectToScreen?.(0, 0, 5));
+  const target = await page.evaluate(() => window.__projectToScreen?.(-4, 0, 8));
   if (!target) throw new Error("__projectToScreen not available");
   await page.mouse.click(target.x, target.y);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
@@ -388,4 +399,16 @@ test("a Wall in the same spot still blocks (control for the Gate opening)", asyn
   await page.waitForTimeout(2500);
   await page.keyboard.up("KeyS");
   expect(Number(await positionHud.getAttribute("data-z"))).toBeLessThan(pz);
+});
+
+test("the fountain is solid: the avatar can't walk through it", async ({ page }) => {
+  await page.goto("/");
+  const positionHud = page.locator("#hud-position");
+  // Straight +z from spawn runs into the fountain at (0, 5), radius ~1.4.
+  await page.keyboard.down("KeyS");
+  await page.waitForTimeout(2500); // ~15 units unobstructed
+  await page.keyboard.up("KeyS");
+  const z = Number(await positionHud.getAttribute("data-z"));
+  expect(z).toBeGreaterThan(1); // it did walk
+  expect(z).toBeLessThan(5); // ...but never reached the fountain's centre
 });
