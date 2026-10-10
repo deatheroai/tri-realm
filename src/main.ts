@@ -442,6 +442,7 @@ function placeCastlePieceAt(clientX: number, clientY: number): void {
     castleStructureFootprintOf,
     landTerrainPlacementRule,
     avatar.position,
+    landDecorationObstacles,
   );
   if (!check.valid) {
     showPlacementRejection(check.reason);

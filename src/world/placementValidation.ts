@@ -30,6 +30,7 @@ export type PlacementRejectionReason =
   | "overlaps-structure"
   | "blocks-portal"
   | "blocks-avatar"
+  | "blocks-scenery"
   | "terrain-not-suitable";
 
 export type PlacementCheck = { valid: true } | { valid: false; reason: PlacementRejectionReason };
@@ -113,6 +114,30 @@ function blocksAvatar(avatarPosition: Vec3, position: Vec3, footprint: Structure
   );
 }
 
+/** A solid piece of non-placed scenery (a tree trunk, a fountain basin) as
+ * an axis-aligned column from the ground up to `topY`. Structurally the same
+ * as `src/land/structureCollision.ts`'s `StructureObstacle`, restated here so
+ * this realm-agnostic file doesn't import from `src/land/`. */
+export interface SceneryBox {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+  topY: number;
+}
+
+// True when the candidate's box overlaps a scenery column. Scenery has no
+// underside (it rises from the ground), so a piece resting exactly on a
+// column's top face (its base flush with `topY`) does not count.
+function blocksScenery(scenery: readonly SceneryBox[], position: Vec3, footprint: StructureFootprint): boolean {
+  return scenery.some(
+    (box) =>
+      axisOverlaps(position.x, footprint.width, (box.minX + box.maxX) / 2, box.maxX - box.minX) &&
+      axisOverlaps(position.z, footprint.depth, (box.minZ + box.maxZ) / 2, box.maxZ - box.minZ) &&
+      position.y - footprint.height / 2 < box.topY - TOUCHING_EPSILON,
+  );
+}
+
 // Portal arrival spots count as "blocks-portal" too: a piece on one would
 // entomb whoever next walks through the portal.
 function blocksPortalOrArrival(map: RealmMap, position: Vec3, footprint: StructureFootprint): boolean {
@@ -154,6 +179,7 @@ export function validatePlacement(
   footprintOf: FootprintLookup,
   terrainRule: TerrainPlacementRule,
   avatarPosition?: Vec3,
+  scenery: readonly SceneryBox[] = [],
 ): PlacementCheck {
   const footprint = rotatedFootprint(footprintOf(type), rotation);
 
@@ -181,6 +207,10 @@ export function validatePlacement(
 
   if (avatarPosition && blocksAvatar(avatarPosition, position, footprint)) {
     return { valid: false, reason: "blocks-avatar" };
+  }
+
+  if (blocksScenery(scenery, position, footprint)) {
+    return { valid: false, reason: "blocks-scenery" };
   }
 
   if (!terrainRule(map, position)) {

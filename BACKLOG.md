@@ -781,6 +781,23 @@ rather than a fixed 2.5s, and aims at the avatar's own x instead of nudging (fra
 Not done: placement validation doesn't know about scenery, so a piece can
 still be dropped inside a tree/the fountain.
 
+**2026-10-10's world cycle**, same situation yet again (item 2 still needs
+a human, item 5 still lives outside this track's section, `Later /
+unscoped` has nothing left but out-of-scope multiplayer; `DECISIONS.md`'s
+only Pending item is Skins-owned; sync from `main` conflicted only on
+`.autonomy-heartbeat.log`). Closed 2026-10-09's "Not done": placement now
+knows about scenery. `validatePlacement` takes an optional trailing
+`scenery` list of ground-up columns (`SceneryBox`, structurally the land
+`StructureObstacle`, restated so `src/world/` stays realm-agnostic); a
+candidate whose box overlaps one is rejected as new reason `blocks-scenery`
+("something's in the way"). A piece resting on a column's top is fine.
+Land passes `decorationObstacles()`; sea/air have no scenery. 2 new unit
+tests, 1 new E2E (fountain click). The old fixed "75% down the viewport"
+ground clicks in `castle-placement`/`land-save-load` specs land on the
+fountain, so they now go through `e2e/openGround.ts`
+(`openGroundScreenPoint`, a projected open-ground world point). Full suite
+green (typecheck, 394 unit, build, 107 E2E). No `RealmMap` schema change.
+
 ## Phase 0 — Get something live
 
 - `done` Initialize the TypeScript + Vite + Three.js scaffold — a single

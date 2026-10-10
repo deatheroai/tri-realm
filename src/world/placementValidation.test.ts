@@ -125,6 +125,24 @@ describe("validatePlacement", () => {
     });
   });
 
+  describe("scenery keep-out", () => {
+    const bigMap = (): RealmMap => ({ ...emptyMap(), bounds: { width: 40, depth: 40 } });
+    const trunk = { minX: 4.8, maxX: 5.2, minZ: 4.8, maxZ: 5.2, topY: 3 };
+    const place = (at: { x: number; y: number; z: number }) =>
+      validatePlacement(bigMap(), "cube", at, 0, footprintOf, alwaysWalkable, undefined, [trunk]);
+
+    it("rejects a piece overlapping a scenery column", () => {
+      expect(place({ x: 5, y: 0.5, z: 5 })).toEqual({ valid: false, reason: "blocks-scenery" });
+      expect(place({ x: 5.6, y: 0.5, z: 5 })).toEqual({ valid: false, reason: "blocks-scenery" });
+    });
+
+    it("accepts a piece beside it, resting on top of it, or with no scenery given", () => {
+      expect(place({ x: 7, y: 0.5, z: 5 })).toEqual({ valid: true });
+      expect(place({ x: 5, y: 3.5, z: 5 })).toEqual({ valid: true });
+      expect(validatePlacement(bigMap(), "cube", { x: 5, y: 0.5, z: 5 }, 0, footprintOf, alwaysWalkable)).toEqual({ valid: true });
+    });
+  });
+
   describe("avatar keep-out", () => {
     const bigMap = (): RealmMap => ({ ...emptyMap(), bounds: { width: 40, depth: 40 } });
     const place = (at: { x: number; y: number; z: number }, avatar?: { x: number; y: number; z: number }) =>

@@ -14,6 +14,8 @@ export function describePlacementRejection(reason: PlacementRejectionReason): st
       return "Can't place here: blocks a portal";
     case "blocks-avatar":
       return "Can't place here: you're standing there";
+    case "blocks-scenery":
+      return "Can't place here: something's in the way";
     case "terrain-not-suitable":
       return "Can't place here: unsuitable terrain";
   }

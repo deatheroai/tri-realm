@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { openGroundScreenPoint } from "./openGround";
 
 test("a placed castle piece and the player's position survive a reload", async ({ page }) => {
   await page.goto("/");
@@ -14,9 +15,8 @@ test("a placed castle piece and the player's position survive a reload", async (
   const zBeforeReload = await hud.getAttribute("data-z");
   expect(Number(zBeforeReload)).toBeLessThan(0);
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  await page.mouse.click(viewport.width / 2, viewport.height * 0.75);
+  const open = await openGroundScreenPoint(page);
+  await page.mouse.click(open.x, open.y);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
   const [lastX, lastY, lastZ] = await Promise.all([
     structuresHud.getAttribute("data-last-x"),
@@ -43,9 +43,8 @@ test("a placed piece's rotation survives a reload too", async ({ page }) => {
 
   await page.keyboard.press("KeyR"); // rotate a quarter turn before placing
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  await page.mouse.click(viewport.width / 2, viewport.height * 0.75);
+  const open = await openGroundScreenPoint(page);
+  await page.mouse.click(open.x, open.y);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
   expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(Math.PI / 2, 5);
 
@@ -68,9 +67,8 @@ test("a fresh visit with nothing saved still starts clean", async ({ page }) => 
 test("a save holding a piece on a portal loads without it (older saves predate the keep-out rule)", async ({ page }) => {
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  await page.mouse.click(viewport.width / 2, viewport.height * 0.75);
+  const open = await openGroundScreenPoint(page);
+  await page.mouse.click(open.x, open.y);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
 
   // Inject a second piece right on the first portal into the saved map.

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { openGroundScreenPoint } from "./openGround";
 import { LAND_PORTAL_POSITION } from "../src/world/landAirPortal";
 
 test("clicking the ground places a castle piece", async ({ page }) => {
@@ -8,10 +9,7 @@ test("clicking the ground places a castle piece", async ({ page }) => {
 
   // The camera looks down at the ground from behind/above the avatar, so
   // a point well below vertical-center is reliably ground, not sky.
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const groundX = viewport.width / 2;
-  const groundY = viewport.height * 0.75;
+  const { x: groundX, y: groundY } = await openGroundScreenPoint(page);
 
   await page.mouse.click(groundX, groundY);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
@@ -41,10 +39,7 @@ test("clicking an existing piece stacks a new one on top of it", async ({ page }
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const groundX = viewport.width / 2;
-  const groundY = viewport.height * 0.75;
+  const { x: groundX, y: groundY } = await openGroundScreenPoint(page);
 
   await page.mouse.click(groundX, groundY);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
@@ -130,10 +125,7 @@ test("pressing X undoes the most recently placed piece", async ({ page }) => {
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const groundX = viewport.width / 2;
-  const groundY = viewport.height * 0.75;
+  const { x: groundX, y: groundY } = await openGroundScreenPoint(page);
 
   await page.mouse.click(groundX, groundY);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
@@ -179,10 +171,7 @@ test("pressing R rotates the next placed piece by a quarter turn", async ({ page
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const groundX = viewport.width / 2;
-  const groundY = viewport.height * 0.75;
+  const { x: groundX, y: groundY } = await openGroundScreenPoint(page);
 
   // Placed with no rotation yet — the schema's default/starting yaw.
   await page.mouse.click(groundX, groundY);
@@ -222,9 +211,8 @@ test("rotation wraps back to zero after four quarter turns", async ({ page }) =>
   }
   await expect(structuresHud).toHaveText("Structures: 0 · 0°");
 
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  await page.mouse.click(viewport.width / 2, viewport.height * 0.75);
+  const open = await openGroundScreenPoint(page);
+  await page.mouse.click(open.x, open.y);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
 
   expect(await page.evaluate(() => window.__getLastPlacedRotation?.())).toBeCloseTo(0, 5);
@@ -233,10 +221,7 @@ test("rotation wraps back to zero after four quarter turns", async ({ page }) =>
 test("a rejected placement shows the reason on the HUD, then clears", async ({ page }) => {
   await page.goto("/");
   const structuresHud = page.locator("#hud-structures");
-  const viewport = page.viewportSize();
-  if (!viewport) throw new Error("no viewport size");
-  const x = viewport.width / 2;
-  const y = viewport.height * 0.75;
+  const { x, y } = await openGroundScreenPoint(page);
 
   await page.mouse.click(x, y);
   await expect(structuresHud).toHaveAttribute("data-count", "1");
@@ -325,6 +310,18 @@ test("a piece can't be placed on top of the avatar: rejected as blocks-avatar", 
   if (!atFeet) throw new Error("__projectToScreen not available");
   await page.mouse.click(atFeet.x, atFeet.y);
   await expect(structuresHud).toHaveAttribute("data-reject", "blocks-avatar");
+  await expect(structuresHud).toHaveAttribute("data-count", "0");
+});
+
+test("a piece can't be placed inside the fountain: rejected as blocks-scenery", async ({ page }) => {
+  await page.goto("/");
+  const structuresHud = page.locator("#hud-structures");
+
+  // Fountain basin is at (0, 5); aim at its centre on the ground.
+  const at = await page.evaluate(() => window.__projectToScreen?.(0, 0, 5));
+  if (!at) throw new Error("__projectToScreen not available");
+  await page.mouse.click(at.x, at.y);
+  await expect(structuresHud).toHaveAttribute("data-reject", "blocks-scenery");
   await expect(structuresHud).toHaveAttribute("data-count", "0");
 });
 
