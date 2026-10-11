@@ -2070,6 +2070,10 @@ Pending decision is still unanswered (not re-logged). Synced `main` cleanly.
 Full suite re-verified on the merged tree (build, 394 unit tests, 107 E2E
 tests, all green). No code change.
 
+**2026-10-11's skins cycle** — same state: no unblocked Skins work, the 2026-09-23
+Pending decision is still unanswered (not re-logged). `main` already merged in.
+Full suite re-verified (build, 394 unit tests, 107 E2E tests, all green). No code change.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
