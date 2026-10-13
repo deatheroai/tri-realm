@@ -3180,5 +3180,6 @@ decision (`DECISIONS.md`), so this proceeded without a fresh check-in.
   existing generic regression guard already covering the risk it
   introduced).
 - `done` **World cycle 2026-10-12: sync + verify only.** No unblocked World-owned item remained (only the camera-framing and dive-suit items are `todo`, both stuck per `DECISIONS.md`); merged `origin/main`, full suite green (typecheck/build, 394 unit, 107 E2E). Nothing built rather than manufacture scope.
+- `done` **World cycle 2026-10-13: sync + verify only.** Same state as 2026-10-12: only the camera-framing and dive-suit items are `todo`, both stuck per `DECISIONS.md`; the sole Pending decision is Skins-owned. Merged `origin/main`, full suite green (build, 394 unit, 107 E2E). Nothing built rather than manufacture scope.
 - Multiplayer or shared persistent world — explicitly out of scope until
   raised, per `AUTONOMY.md`.
