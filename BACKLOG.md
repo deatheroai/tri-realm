@@ -2079,6 +2079,17 @@ Pending decision is still unanswered (not re-logged). `main` merged in (World's
 2026-10-12 cycle). Full suite re-verified (build, 394 unit tests, 107 E2E tests,
 all green). No code change.
 
+**2026-10-15's skins cycle** — same state: no unblocked Skins work, the 2026-09-23
+Pending decision is still unanswered (not re-logged). `main` merged in (World's
+2026-10-15 cycle; heartbeat-log conflict only, kept both lines). Build and 394 unit
+tests green. E2E: 101 passed, 6 failed in the full run; 3 passed on isolated
+re-run (skins overlay layout, sea-swim, touch-controls ascend), 3 still fail in
+isolation and are all World-owned, frame-rate/timing-dependent: `castle-placement`
+"Gate has a walk-through opening" and "Wall ... still blocks" (30s timeout on a
+2.5s hold) and `land-walk` "holding Space doesn't repeatedly jump" (altitude 1.36 vs
+0.8). The branch differs from `main` only by the heartbeat line, so these reproduce
+on `main`; likely slow software rendering in this container, flagged for World.
+
 ## Phase 1b — Harden into the real architecture
 
 Only starts once Phase 1a has been reviewed and the direction holds.
