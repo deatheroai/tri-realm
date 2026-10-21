@@ -29,7 +29,7 @@ _None pending._
 
 ## Resolved
 
-- **2026-10-21 — Skins track backlog exhausted: closed, track paused.** You chose to close the question without giving new scope or authorizing the camera-framing E2E migration. The Skins daily routine was deleted; the 3rd-person camera framing item stays open in `BACKLOG.md` and can be revived by giving the track new scope.
+- **2026-10-21 — Skins track backlog exhausted: closed, track paused.** You chose to close the question without giving new scope or authorizing the camera-framing E2E migration. The Skins daily routine is to be deleted by the user (no automated session can delete it); the 3rd-person camera framing item stays open in `BACKLOG.md` and can be revived by giving the track new scope.
 
 - **2026-09-10 — Bird's first color pass called "ugly... too similar to
   Dive Suit"; reworked with your review, and split into two skins.** You
