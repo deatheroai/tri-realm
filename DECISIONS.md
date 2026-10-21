@@ -10,7 +10,8 @@ on these.
 
 ## Pending Decisions
 
-_None pending._
+- **2026-10-21 (World cycle) — World backlog has no unblocked item left; what next?** Every World-section `todo` is blocked on a human (dive-suit live check, see Needs Your Action) or lives in Skins territory (camera framing), `Later / unscoped` holds only out-of-scope multiplayer, and prior cycles already pulled forward every gap found in `ARCHITECTURE.md`. This cycle built nothing rather than manufacture busywork. Needs new World scope (e.g. next realm feature, persistence/`RealmMap` save format, or pause the World routine like Skins).
+  - Also noted: on a loaded machine, `castle-placement.spec.ts:375` (26.6s of a 30s timeout even alone) and `land-walk.spec.ts:60` (altitude timing) fail under parallel workers but pass with `--workers=1`; timing flakiness, not a regression.
 
 ## Needs Your Action (not decisions — steps only you can take)
 
