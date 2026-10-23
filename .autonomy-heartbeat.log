@@ -78,22 +78,22 @@
 2026-10-15T13:14:19Z skins cycle started (session session_01WvYG1DfVNJkQta1eH1mxrE)
 2026-10-16T09:10:27Z world cycle started (session 01XfvvnjegtCVZt9MCNBY5sM)
 2026-10-16T13:19:44Z skins cycle started (session 01BCmb4VNZpDd24cN6eCYdcF)
-2026-10-17T13:13:41Z skins cycle started (session session_018WLG2QxJLojHdaJJvYk5o3)
 2026-10-17T09:10:18Z world cycle started (session 013ANnQsZThSxMAwYfR1CZu2)
+2026-10-17T13:13:41Z skins cycle started (session session_018WLG2QxJLojHdaJJvYk5o3)
 2026-10-18T09:15:16Z world cycle started (session unknown)
-2026-10-19T09:15:20Z world cycle started (session 014ku3YvgLLPP9hozTv5f52W)
 2026-10-18T13:14:36Z skins cycle started (session 01UpvN7Ypz7FirD8qpw1ARZR)
+2026-10-19T09:15:20Z world cycle started (session 014ku3YvgLLPP9hozTv5f52W)
 2026-10-19T13:15:18Z skins cycle started (session 01RTtvJbDCJG7t3Pi1Lovifh)
 2026-10-19T13:23:25Z skins cycle: no build (backlog exhausted, Pending decision still open); e2e on merged main: 3 World-owned jump/wall specs fail reproducibly (castle-placement:375, land-walk:60, touch-controls:290[mobile]); typecheck/unit/build pass
+2026-10-20T09:14:57Z world cycle started (session 01FYDj8ovftVEUQ6BxH3mKQn)
 2026-10-20T13:18:00Z skins cycle started (session unknown)
 2026-10-20T13:26:21Z skins cycle: no build (backlog exhausted, Pending decision still open); typecheck/unit(394)/build pass; e2e on main: 103 pass, 3 World-owned jump specs fail reproducibly (castle-placement:375, land-walk:60, touch-controls:290[mobile]) — same as 2026-10-19; skins.spec:99 failed once under full-suite load, passed in isolation (flake)
-2026-10-20T09:14:57Z world cycle started (session 01FYDj8ovftVEUQ6BxH3mKQn)
 2026-10-21T09:15:07Z world cycle started (session 01UsdtrvUJwGTypGDHU3HB59)
 2026-10-21T09:23:22Z world cycle: no unblocked backlog item; logged Pending decision; no code changes
-2026-10-22T09:14:57Z world cycle started (session 015k5CCDm2rvfEsoTDgo6pqP)
 2026-10-21T13:22:24Z skins cycle started (session 017PmwD4ZApG6UV4Wid3V139)
 2026-10-21T13:22:46Z skins cycle: no build — Skins track closed/paused per DECISIONS.md 2026-10-21 (Resolved); no code changes
+2026-10-22T09:14:57Z world cycle started (session 015k5CCDm2rvfEsoTDgo6pqP)
 2026-10-22T09:15:16Z world cycle: no unblocked backlog item (Pending decision from 2026-10-21 still open); no code changes
-2026-10-23T09:15:00Z world cycle started (session session_01PUaaisq5Eurz4Eqvhc1peB)
 2026-10-22T13:20:31Z skins cycle started (session unknown)
 2026-10-22T13:20:52Z skins cycle: no build — Skins track closed/paused per DECISIONS.md 2026-10-21 (Resolved); no code changes
+2026-10-23T09:15:00Z world cycle started (session session_01PUaaisq5Eurz4Eqvhc1peB)
